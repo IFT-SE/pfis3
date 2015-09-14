@@ -1,0 +1,14 @@
+#!/bin/bash
+
+COUNTER=2
+echo "Combining results..."
+while [  $COUNTER -lt 63 ]; do
+    cat outputnaive/nav_$COUNTER/naiveFrequency.csv >> outputnaive/naiveFrequencyAll.csv
+    cat outputnaive/nav_$COUNTER/naiveRecency.csv >> outputnaive/naiveRecencyAll.csv
+    cat outputnaive/nav_$COUNTER/naiveTfidf.csv >> outputnaive/naiveTfidfAll.csv
+    cat outputnaive/nav_$COUNTER/naiveAdjacency.csv >> outputnaive/naiveAdjacencyAll.csv
+    cat outputnaive/nav_$COUNTER/naiveCalledMethod.csv >> outputnaive/naiveCalledMethodAll.csv
+    cat outputnaive/nav_$COUNTER/naiveDirectedCalledMethod.csv >> outputnaive/naiveDirectedCalledMethodAll.csv
+    cat outputnaive/nav_$COUNTER/naiveClickable.csv >> outputnaive/naiveClickableAll.csv
+    let COUNTER=COUNTER+1 
+done

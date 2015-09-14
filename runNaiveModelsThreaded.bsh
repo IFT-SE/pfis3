@@ -1,0 +1,130 @@
+#!/bin/bash
+
+DB='sqlite.db'
+FIXEDDB='sqlite_fixed.db'
+NAVS=99
+
+echo "Making required directories..."
+mkdir bin
+mkdir outputnaive
+echo "Removing old class files..."
+rm -v bin/*.class
+echo "Removing old user jar files..."
+rm -v lib/TFIDF.jar
+echo "Removing old output..."
+rm -vr outputnaive/*
+echo "Compiling TFIDFIndex.java..."
+javac -sourcepath src/java -d bin src/java/Stemmer.java src/java/TFIDFIndex.java src/java/Util.java
+echo "Building TFIDF.jar"
+jar -cf lib/TFIDF.jar -C bin Stemmer.class -C bin TFIDFIndex.class -C bin TFIDFIndex\$QueryResult.class -C bin Util.class
+echo "Compiling BuildNaiveModelFiles.java..."
+javac -sourcepath src/java -cp lib/joda-time-1.6.jar:lib/sqlitejdbc-v056.jar -d bin src/java/BuildNaiveModelFiles.java
+echo "Filling database with new navigations..."
+python src/python/buildCorrectDb.py data/$DB data/scrolls-manualCorrection.txt data/navs-manualCorrection.txt data/$FIXEDDB
+echo "Executing BuildNaiveModelFiles.java..."
+java -cp bin:lib/joda-time-1.6.jar:lib/sqlitejdbc-v056.jar BuildNaiveModelFiles outputnaive
+
+THREADS=0
+COUNTER=1
+
+echo "Creating document repository for TF-IDF..."
+while [  $COUNTER -lt 99 ]; do
+    python src/python/createDocs.py outputnaive/nav_$COUNTER/$FIXEDDB outputnaive/docs_$COUNTER &
+    let THREADS=THREADS+1
+    if [ $THREADS == 4 ]; then
+        wait
+        THREADS=0
+    fi
+    let COUNTER=COUNTER+1 
+done
+wait
+
+THREADS=0
+COUNTER=1
+
+echo "Scoring methods with TF-IDF..."
+while [  $COUNTER -lt $NAVS ]; do
+    echo "Scoring for navigation # $COUNTER..."
+    jython src/jython/tfidf.py outputnaive/docs_$COUNTER &
+    let THREADS=THREADS+1
+    if [ $THREADS == 4 ]; then
+        wait
+        THREADS=0
+    fi
+    let COUNTER=COUNTER+1 
+done
+wait
+
+THREADS=0
+COUNTER=1
+
+echo "Running naive models"
+while [  $COUNTER -lt $NAVS ]; do
+    echo "Executing naive models for navigation # $COUNTER..."
+    python src/python/naiveModels.py outputnaive/nav_$COUNTER/$FIXEDDB outputnaive/docs_$COUNTER/ outputnaive/nav_$COUNTER &
+    let THREADS=THREADS+1
+    if [ $THREADS == 4 ]; then
+        wait
+        THREADS=0
+    fi
+    let COUNTER=COUNTER+1 
+done
+wait
+
+COUNTER=1
+
+echo "Removing TFIDF dirs"
+while [  $COUNTER -lt $NAVS ]; do
+    rm -r outputnaive/docs_$COUNTER/
+    let COUNTER=COUNTER+1 
+done
+
+THREADS=0
+COUNTER=1
+
+echo "Running naive topology models"
+while [  $COUNTER -lt $NAVS ]; do
+    echo "Executing naive topology model for navigation # $COUNTER..."
+    python src/python/naiveClickable.py outputnaive/nav_$COUNTER/$FIXEDDB data/je.txt outputnaive/nav_$COUNTER &
+    let THREADS=THREADS+1
+    if [ $THREADS == 4 ]; then
+        wait
+        THREADS=0
+    fi
+    let COUNTER=COUNTER+1 
+done
+wait
+
+
+COUNTER=1
+echo "Combining results..."
+while [  $COUNTER -lt $NAVS ]; do
+    cat outputnaive/nav_$COUNTER/naiveFrequency.csv >> outputnaive/naiveFrequencyAll.csv
+    cat outputnaive/nav_$COUNTER/naiveRecency.csv >> outputnaive/naiveRecencyAll.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet3.csv >> outputnaive/naiveWorkingSet3All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet4.csv >> outputnaive/naiveWorkingSet4All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet5.csv >> outputnaive/naiveWorkingSet5All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet6.csv >> outputnaive/naiveWorkingSet6All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet7.csv >> outputnaive/naiveWorkingSet7All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet8.csv >> outputnaive/naiveWorkingSet8All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet9.csv >> outputnaive/naiveWorkingSet9All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet10.csv >> outputnaive/naiveWorkingSet10All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet11.csv >> outputnaive/naiveWorkingSet11All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet12.csv >> outputnaive/naiveWorkingSet12All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet13.csv >> outputnaive/naiveWorkingSet13All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet14.csv >> outputnaive/naiveWorkingSet14All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet15.csv >> outputnaive/naiveWorkingSet15All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet16.csv >> outputnaive/naiveWorkingSet16All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet17.csv >> outputnaive/naiveWorkingSet17All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet18.csv >> outputnaive/naiveWorkingSet18All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet19.csv >> outputnaive/naiveWorkingSet19All.csv
+    cat outputnaive/nav_$COUNTER/naiveWorkingSet20.csv >> outputnaive/naiveWorkingSet20All.csv
+    cat outputnaive/nav_$COUNTER/naiveTfidf.csv >> outputnaive/naiveTfidfAll.csv
+    cat outputnaive/nav_$COUNTER/naiveAdjacency.csv >> outputnaive/naiveAdjacencyAll.csv
+    cat outputnaive/nav_$COUNTER/naiveCalledMethod.csv >> outputnaive/naiveCalledMethodAll.csv
+    cat outputnaive/nav_$COUNTER/naiveDirectedCalledMethod.csv >> outputnaive/naiveDirectedCalledMethodAll.csv
+    cat outputnaive/nav_$COUNTER/naiveClickable.csv >> outputnaive/naiveTopologyAll.csv
+    let COUNTER=COUNTER+1 
+done
+
+echo "Done.  See .csv files in outputnaive directory for results."
