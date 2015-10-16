@@ -427,7 +427,7 @@ def loadPaths():
             add_offset(agent, timestamp, loc, target, referrer)
             t = timestamp
     c.close()
-    
+    c = conn.cursor()
     c.execute("select timestamp,action,target,referrer,agent from logger_log where action in ('Text selection offset') order by timestamp")
     for row in c:
         timestamp, action, agent, target, referrer = \
