@@ -51,7 +51,7 @@ public class BuildNaiveModelFiles
 		//deleteTextSelectionEvents();
 		//addScrollingEvents();
 		//closeDbConnection();
-		createDbCopies("data/ParticipantK_newNavs.db", args[0]);
+		createDbCopies(args[1], args[0]);
 	}
 
 	public static void copyFile(File in, File out) throws IOException
