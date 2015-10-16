@@ -239,12 +239,13 @@ public class BuildNaiveModelFiles
 			closeDbConnection();
 
 			int i = 1;
-			String newDbDir, newDbPath;
+			String newDbDir, newDbPath, newDbName;
+			newDbName = dbPath.substring(dbPath.indexOf('/') + 1);
 
 			for (String d : dates)
 			{
 				newDbDir = outputDir + "/nav_" + i++ + "/";
-				newDbPath = newDbDir + "ParticipantK-2010-01-25-sqlite.db";
+				newDbPath = newDbDir + newDbName;
 
 				System.out.println("\tCreating " + newDbPath);
 
