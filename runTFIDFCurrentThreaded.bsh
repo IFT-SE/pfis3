@@ -21,7 +21,7 @@ javac -sourcepath src/java -cp lib/joda-time-1.6.jar:lib/sqlitejdbc-v056.jar -d 
 echo "Filling database with new navigations..."
 python src/python/buildCorrectDb.py data/$DB data/scrolls-manualCorrection.txt data/navs-manualCorrection.txt data/$FIXEDDB
 echo "Executing BuildNaiveModelFiles.java..."
-java -cp bin:lib/joda-time-1.6.jar:lib/sqlitejdbc-v056.jar BuildNaiveModelFiles outputnaive
+java -cp bin:lib/joda-time-1.6.jar:lib/sqlitejdbc-v056.jar BuildNaiveModelFiles outputnaive data/$FIXEDDB
 
 THREADS=0
 COUNTER=1
