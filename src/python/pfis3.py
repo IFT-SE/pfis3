@@ -5,20 +5,17 @@ import networkx as nx
 from nltk.stem import PorterStemmer
 import iso8601
 import bisect
+import copy
 
 
-VERBOSE = 1
+VERBOSE_BUILD = 0
+VERBOSE_PATH = 0
 
 SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'New package', 'New file header')"
-
 TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'New package', 'Open call hierarchy')"
-
 ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' ORDER BY timestamp"
-
 PATH_QUERY_1 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
-
 PATH_QUERY_2 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
-
 PATH_QUERY_3 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration length' AND timestamp <= ? ORDER BY timestamp"
 
 
@@ -31,12 +28,87 @@ REGEX_PROJECT = re.compile(r"\/(.*)\/src/.*")
 REGEX_PACKAGE = re.compile(r"(.*)/[a-zA-Z0-9]+")
 
 
+NUM_METHODS_KNOWN_ABOUT = 0
+#remember that you have to multiply the number of iterations you want by 2
+NUM_ITERATIONS = 2
+DECAY_FACTOR = 0.85
+PATH_DECAY_FACTOR = 0.9
+INITIAL_ACTIVATION = 1
+
+
+activation_root = ''
+
+class LogEntry:
+    def __init__(self, navNum, timestamp, rank, numTies, length, 
+                 fromLoc, toLoc, classLoc, packageLoc):
+        self.navNum = str(navNum)
+        self.timestamp = str(timestamp)
+        self.rank = str(rank)
+        self.numTimes = str(numTies)
+        self.length = str(length)
+        self.fromLoc = fromLoc
+        self.classLoc = str(classLoc)
+        self.packageLoc = str(packageLoc)
+        
+    def getString(self):
+        return self.navNum + '\t' + self.timestamp + '\t' + self.rank + '\t' \
+            + self.numTimes + '\t' + self.length + '\t' + self.fromLoc + '\t' \
+            + self.classLoc + '\t' + self.packageLoc
+
+class Log:
+    def __init__(self, filePath):
+        self.filePath = filePath;
+        self.entries = []
+        
+    def addEntry(self, logEntry):
+        self.entries.append(logEntry);
+        
+    def saveLog(self):
+        logFile = open(self.filePath, 'w');
+        for entry in self.entries:
+            logFile.write(entry.getString() + '\n');
+        logFile.close();
+        
+class Activation:
+    def __init__(self, mapMethodsToScores):
+        self.mapMethodsToScores = mapMethodsToScores
+        
+    def spread(self, graph):
+    #Perform spreading activation computation on the graph by activating
+    #nodes in the activation dictionary. activation = {} where key is node,
+    #value is initial activation weight
+    
+        #i = the current node
+        #j = iterated neighbor of i
+        #x = iteration counter
+        
+        # if x is 0,2,4,6,... we want to spread out only to word nodes
+        # if x is 1,3,5,7,... we want to spread out only to non-word nodes
+        
+        for x in range(NUM_ITERATIONS):
+            for i in self.mapMethodsToScores.keys():
+                if i not in graph:
+                    continue
+                w = 1.0 / len(graph.neighbors(i))
+                for j in graph.neighbors(i):
+                    if j not in self.mapMethodsToScores:
+                        self.mapMethodsToScores[j] = 0.0
+                    if (x % 2 == 0 and wordNode(j)) or (x % 2 != 0 and not wordNode(j)):
+                        self.mapMethodsToScores[j] = self.mapMethodsToScores[j] + (self.mapMethodsToScores[i] * w * DECAY_FACTOR)
+        return sorted(self.mapMethodsToScores.items(), sorter) # Returns a list of only nodes with weights
+        
+
 
 def main():
     stopWords = loadStopWords('/Users/Dave/Desktop/pfis3/data/je.txt')
-    #g = buildGraph('/Users/Dave/Desktop/pfis3/data/sqlite.db', stopWords)
-    p = buildPath('/Users/Dave/Desktop/pfis3/data/sqlite_fixed.db');
-
+    g = buildGraph('/Users/Dave/Desktop/pfis3/data/chi12_p2.db', stopWords)
+    p = buildPath('/Users/Dave/Desktop/pfis3/data/chi12_p2.db');
+    l = Log('/Users/Dave/Desktop/pfis3_test.txt');
+    activation_root = open("/Users/Dave/Desktop/pfis3_activation.txt", 'w')
+    makePredictions(p, g, pfisWithHistory, resultsLog = l)
+    l.saveLog()
+    #writeResults(r['log'], "/Users/Dave/Desktop/pfis3_test.txt")
+    activation_root.close()
 
     sys.exit(0);
     
@@ -45,6 +117,7 @@ def loadStopWords(path):
     # word per line. Stop words are ignored and not loaded into the PFIS graph.
     words = []
     f = open(path)
+    
     
     for word in f:
         words.append(word.lower())
@@ -72,7 +145,7 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
     # described below. Some of the nodes here are then reused when the topology
     # is built in loadTopology.
     
-    if VERBOSE: print "Processing scent. Adding word nodes to the graph..."
+    print "Processing scent. Adding word nodes to the graph..."
     
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
@@ -80,7 +153,7 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
     c.execute(SCENT_QUERY);
     
     for row in c:
-        action, target, referrer, agent = \
+        action, target, referrer = \
             row['action'], fixSlashes(row['target']), \
             fixSlashes(row['referrer'])
         
@@ -94,11 +167,11 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
                       'Variable type'):
             for word in getWordNodes_splitNoStem(target, stopWords):
                 g.add_edge(target, word)
-                if VERBOSE: print "\tAdding edge from", target, "to", word[1]
+                if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
             
             for word in getWordNodes_splitNoStem(referrer, stopWords):
                 g.add_edge(referrer, word)
-                if VERBOSE: print "\tAdding edge from", referrer, "to", word[1]
+                if VERBOSE_BUILD: print "\tAdding edge from", referrer, "to", word[1]
                      
         # Case 2: For new packages, we want to connect the last part of the 
         # package's name to the path containing the package (which should have 
@@ -106,7 +179,7 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
         elif action in ('New package'):
             for word in getWordNodes_splitNoStem(target, stopWords):
                 g.add_edge(target, word)
-                if VERBOSE: print "\tAdding edge from", target, "to", word[1]
+                if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
                 
         # Case 3: These actions have code content within them. In this case we 
         # want to add an edge from the FQN node in target to the code content in 
@@ -120,14 +193,14 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
                         'New file header'):    
             for word in getWordNodes_splitNoStem(referrer, stopWords):
                 g.add_edge(target, word)
-                if VERBOSE: print "\tAdding edge from", target, "to", word[1]
+                if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
         
             for word in getWordNodes_splitCamelAndStem(referrer, stopWords):
                 g.add_edge(target, word)
-                if VERBOSE: print "\tAdding edge from", target, "to", word[1]
+                if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
     c.close() 
     
-    if VERBOSE: print "Done processing scent."
+    print "Done processing scent."
     
 def loadTopologyRelatedNodes(g, dbFile, stopWords):
     # This method creates adds many edges to g according to the things logged by 
@@ -148,8 +221,7 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords):
     # method calls another since that's the only way to link two FQNs that are
     # methods.
     
-    if VERBOSE: 
-        print "Processing topology. Adding location nodes to the graph..."
+    print "Processing topology. Adding location nodes to the graph..."
     
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
@@ -157,7 +229,7 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords):
     c.execute(TOPOLOGY_QUERY)
         
     for row in c:
-        action, target, referrer, agent = \
+        action, target, referrer, = \
             row['action'], fixSlashes(row['target']), \
             fixSlashes(row['referrer'])
             
@@ -195,44 +267,46 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords):
             # Open call hierarchy: org/gjt/sp/jedit/gui/StatusBar
             #          --> Lorg/gjt/sp/jedit/gui/StatusBar;.updateCaretStatus()V
             g.add_edge(target, referrer)
-            if VERBOSE: print "\tAdding edge from", target, "to", referrer
+            if VERBOSE_BUILD: print "\tAdding edge from", target, "to", referrer
         
             # Connect the project name and the packages to the root packages
             # node
             if proj != '':
                 g.add_edge('packages', proj)
-                if VERBOSE: print "\tAdding edge from 'packages' to", proj
+                if VERBOSE_BUILD: print "\tAdding edge from 'packages' to", proj
                 
             if pack != '':
                 g.add_edge('packages', pack)
-                if VERBOSE: print "\tAdding edge from 'packages' to", pack
+                if VERBOSE_BUILD: print "\tAdding edge from 'packages' to", pack
                 
             # Attach packages to each class by their normalized path which 
             # starts with the package name. See normalize().
             # Ex: org/gjt/sp/jedit --> org/gjt/sp/jedit/View
             if pack != '' and ntarget != '':
                 g.add_edge(pack, ntarget)
-                if VERBOSE: print "\tAdding edge from", pack, "to", ntarget
+                if VERBOSE_BUILD: 
+                    print "\tAdding edge from", pack, "to", ntarget
                 
             # Attach all package paths to the project node
             # Ex: jEdit --> org/gjt/sp/jedit/gui
             if pack != '' and proj != '':
                 g.add_edge(proj, pack)
-                if VERBOSE: print "\tAdding edge from", proj, "to", pack
+                if VERBOSE_BUILD: print "\tAdding edge from", proj, "to", pack
                 
             # Attaches normalized paths to FQNs See normalize().
             # Ex: org/gjt/sp/jedit/bufferset/BufferSet 
             #       --> Lorg/gjt/sp/jedit/bufferset/BufferSet;.sort()V
             if ntarget != '':
                 g.add_edge(ntarget, target)
-                if VERBOSE: print "\tAdding edge from", ntarget, "to", target
+                if VERBOSE_BUILD: 
+                    print "\tAdding edge from", ntarget, "to", target
                 
             # Attaches FQNs to normalized paths See normalize().
             # Ex: Lorg/gjt/sp/jedit/bufferset/BufferSet;.sort()V#listeners
             #       --> org/gjt/sp/jedit/bufferset/BufferSet
             if nreferrer != '':
                 g.add_edge(nreferrer, referrer)
-                if VERBOSE:
+                if VERBOSE_BUILD:
                     print "\tAdding edge from", nreferrer, "to", referrer
             
             # Attaches two FQNs normalized paths to each other. See normalize().
@@ -242,10 +316,19 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords):
             #        --> org/gjt/sp/util/Log;
             if ntarget != '' and nreferrer != '':
                 g.add_edge(ntarget, nreferrer)
-                if VERBOSE: print "\tAdding edge from", ntarget, "to", nreferrer
+                if VERBOSE_BUILD: 
+                    print "\tAdding edge from", ntarget, "to", nreferrer
     c.close
     
-    if VERBOSE: print "Done processing topology."
+    global NUM_METHODS_KNOWN_ABOUT
+    
+    for item in g.nodes_iter():
+        if item != '' and \
+                      not wordNode(item) and \
+                      '#' not in item and ';.' in item:
+            NUM_METHODS_KNOWN_ABOUT += 1
+    
+    print "Done processing topology."
     
 def loadAdjacentMethods(g, dbFile):
     # Creates links between two methods that are adjacent in a class file. A
@@ -300,12 +383,11 @@ def loadAdjacentMethods(g, dbFile):
             if i + 1 < len(offsets[loc2]):
                 g.add_edge(offsets[loc2][i]['target'],
                                 offsets[loc2][i + 1]['target'])
-                if VERBOSE: 
+                if VERBOSE_BUILD: 
                     print "\tAdding edge from", offsets[loc2][i]['target'], \
                             "to", offsets[loc2][i + 1]['target']
                             
-    if VERBOSE: 
-        print "Processing adjacency. Adding adjacent methods to the graph..."
+    print "Processing adjacency. Adding adjacent methods to the graph..."
     
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
@@ -313,15 +395,17 @@ def loadAdjacentMethods(g, dbFile):
     c.execute(ADJACENCY_QUERY)
 
     for row in c:
-        timestamp, action, target, referrer = \
-            iso8601.parse_date(row['timestamp']), row['action'], \
-            row['target'], int(row['referrer'])
+        timestamp, target, referrer = \
+            iso8601.parse_date(row['timestamp']), row['target'], \
+            int(row['referrer'])
         
         # Get the method's class
         loc = normalize(target)
         if loc:
             add_offset(timestamp, loc, target, referrer)
     c.close()
+    
+    print "Done processing adjacency."
     
 #==============================================================================#
 # Helper methods for building the graph                                        #
@@ -479,9 +563,9 @@ def buildPath(dbFile):
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
         
-        for tuple in offsets[loc2]:
-            if tuple['method'] == method:
-                tuple['end'] = tuple['offset'] + length - 1
+        for t in offsets[loc2]:
+            if t['method'] == method:
+                t['end'] = t['offset'] + length - 1
                 
     def find_method_match(loc, offset):
         # Iterate over offsets and find the method that matches the passed in
@@ -495,14 +579,14 @@ def buildPath(dbFile):
         if loc2 not in offsets:
             offsets[loc2] = []
         
-        if loc2 not in offsets:
-            print "Unknown location:", loc2;
-        else:
-            for tuple in offsets[loc2]:
-                if offset >= tuple['offset'] and offset <= tuple['end']:
-                    return tuple['method']
+        if loc2 in offsets:
+            for t in offsets[loc2]:
+                if offset >= t['offset'] and offset <= t['end']:
+                    return t['method']
                     
-        return 'Unknown location'
+        return 'Unknown location:' + loc2 + 'at' + str(offset)
+    
+    print "Building path..."
 
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
@@ -513,9 +597,9 @@ def buildPath(dbFile):
     c = conn.cursor()
     c.execute(PATH_QUERY_1)
     for row in c:
-        timestamp, action, target, referrer = \
-            (iso8601.parse_date(row['timestamp']), row['action'], \
-            row['target'], int(row['referrer']))
+        timestamp, target, referrer = \
+            (iso8601.parse_date(row['timestamp']), row['target'], \
+            int(row['referrer']))
         
         # Get the class of the method    
         loc = normalize(target)
@@ -541,8 +625,7 @@ def buildPath(dbFile):
         c = conn.cursor()
         c.execute(PATH_QUERY_2, [currentTime])
         for row in c:
-            action, target, referrer = \
-                row['action'], row['target'], int(row['referrer'])
+            target, referrer = row['target'], int(row['referrer'])
             
             # Get the class of the method
             loc = normalize(target)
@@ -555,8 +638,7 @@ def buildPath(dbFile):
         c = conn.cursor()
         c.execute(PATH_QUERY_3, [currentTime])
         for row in c:
-            action, target, referrer = \
-                row['action'], row['target'], int(row['referrer'])
+            target, referrer = row['target'], int(row['referrer'])
             
             # Get the class of the method
             loc = normalize(target)
@@ -569,10 +651,220 @@ def buildPath(dbFile):
         # participant's path
         out.append({'target': find_method_match(navLoc, offset), 
             'timestamp': currentTime})
+    
+    if VERBOSE_PATH: 
+        for t in out:
+            print "\tNavigation to", t["target"]
+    
+    print "Done building path."
     return out
+
+#==============================================================================#
+# Helper methods for initial weights on the graph                              #
+#==============================================================================#
+# Each of these mehtods define a different level of granularity for navigations
+# PFIS3 supports betwee-method, between-class and between-package navigations.
+# These functions are passed in as parameters and rely on the list of methods
+# generated by buildPaths
+
+def between_method(a, b):
+    # A navigation between methods occurs when two consecutive FQNs do not match
+    return a != b
+
+def between_class(a, b):
+    # A navigation between classes occurs when two consecutive normalized class
+    # paths do not match
+    return normalize(a) != normalize(b)
+
+def between_package(a, b):
+    # A navigation between packages occurs when two conscutive pacakes do not
+    # match
+    return package(a) != package(b)
     
+def makePredictions(navList, graph, algorithmFunc, resultsLog,
+                    granularityFunc = between_method, 
+                    bugReportWordList = []):
+    # Iterate through the navigations with the selected granularityFunc and call 
+    # the prediction function for each navigation to a new location (as 
+    # specified by the granularityFunc). Results are stored in the resultsLog  
+    # data structure.
+    #pprev = None
+    prev = navList[0]
+    i = 0
+    for nav in navList:
+        if granularityFunc(nav['target'], prev['target']):
+            i += 1
+            algorithmFunc(resultsLog, graph, prev, nav, i, bugReportWordList)
+            #pprev = prev
+        prev = nav
+    return resultsLog
+
+def pfisWithHistory(resultsLog, graph, prev, navListEntry, i, 
+                    bugReportWordList):
+    '''The most recently encountered item has the highest dictInitialWeights, older
+    items have lower dictInitialWeights. No accumulation of dictInitialWeights.
+    '''
     
+    def getInitialPathWeights():
+        navsInGraph = [];
     
+        # remove any existing instances of from location
+        if prev['target'] in navsInGraph:
+            navsInGraph.remove(prev['target'])
+            
+        # append the previous location to the end of the list
+        navsInGraph.append(prev['target'])
+
+        a = INITIAL_ACTIVATION
+        dictInitialWeights = {}
+        # Set the dictInitialWeights of all bugReportWordList in bugReportWordList to 1
+        for word in bugReportWordList:
+            dictInitialWeights[word] = INITIAL_ACTIVATION
+            
+        # Iterate over resultsLog backwards. For each navigation with both start and
+        # end nodes in the graph, apply a starting weight on those nodes with a
+        # decay factor of 0.9.
+        for j in reversed(range(len(navsInGraph))):
+            if(navsInGraph[j] not in dictInitialWeights or dictInitialWeights[navsInGraph[j]] < a):
+                dictInitialWeights[navsInGraph[j]] = a
+            a *= PATH_DECAY_FACTOR
+            
+        return dictInitialWeights
+                
+                
+    ties = -1 # Added by me
+            
+    if prev['target'] in graph and navListEntry['target'] in graph:
+        dictInitialWeights = getInitialPathWeights()
+        act = Activation(dictInitialWeights)
+        activation = act.spread(graph)
+        rank, length, ties = \
+            getResultRank(graph, navListEntry['target'], activation, navNum=i)
+            
+        e = LogEntry(i, rank, ties, length, prev['target'],
+                     navListEntry['target'], 
+                     between_class(prev['target'], navListEntry['target']), 
+                     between_package(prev['target'], navListEntry['target']), 
+                     navListEntry['timestamp'])
+        resultsLog.addEntry(e);
+    else:
+        e = LogEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prev['target'],
+                     navListEntry['target'], 
+                     between_class(prev['target'], navListEntry['target']), 
+                     between_package(prev['target'], navListEntry['target']), 
+                     navListEntry['timestamp'])
+        resultsLog.addEntry(e);
+        
+        
+def getResultRank(graph, navNumMinus1, activation, navNum=0):
+    # sorts list of activations desc
+    last = activation[0][0]
+    #Here he removes everything but methods from activation
+    scores = [val for (item,val) in activation if item != '' and \
+                      item != last and not wordNode(item) and \
+                      '#' not in item and ';.' in item]
+    
+    targets = [item for (item,val) in activation if item != '' and \
+                      item != last and not wordNode(item) and \
+                      '#' not in item and ';.' in item]
+    #print "\ttargets vector has", len(targets), "nodes"
+    rank = 0
+    #found = 0
+    for item in targets:
+        rank += 1
+        print rank, item, val
+        if item == navNumMinus1:
+    #        #found = 1
+            break
+    #if found:
+        #scores = []
+    ranks = rankTransform(scores) # Returns a list of ranks that account for ties in reverse order
+    rankTies = mapRankToTieCount(ranks)
+    ties = rankTies[ranks[rank - 1]]
+    #methods[agent][item] = (len(ranks) - ranks[i]) / (len(ranks) - 1)
+    #writeScores(navNum, targets, ranks, scores) -- REMOVED BY ME
+    #print "End:", navNumMinus1, "\trank:", rank, "\tranks[rank-1]:", ranks[rank - 1], "\tscores[rank-1]:", scores[rank-1] 
+    return (len(ranks) - ranks[rank - 1]), len(targets), ties
+    #return (len(ranks) - ranks[rank - 1]) / (len(ranks) - 1), len(targets)
+    #else:
+    #    return 999998, len(targets)
+    
+def mapRankToTieCount(ranks):
+# uses methods to create a mapping from the rank to the number of instances
+# of that rank in the rank listing
+# methods: { agent id --> { method --> rank }
+# o: { rank --> number ties }
+    
+    o = {}
+    
+    for rank in ranks:      
+        if rank not in o:
+            o[rank] = 1
+        else:
+            o[rank] = o[rank] + 1
+                
+    return o
+    
+def writeScores(navnum, methods, ranks, scores):
+# Writes the contents of methods to the specified file
+
+    for i in range(len(methods)):
+        activation_root.write("%d,%s,%s,%s\n" % (navnum, methods[i], (len(ranks) - ranks[i]), scores[i]))
+    
+#The following were pulled from the stats.py package
+
+    
+def rankTransform(scoresForMethods):
+    #We need to add all the zero entries here
+    extendedList = [0] * NUM_METHODS_KNOWN_ABOUT;
+    for i in range(len(scoresForMethods)):
+        extendedList[i] = scoresForMethods[i]
+    
+    # At this point, there's a sorted list of scores for every known method
+    
+    scoresVector, ranksVector = shellsort(extendedList)
+    sumranks = 0
+    dupcount = 0
+    resultRankList = [0] * NUM_METHODS_KNOWN_ABOUT
+    for i in range(NUM_METHODS_KNOWN_ABOUT):
+        sumranks = sumranks + i
+        dupcount = dupcount + 1
+        if i==NUM_METHODS_KNOWN_ABOUT-1 or scoresVector[i] <> scoresVector[i+1]:
+            averank = sumranks / float(dupcount) + 1
+            for j in range(i-dupcount+1,i+1):
+                resultRankList[ranksVector[j]] = averank
+            sumranks = 0
+            dupcount = 0
+    return resultRankList
+
+def shellsort(allScoresList):
+    n = len(allScoresList)
+    scoresVector = copy.deepcopy(allScoresList)
+    ranksVector = range(n) # Int vector 0 to len n-1
+    gap = n/2   # integer division needed
+    while gap >0:
+        for i in range(gap,n):
+            for j in range(i-gap,-1,-gap):
+                while j>=0 and scoresVector[j]>scoresVector[j+gap]:
+                    temp        = scoresVector[j]
+                    scoresVector[j]     = scoresVector[j+gap]
+                    scoresVector[j+gap] = temp
+                    itemp       = ranksVector[j]
+                    ranksVector[j]     = ranksVector[j+gap]
+                    ranksVector[j+gap] = itemp
+        gap = gap / 2  # integer division needed
+# scoresVector is now sorted allScoresList, and ranksVector has the order scoresVector[i] = vec[ranksVector[i]]
+    return scoresVector, ranksVector
+
+def sorter (x,y):
+    return cmp(y[1],x[1])
+
+
+def wordNode (n):
+    return n[0] == 'word'
+
+
+
     
 if __name__ == "__main__":
     main()
