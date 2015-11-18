@@ -9,7 +9,7 @@ import copy
 
 
 VERBOSE_BUILD = 0
-VERBOSE_PATH = 0
+VERBOSE_PATH = 1
 
 SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'New package', 'New file header')"
 TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'New package', 'Open call hierarchy')"
@@ -100,12 +100,12 @@ class Activation:
 
 
 def main():
-    stopWords = loadStopWords('/Users/Dave/Desktop/pfis3/data/je.txt')
-    g = buildGraph('/Users/Dave/Desktop/pfis3/data/chi12_p2.db', stopWords)
-    p = buildPath('/Users/Dave/Desktop/pfis3/data/chi12_p2.db');
+    stopWords = loadStopWords('/Users/Dave/Desktop/code/pfis3/data/je.txt')
+    g = buildGraph('/Users/Dave/Desktop/code/pfis3_old/data/chi12_p2.db', stopWords)
+    p = buildPath('/Users/Dave/Desktop/code/pfis3_old/data/chi12_p2.db', between_method);
     l = Log('/Users/Dave/Desktop/pfis3_test.txt');
     activation_root = open("/Users/Dave/Desktop/pfis3_activation.txt", 'w')
-    makePredictions(p, g, pfisWithHistory, resultsLog = l)
+    makePredictions(p, g, pfisWithHistory, resultsLog=l)
     l.saveLog()
     #writeResults(r['log'], "/Users/Dave/Desktop/pfis3_test.txt")
     activation_root.close()
@@ -484,7 +484,7 @@ def project(s):
 #==============================================================================#
 # Method for determining the path                                              #
 #==============================================================================#
-def buildPath(dbFile):
+def buildPath(dbFile, granularityFunc):
     # Reconstruct the original method-level path through the source code by
     # matching text selection offsets to method declaration offsets. Text
     # selection offsets occur later in the data than method declaration
@@ -584,8 +584,124 @@ def buildPath(dbFile):
                 if offset >= t['offset'] and offset <= t['end']:
                     return t['method']
                     
-        return 'Unknown location:' + loc2 + 'at' + str(offset)
+        return 'UNKNOWN,' + loc2 + ',' + str(offset)
     
+    def clean_up_path():
+        # Remove navigations to the same location and any navigations that are
+        # between methods or after the last method. The only unknown location we
+        # keep is are one that occur before the beginning of the first method as
+        # those will become header navigations
+        for i in reversed(range(len(out) - 1)):
+            doDelete = False
+            method1 = out[i]['target']
+            method2 = out[i + 1]['target']
+            
+            # Using the granularity function, remove any identical methods
+            # Recall that granularity functions returns true when the two
+            # passed-in parameters are true.
+            if not granularityFunc(method1, method2):
+                if VERBOSE_PATH:
+                    print "\tRemoving duplicate method navigation at", str(i), method2
+                    doDelete = True
+            
+            # If the granularity is between method, we want to remove any
+            # navigations that landed between method definitions and any methods
+            # after the end of the file.
+            if not doDelete and granularityFunc == between_method:
+                if method2.startswith('UNKNOWN'):
+                    tokens = method2.split(',')
+                    loc = tokens[1]
+                    offset = int(tokens[2])
+                    
+                    # Remove any methods that are known to be in between two
+                    # methods
+                    if is_in_gap(loc, offset):
+                        if VERBOSE_PATH:
+                            print "\tRemoving navigation to gap between" \
+                            +" methods at", str(i), method2
+                        doDelete = True
+                    
+                if not doDelete and method1.startswith("UNKNOWN") \
+                    and method2.startswith("UNKNOWN"):
+                    tokens1 = method1.split(',')
+                    tokens2 = method2.split(',')
+                    loc1 = tokens1[1]
+                    loc2 = tokens2[1]
+                    
+                    if loc1 == loc2:
+                        offset1 = int(tokens1[2])
+                        offset2 = int(tokens2[2])
+                        
+                        if in_in_same_gap(loc1, offset1, offset2):
+                            if VERBOSE_PATH:
+                                print "\tRemoving duplicate navigation to gap" \
+                                + " between methods at", str(i), method2
+                            doDelete = True
+            if doDelete: 
+                del out[i + 1]
+                
+    def is_in_gap(loc, offset):
+        # Returns true if the given navigation is to a location between method
+        # definitions or after the last method defintion for the given class
+        # location and offset. Navigations to the top of a file, before the
+        # start offset are not considered to be in a gap.
+        
+        # This split allows inner classes to be handled properly, by setting the
+        # class to the outer class instead of the inner one.
+        loc2 = loc.split('$')[0]
+        
+        # If the class in offsets doesn't exist, it's a navigation to a new 
+        # file. If the location is before the first method, we keep it as it is
+        # a header navigation
+        if loc2 not in offsets or offset < offsets[loc2][0]['offset']:
+            return False
+        
+        classOffsets = offsets[loc2]
+        
+        # Return true if the offset is past the last method.
+        if offset > classOffsets[-1]['end']:
+            return True
+        
+        # Return true if the offset is in between two methods
+        if loc2 in offsets and len(classOffsets) > 1:
+            for i in range(len(classOffsets) - 1):
+                currMethod = classOffsets[i];
+                nextMethod = classOffsets[i + 1]
+                if offset > currMethod['end'] and offset < nextMethod['offset']:
+                    return True
+
+        return False
+    
+    def in_in_same_gap(loc, offset1, offset2):
+        
+        # This split allows inner classes to be handled properly, by setting the
+        # class to the outer class instead of the inner one.
+        loc2 = loc.split('$')[0]
+        
+        # If the class in offsets doesn't exist, it's a navigation to a new 
+        # file. If the location is before the first method, we keep it as it is
+        # a header navigation
+        if loc2 not in offsets:
+            return False
+        
+        classOffsets = offsets[loc2]
+        
+        # Return true if the offsets are past the last method.
+        if offset > classOffsets[-1]['end'] \
+            and offset2 > classOffsets[-1]['end']:
+            return True
+        
+        # Return true if the offsets are in between teh same two methods
+        if loc2 in offsets and len(classOffsets) > 1:
+            for i in range(len(classOffsets) - 1):
+                currMethod = classOffsets[i];
+                nextMethod = classOffsets[i + 1]
+                if offset > currMethod['end'] \
+                    and offset < nextMethod['offset'] \
+                    and offset2 > currMethod['end'] \
+                    and offset2 < nextMethod['offset']:
+                    return True
+                
     print "Building path..."
 
     conn = sqlite3.connect(dbFile)
@@ -651,8 +767,12 @@ def buildPath(dbFile):
         # participant's path
         out.append({'target': find_method_match(navLoc, offset), 
             'timestamp': currentTime})
+            
+    print "Cleaning up path according to specified granularity..."
+    clean_up_path()
     
     if VERBOSE_PATH: 
+        print "\tFinal path:"
         for t in out:
             print "\tNavigation to", t["target"]
     
@@ -680,79 +800,88 @@ def between_package(a, b):
     # A navigation between packages occurs when two conscutive pacakes do not
     # match
     return package(a) != package(b)
+
+
+
+
+
+
+
+
+
+
+
     
-def makePredictions(navList, graph, algorithmFunc, resultsLog,
+def makePredictions(navPath, graph, algorithmFunc, resultsLog,
                     granularityFunc = between_method, 
                     bugReportWordList = []):
     # Iterate through the navigations with the selected granularityFunc and call 
-    # the prediction function for each navigation to a new location (as 
+    # the algorithmFunc for each navigation to a new location (navigations are
     # specified by the granularityFunc). Results are stored in the resultsLog  
     # data structure.
-    #pprev = None
-    prev = navList[0]
+    prev = navPath[0]
     i = 0
-    for nav in navList:
+    for nav in navPath:
         if granularityFunc(nav['target'], prev['target']):
             i += 1
-            algorithmFunc(resultsLog, graph, prev, nav, i, bugReportWordList)
-            #pprev = prev
+            algorithmFunc(resultsLog, navPath, graph, prev, nav, i, \
+                          bugReportWordList)
         prev = nav
-    return resultsLog
 
-def pfisWithHistory(resultsLog, graph, prev, navListEntry, i, 
+def pfisWithHistory(resultsLog, navPath, graph, prevNav, currentNav, i, 
                     bugReportWordList):
-    '''The most recently encountered item has the highest dictInitialWeights, older
-    items have lower dictInitialWeights. No accumulation of dictInitialWeights.
-    '''
+    # One of the possible algorithm fucntions.
+    # This version pre-weighs the participant's path with initial starting
+    # weights before spreading activation. The current step is weighed with 
+    # INITIAL_ACTIVATION and every step in the past is decayed by the
+    # PATH_DECAY_FACTOR.
     
     def getInitialPathWeights():
-        navsInGraph = [];
-    
-        # remove any existing instances of from location
-        if prev['target'] in navsInGraph:
-            navsInGraph.remove(prev['target'])
-            
-        # append the previous location to the end of the list
-        navsInGraph.append(prev['target'])
+        # Weigh the navigation path prior to spreading activation. If the
+        # programmer has been to the same location several times, the highest
+        # weight is the one that is stored. Also, give an initial weight of 1
+        # to all words that have been included in the bugReport
 
         a = INITIAL_ACTIVATION
-        dictInitialWeights = {}
-        # Set the dictInitialWeights of all bugReportWordList in bugReportWordList to 1
+        dictOfInitialWeights = {}
+        # Set the dictOfInitialWeights of all bugReportWordList in 
+        # bugReportWordList to INITIAL_ACTIVATION
         for word in bugReportWordList:
-            dictInitialWeights[word] = INITIAL_ACTIVATION
+            dictOfInitialWeights[word] = INITIAL_ACTIVATION
             
-        # Iterate over resultsLog backwards. For each navigation with both start and
-        # end nodes in the graph, apply a starting weight on those nodes with a
-        # decay factor of 0.9.
-        for j in reversed(range(len(navsInGraph))):
-            if(navsInGraph[j] not in dictInitialWeights or dictInitialWeights[navsInGraph[j]] < a):
-                dictInitialWeights[navsInGraph[j]] = a
+        # Iterate over resultsLog backwards. For each navigation with both start
+        # and end nodes in the graph, apply a starting weight on those nodes 
+        # with a decay factor specified by PATH_DECAY_FACTOR
+        for j in reversed(range(len(navPath))):
+            #print j, navPath[j]['target'];
+            if navPath[j]['target'] not in dictOfInitialWeights \
+                or dictOfInitialWeights[navPath[j]['target']] < a:
+                dictOfInitialWeights[navPath[j]['target']] = a
             a *= PATH_DECAY_FACTOR
             
-        return dictInitialWeights
-                
+        return dictOfInitialWeights
                 
     ties = -1 # Added by me
-            
-    if prev['target'] in graph and navListEntry['target'] in graph:
-        dictInitialWeights = getInitialPathWeights()
-        act = Activation(dictInitialWeights)
+    
+    if prevNav['target'] in graph and currentNav['target'] in graph:
+        dictOfInitialWeights = getInitialPathWeights()
+        act = Activation(dictOfInitialWeights)
         activation = act.spread(graph)
         rank, length, ties = \
-            getResultRank(graph, navListEntry['target'], activation, navNum=i)
+            getResultRank(graph, currentNav['target'], activation, navNum=i)
             
-        e = LogEntry(i, rank, ties, length, prev['target'],
-                     navListEntry['target'], 
-                     between_class(prev['target'], navListEntry['target']), 
-                     between_package(prev['target'], navListEntry['target']), 
-                     navListEntry['timestamp'])
+        e = LogEntry(i, rank, ties, length, prevNav['target'],
+                     currentNav['target'], 
+                     between_class(prevNav['target'], currentNav['target']), 
+                     between_package(prevNav['target'], currentNav['target']), 
+                     currentNav['timestamp'])
         resultsLog.addEntry(e);
     else:
-        e = LogEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prev['target'],
-                     navListEntry['target'], 
-                     between_class(prev['target'], navListEntry['target']), 
-                     between_package(prev['target'], navListEntry['target']), 
-                     navListEntry['timestamp'])
+        e = LogEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prevNav['target'],
+                     currentNav['target'], 
+                     between_class(prevNav['target'], currentNav['target']), 
+                     between_package(prevNav['target'], currentNav['target']), 
+                     currentNav['timestamp'])
         resultsLog.addEntry(e);
         
         
@@ -772,7 +901,7 @@ def getResultRank(graph, navNumMinus1, activation, navNum=0):
     #found = 0
     for item in targets:
         rank += 1
-        print rank, item, val
+        #print rank, item, val
         if item == navNumMinus1:
     #        #found = 1
             break
