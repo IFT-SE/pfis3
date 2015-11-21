@@ -9,11 +9,12 @@ import copy
 
 
 VERBOSE_BUILD = 0
-VERBOSE_PATH = 1
+VERBOSE_PATH = 0
+VERBOSE_PREDICT = 1
 
-SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'New package', 'New file header')"
-TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'New package', 'Open call hierarchy')"
-ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' ORDER BY timestamp"
+SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'New package', 'New file header') AND timestamp <= ?"
+TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'New package', 'Open call hierarchy') AND timestamp <= ?"
+ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
 PATH_QUERY_1 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
 PATH_QUERY_2 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
 PATH_QUERY_3 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration length' AND timestamp <= ? ORDER BY timestamp"
@@ -38,6 +39,56 @@ INITIAL_ACTIVATION = 1
 
 activation_root = ''
 
+class NavPath:
+    def __init__(self):
+        self.navPath = []
+        
+    def addEntry(self, entry):
+        self.navPath.append(entry)
+        l = len(self.navPath)
+        if l > 1:
+            entry.prevEntry = self.navPath[l - 2]
+            
+    def __iter__(self):
+        return self.navPath.__iter__()
+    
+    def isUnknownMethodAt(self, index):
+        return self.navPath[index].unknownMethod
+    
+    def getLength(self):
+        return len(self.navPath)
+    
+    def getEntryAt(self, index):
+        return self.navPath[index]
+    
+    def getMethodAt(self, index):
+        return self.navPath[index].method
+    
+    def getTimestampAt(self, index):
+        return self.navPath[index].timestamp
+    
+    def getPrevEntryAt(self, index):
+        return self.navPath[index].prevEntry
+    
+    def removeAt(self, index):
+        del self.navPath[index]
+    
+    def toStr(self):
+        out = 'NavPath:\n'
+        for entry in self.navPath:
+            out += '\t' + entry.method + ' at ' + entry.timestamp +'\n'
+        return out
+    
+class NavPathEntry:
+    def __init__(self, timestamp, method):
+        self.timestamp = str(timestamp)
+        self.method = method
+        self.prevEntry = None
+        self.unknownMethod = False
+        
+        if method.startswith("UNKNOWN"):
+            self.unknownMethod = True;
+        
 class LogEntry:
     def __init__(self, navNum, timestamp, rank, numTies, length, 
                  fromLoc, toLoc, classLoc, packageLoc):
@@ -100,17 +151,38 @@ class Activation:
 
 
 def main():
-    stopWords = loadStopWords('/Users/Dave/Desktop/code/pfis3/data/je.txt')
-    g = buildGraph('/Users/Dave/Desktop/code/pfis3_old/data/chi12_p2.db', stopWords)
-    p = buildPath('/Users/Dave/Desktop/code/pfis3_old/data/chi12_p2.db', between_method);
-    l = Log('/Users/Dave/Desktop/pfis3_test.txt');
+    predAlgs = [pfisWithHistory]
     activation_root = open("/Users/Dave/Desktop/pfis3_activation.txt", 'w')
-    makePredictions(p, g, pfisWithHistory, resultsLog=l)
-    l.saveLog()
-    #writeResults(r['log'], "/Users/Dave/Desktop/pfis3_test.txt")
+    p = buildPath('/Users/Dave/Desktop/code/pfis3/data/p8l_debug.db', between_method);
+    stopWords = loadStopWords('/Users/Dave/Desktop/code/pfis3/data/je.txt')
+    l = Log('/Users/Dave/Desktop/pfis3_test.txt');
+    predictAllNavigations(p, stopWords, l, \
+                          '/Users/Dave/Desktop/code/pfis3/data/p8l_debug.db', \
+                          predAlgs)
+
     activation_root.close()
 
     sys.exit(0);
+    
+def predictAllNavigations(navPathObj, stopWords, logObj, dbFile, \
+                          listPredictionAlgorithms):
+    navNum = 0
+    for entry in navPathObj:
+        if entry.prevEntry:
+            print "=================================================="
+            if VERBOSE_PREDICT:
+                print "\tPredicting navigation", str(navNum), "from", \
+                entry.prevEntry.method, "to", entry.method
+                
+            g = buildGraph(dbFile, stopWords, entry.timestamp)
+            
+            for predictAlg in listPredictionAlgorithms:
+                    makePredictions(navPathObj, navNum, g, predictAlg, resultsLog=logObj)
+                    #logObj.saveLog()
+            print "=================================================="
+        
+        navNum += 1
+    
     
 def loadStopWords(path):
     # Load the stop words from a file. The file is expected to have one stop 
@@ -128,17 +200,22 @@ def loadStopWords(path):
 # Methods to build the topology                                                #
 #==============================================================================#
 
-def buildGraph(dbFile, stopWords):
+def buildGraph(dbFile, stopWords, timestamp):
+    global NUM_METHODS_KNOWN_ABOUT
     # Construct the undirected PFIS graph using the sqlite3 database found at 
     # dbFile using the list of stop words contained in stopWords.
     g = nx.Graph()
-    loadScentRelatedNodes(g, dbFile, stopWords)
-    loadTopologyRelatedNodes(g, dbFile, stopWords)
-    loadAdjacentMethods(g, dbFile)
+    NUM_METHODS_KNOWN_ABOUT = 0
+    print "Building PFIS graph..."
+    loadScentRelatedNodes(g, dbFile, stopWords, timestamp)
+    loadTopologyRelatedNodes(g, dbFile, stopWords, timestamp)
+    loadAdjacentMethods(g, dbFile, timestamp)
+    print "Done building PFIS graph. Graph contains", NUM_METHODS_KNOWN_ABOUT, \
+    "method nodes."
     
     return g
     
-def loadScentRelatedNodes(g, dbFile, stopWords):
+def loadScentRelatedNodes(g, dbFile, stopWords, ts):
     # Attaches word nodes to the graph. Words nodes come from three types of
     # sources. These words are split according to camel case, or not and also
     # stemmed or not depending on the source of the word. The three cases are
@@ -150,7 +227,7 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute(SCENT_QUERY);
+    c.execute(SCENT_QUERY, [ts]);
     
     for row in c:
         action, target, referrer = \
@@ -202,7 +279,7 @@ def loadScentRelatedNodes(g, dbFile, stopWords):
     
     print "Done processing scent."
     
-def loadTopologyRelatedNodes(g, dbFile, stopWords):
+def loadTopologyRelatedNodes(g, dbFile, stopWords, ts):
     # This method creates adds many edges to g according to the things logged by 
     # PFIG. Specifically they are as follows:
     # 1. A node called "packages" to all packages (as a folder path)
@@ -226,7 +303,7 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords):
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute(TOPOLOGY_QUERY)
+    c.execute(TOPOLOGY_QUERY, [ts])
         
     for row in c:
         action, target, referrer, = \
@@ -327,10 +404,14 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords):
                       not wordNode(item) and \
                       '#' not in item and ';.' in item:
             NUM_METHODS_KNOWN_ABOUT += 1
+            if item == 'Lch/blinkenlights/android/vanilla/FullPlaybackActivity;.showOverlayMessage(I)V':
+                print "NODE FOUND", item
+            if item == "Lch/blinkenlights/android/vanilla/FullPlaybackActivity;.onCreate(Landroid/os/Bundle;)V":
+                print "NODE FOUND", item
     
     print "Done processing topology."
     
-def loadAdjacentMethods(g, dbFile):
+def loadAdjacentMethods(g, dbFile, ts):
     # Creates links between two methods that are adjacent in a class file. A
     # method is considered to be adjacent if it is the next method to be defined
     # in a class, even if there is stuff in between (like field declarations or
@@ -392,7 +473,7 @@ def loadAdjacentMethods(g, dbFile):
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute(ADJACENCY_QUERY)
+    c.execute(ADJACENCY_QUERY, [ts])
 
     for row in c:
         timestamp, target, referrer = \
@@ -502,9 +583,8 @@ def buildPath(dbFile, granularityFunc):
     #   --> method, "end" --> method end offset }, ... ] } 
     offsets = {}
     
-    # Programmer path for output.  The list is sorted by time.
-    # [ { "target" --> method, "timestamp" --> timestamp }, ... ]
-    out = []
+    # Programmer path for output.
+    out = NavPath()
 
     def sorted_insert(l, item):
         # Insert the method declaration offset according to its position in the 
@@ -583,7 +663,7 @@ def buildPath(dbFile, granularityFunc):
             for t in offsets[loc2]:
                 if offset >= t['offset'] and offset <= t['end']:
                     return t['method']
-                    
+                
         return 'UNKNOWN,' + loc2 + ',' + str(offset)
     
     def clean_up_path():
@@ -591,24 +671,27 @@ def buildPath(dbFile, granularityFunc):
         # between methods or after the last method. The only unknown location we
         # keep is are one that occur before the beginning of the first method as
         # those will become header navigations
-        for i in reversed(range(len(out) - 1)):
+        for i in reversed(range(out.getLength() - 1)):
             doDelete = False
-            method1 = out[i]['target']
-            method2 = out[i + 1]['target']
+            method1 = out.getMethodAt(i)
+            method2 = out.getMethodAt(i + 1)
+            method1IsUnknown = out.isUnknownMethodAt(i);
+            method2IsUnknown = out.isUnknownMethodAt(i + 1);
             
             # Using the granularity function, remove any identical methods
             # Recall that granularity functions returns true when the two
             # passed-in parameters are true.
             if not granularityFunc(method1, method2):
                 if VERBOSE_PATH:
-                    print "\tRemoving duplicate method navigation at", str(i), method2
-                    doDelete = True
+                    print "\tRemoving duplicate method navigation at", str(i), \
+                    method2
+                doDelete = True
             
             # If the granularity is between method, we want to remove any
             # navigations that landed between method definitions and any methods
             # after the end of the file.
             if not doDelete and granularityFunc == between_method:
-                if method2.startswith('UNKNOWN'):
+                if method2IsUnknown:
                     tokens = method2.split(',')
                     loc = tokens[1]
                     offset = int(tokens[2])
@@ -620,9 +703,11 @@ def buildPath(dbFile, granularityFunc):
                             print "\tRemoving navigation to gap between" \
                             +" methods at", str(i), method2
                         doDelete = True
-                    
-                if not doDelete and method1.startswith("UNKNOWN") \
-                    and method2.startswith("UNKNOWN"):
+                        
+                # Remove any duplicates that are in the same gap between methods
+                # but at different offsets    
+                if not doDelete and method1IsUnknown \
+                    and method2IsUnknown:
                     tokens1 = method1.split(',')
                     tokens2 = method2.split(',')
                     loc1 = tokens1[1]
@@ -638,7 +723,7 @@ def buildPath(dbFile, granularityFunc):
                                 + " between methods at", str(i), method2
                             doDelete = True
             if doDelete: 
-                del out[i + 1]
+                out.removeAt(i + 1)
                 
     def is_in_gap(loc, offset):
         # Returns true if the given navigation is to a location between method
@@ -691,7 +776,7 @@ def buildPath(dbFile, granularityFunc):
             and offset2 > classOffsets[-1]['end']:
             return True
         
-        # Return true if the offsets are in between teh same two methods
+        # Return true if the offsets are in between the same two methods
         if loc2 in offsets and len(classOffsets) > 1:
             for i in range(len(classOffsets) - 1):
                 currMethod = classOffsets[i];
@@ -701,6 +786,8 @@ def buildPath(dbFile, granularityFunc):
                     and offset2 > currMethod['end'] \
                     and offset2 < nextMethod['offset']:
                     return True
+                
+        return False
                 
     print "Building path..."
 
@@ -763,19 +850,19 @@ def buildPath(dbFile, granularityFunc):
         c.close()
         
         # Lookup the offset in navs and get the method. Each element in navs
-        # gets looked up and added to the out structure, which represents the
-        # participant's path
-        out.append({'target': find_method_match(navLoc, offset), 
-            'timestamp': currentTime})
+        # gets looked up and added to NavPath object as a NavPathEntry
+        entry = NavPathEntry(currentTime, find_method_match(navLoc, offset))
+        out.addEntry(entry)
+        
+        #out.append({'target': find_method_match(navLoc, offset), 
+        #    'timestamp': currentTime})
             
     print "Cleaning up path according to specified granularity..."
     clean_up_path()
     
     if VERBOSE_PATH: 
-        print "\tFinal path:"
-        for t in out:
-            print "\tNavigation to", t["target"]
-    
+        print out.toStr()
+
     print "Done building path."
     return out
 
@@ -812,23 +899,20 @@ def between_package(a, b):
 
 
     
-def makePredictions(navPath, graph, algorithmFunc, resultsLog,
+def makePredictions(navPath, navNum, graph, algorithmFunc, resultsLog,
                     granularityFunc = between_method, 
                     bugReportWordList = []):
     # Iterate through the navigations with the selected granularityFunc and call 
     # the algorithmFunc for each navigation to a new location (navigations are
     # specified by the granularityFunc). Results are stored in the resultsLog  
     # data structure.
-    prev = navPath[0]
-    i = 0
-    for nav in navPath:
-        if granularityFunc(nav['target'], prev['target']):
-            i += 1
-            algorithmFunc(resultsLog, navPath, graph, prev, nav, i, \
-                          bugReportWordList)
-        prev = nav
+    print "make Predictions called"
+    entry = navPath.getEntryAt(navNum)
+    if granularityFunc(entry.prevEntry.method, entry.method):
+        algorithmFunc(resultsLog, navPath, graph, entry.prevEntry, entry, \
+                      navNum, bugReportWordList)
 
-def pfisWithHistory(resultsLog, navPath, graph, prevNav, currentNav, i, 
+def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i, 
                     bugReportWordList):
     # One of the possible algorithm fucntions.
     # This version pre-weighs the participant's path with initial starting
@@ -852,40 +936,60 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNav, currentNav, i,
         # Iterate over resultsLog backwards. For each navigation with both start
         # and end nodes in the graph, apply a starting weight on those nodes 
         # with a decay factor specified by PATH_DECAY_FACTOR
-        for j in reversed(range(len(navPath))):
+        for j in reversed(range(navPath.getLength())):
             #print j, navPath[j]['target'];
-            if navPath[j]['target'] not in dictOfInitialWeights \
-                or dictOfInitialWeights[navPath[j]['target']] < a:
-                dictOfInitialWeights[navPath[j]['target']] = a
+            jMethod = navPath.getMethodAt(j)
+            if jMethod not in dictOfInitialWeights \
+                or dictOfInitialWeights[jMethod] < a:
+                dictOfInitialWeights[jMethod] = a
             a *= PATH_DECAY_FACTOR
             
         return dictOfInitialWeights
                 
     ties = -1 # Added by me
+    prevMethod = prevNavEntry.method
+    currMethod = currNavEntry.method
     
-    if prevNav['target'] in graph and currentNav['target'] in graph:
+    # There are two possibiliites when making a prediction
+    # Possibility 1: Both the prevNavEntry (the one that we are predicting from)
+    # and the currNavEntry (the location the programmer acually went) exits in the
+    # graph. If this is the case, then we weigh the nodes according to the path,
+    # spread activation, and then get a ranked list of predictions.
+    if prevMethod in graph and currMethod in graph:
+        # Initially seed some of the weights
         dictOfInitialWeights = getInitialPathWeights()
-        act = Activation(dictOfInitialWeights)
-        activation = act.spread(graph)
+        
+        # Create an Activation object with those weights
+        actObj = Activation(dictOfInitialWeights)
+        
+        # Spread activationa and get a list of all the nodes that have a 
+        # non-zero weight
+        activation = actObj.spread(graph)
+        
         rank, length, ties = \
-            getResultRank(graph, currentNav['target'], activation, navNum=i)
+            getResultRank(graph, currNavEntry.method, activation, navNum=i)
+        if VERBOSE_PREDICT:
+            print '\tLocation found. Rank =', rank
             
-        e = LogEntry(i, rank, ties, length, prevNav['target'],
-                     currentNav['target'], 
-                     between_class(prevNav['target'], currentNav['target']), 
-                     between_package(prevNav['target'], currentNav['target']), 
-                     currentNav['timestamp'])
+        e = LogEntry(i, rank, ties, length, prevMethod, currMethod, 
+                     between_class(prevMethod, currMethod), 
+                     between_package(prevMethod, currMethod), 
+                     currNavEntry.timestamp)
         resultsLog.addEntry(e);
+    # Possibility 2, the method is unknown or somehow not in the graph, so we
+    # mark it as such
     else:
-        e = LogEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prevNav['target'],
-                     currentNav['target'], 
-                     between_class(prevNav['target'], currentNav['target']), 
-                     between_package(prevNav['target'], currentNav['target']), 
-                     currentNav['timestamp'])
+        if VERBOSE_PREDICT:
+            print '\tLocation not found.'
+        e = LogEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prevMethod,
+                     currMethod, 
+                     between_class(prevMethod, currMethod), 
+                     between_package(prevMethod, currMethod), 
+                     currNavEntry.timestamp)
         resultsLog.addEntry(e);
         
         
-def getResultRank(graph, navNumMinus1, activation, navNum=0):
+def getResultRank(graph, currNav, activation, navNum=0):
     # sorts list of activations desc
     last = activation[0][0]
     #Here he removes everything but methods from activation
@@ -902,7 +1006,7 @@ def getResultRank(graph, navNumMinus1, activation, navNum=0):
     for item in targets:
         rank += 1
         #print rank, item, val
-        if item == navNumMinus1:
+        if item == currNav:
     #        #found = 1
             break
     #if found:
@@ -912,7 +1016,7 @@ def getResultRank(graph, navNumMinus1, activation, navNum=0):
     ties = rankTies[ranks[rank - 1]]
     #methods[agent][item] = (len(ranks) - ranks[i]) / (len(ranks) - 1)
     #writeScores(navNum, targets, ranks, scores) -- REMOVED BY ME
-    #print "End:", navNumMinus1, "\trank:", rank, "\tranks[rank-1]:", ranks[rank - 1], "\tscores[rank-1]:", scores[rank-1] 
+    #print "End:", currNav, "\trank:", rank, "\tranks[rank-1]:", ranks[rank - 1], "\tscores[rank-1]:", scores[rank-1] 
     return (len(ranks) - ranks[rank - 1]), len(targets), ties
     #return (len(ranks) - ranks[rank - 1]) / (len(ranks) - 1), len(targets)
     #else:
