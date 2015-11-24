@@ -1,21 +1,21 @@
 from regex import *;
 
-# todo: extract common code between Java and JS processors into base class
-class JavaProcessor:
+class JavaScriptProcessor:
 
-    def normalize(self, s):
+    def normalize(self, string):
         # Return the class indicated in the string. Empty string returned on fail.
         # File-name example:
         # Raw file name: jEdit/src/org/gjt/sp/jedit/gui/StatusBar.java
         # Normalized file name: org/gjt/sp/jedit/gui/StatusBar
 
-        m = REGEX_NORM_ECLIPSE.match(s)
+        m = REGEX_NORM_ECLIPSE.match(string)
         if m:
             return m.group(1)
-        n = REGEX_NORM_JAVA_PATH.match(fixSlashes(s))
-        if n:
-            return n.group(1)
-        return ''
+        n = REGEX_NORM_JS_PATH.match(fixSlashes(string))
+        pos = string.rfind(".js")
+        if pos:
+            return string[:pos]
+	    return ''
 
     def package(self, s):
         # Return the package. Empty string returned on fail.
@@ -30,7 +30,7 @@ class JavaProcessor:
         # Return the root folder in the given path. Empty string returned on fail.
         # In Eclipse, the root folder would be the project folder.
         # Ex: /jEdit/src/org/gjt/sp/jedit/search --> jEdit
-        m = REGEX_PROJECT.match(fixSlashes(s))
+        m = REGEX_JS_PROJECT.match(fixSlashes(s))
         if m:
             return m.group(1)
         return ''
@@ -58,7 +58,4 @@ class JavaProcessor:
         return self.package(a) != self.package(b)
 
     def adjustInnerLocations(self, loc):
-        # This split allows inner classes to be handled properly, by setting the
-        # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
-        return loc2
+        return loc

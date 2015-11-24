@@ -14,6 +14,7 @@ import getopt
 from navpath import *
 from log import *
 from java_processor import JavaProcessor
+from js_processor import JavaScriptProcessor
 from regex import *
 
 # VOCAB:
@@ -636,9 +637,7 @@ def buildPath(dbFile, granularityFunc, processor):
         # offset = the number of characters from the top of the file the
         #   cursor start position was
 
-        # This split allows inner classes to be handled properly, by setting the
-        # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 = processor.adjustInnerLocations(loc)
         if loc2 not in offsets:
             offsets[loc2] = []
 
@@ -655,7 +654,7 @@ def buildPath(dbFile, granularityFunc, processor):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 = processor.adjustInnerLocations(loc)
         if loc2 not in offsets:
             offsets[loc2] = []
 
