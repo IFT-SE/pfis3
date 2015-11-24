@@ -77,11 +77,15 @@ class Activation:
 
 def loadLanguageSpecifics(language):
     #TODO: add a processor for JS
-    processor = JavaProcessor()
+    if(language == "JAVA"):
+        processor = JavaProcessor()
+    elif (language == "JS"):
+        processor = JavaScriptProcessor()
     return processor
 
 def print_usage():
     print("python pfis3.py -d <dbPath> -s <stopwordsfile> -l <language> -p <project src folder path>")
+    print("for language : say JAVA or JS")
 
 def parseArgs():
 
