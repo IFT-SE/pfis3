@@ -52,55 +52,55 @@ INITIAL_ACTIVATION = 1
 class NavPath:
     def __init__(self):
         self.navPath = []
-        
+
     def addEntry(self, entry):
         self.navPath.append(entry)
         l = len(self.navPath)
         if l > 1:
             entry.prevEntry = self.navPath[l - 2]
-            
+
     def __iter__(self):
         return self.navPath.__iter__()
-    
+
     def isUnknownMethodAt(self, index):
         return self.navPath[index].unknownMethod
-    
+
     def getLength(self):
         return len(self.navPath)
-    
+
     def getEntryAt(self, index):
         return self.navPath[index]
-    
+
     def getMethodAt(self, index):
         return self.navPath[index].method
-    
+
     def getTimestampAt(self, index):
         return self.navPath[index].timestamp
-    
+
     def getPrevEntryAt(self, index):
         return self.navPath[index].prevEntry
-    
+
     def removeAt(self, index):
         del self.navPath[index]
-    
+
     def toStr(self):
         out = 'NavPath:\n'
         for entry in self.navPath:
             out += '\t' + entry.method + ' at ' + entry.timestamp +'\n'
         return out
-    
+
 class NavPathEntry:
     def __init__(self, timestamp, method):
         self.timestamp = str(timestamp)
         self.method = method
         self.prevEntry = None
         self.unknownMethod = False
-        
+
         if method.startswith("UNKNOWN"):
             self.unknownMethod = True;
-        
+
 class LogEntry:
-    def __init__(self, navNum, timestamp, rank, numTies, length, 
+    def __init__(self, navNum, timestamp, rank, numTies, length,
                  fromLoc, toLoc, classLoc, packageLoc):
         self.navNum = str(navNum)
         self.timestamp = str(timestamp)
@@ -110,7 +110,7 @@ class LogEntry:
         self.fromLoc = fromLoc
         self.classLoc = str(classLoc)
         self.packageLoc = str(packageLoc)
-        
+
     def getString(self):
         return self.navNum + '\t' + self.timestamp + '\t' + self.rank + '\t' \
             + self.numTimes + '\t' + self.length + '\t' + self.fromLoc + '\t' \
@@ -120,32 +120,32 @@ class Log:
     def __init__(self, filePath):
         self.filePath = filePath;
         self.entries = []
-        
+
     def addEntry(self, logEntry):
         self.entries.append(logEntry);
-        
+
     def saveLog(self):
         logFile = open(self.filePath, 'w');
         for entry in self.entries:
             logFile.write(entry.getString() + '\n');
         logFile.close();
-        
+
 class Activation:
     def __init__(self, mapMethodsToScores):
         self.mapMethodsToScores = mapMethodsToScores
-        
+
     def spread(self, graph):
     #Perform spreading activation computation on the graph by activating
     #nodes in the activation dictionary. activation = {} where key is node,
     #value is initial activation weight
-    
+
         #i = the current node
         #j = iterated neighbor of i
         #x = iteration counter
-        
+
         # if x is 0,2,4,6,... we want to spread out only to word nodes
         # if x is 1,3,5,7,... we want to spread out only to non-word nodes
-        
+
         for x in range(NUM_ITERATIONS):
             for i in self.mapMethodsToScores.keys():
                 if i not in graph:
@@ -157,17 +157,83 @@ class Activation:
                     if (x % 2 == 0 and wordNode(j)) or (x % 2 != 0 and not wordNode(j)):
                         self.mapMethodsToScores[j] = self.mapMethodsToScores[j] + (self.mapMethodsToScores[i] * w * DECAY_FACTOR)
         return sorted(self.mapMethodsToScores.items(), sorter) # Returns a list of only nodes with weights
-        
+
+
+# todo: subclass this from a generic processor class, and move the Java & JS common code up there.
+class JavaProcessor:
+
+    def normalize(self, s):
+        # Return the class indicated in the string. Empty string returned on fail.
+        # File-name example:
+        # Raw file name: jEdit/src/org/gjt/sp/jedit/gui/StatusBar.java
+        # Normalized file name: org/gjt/sp/jedit/gui/StatusBar
+
+        m = REGEX_NORM_ECLIPSE.match(s)
+        if m:
+            return m.group(1)
+        n = REGEX_NORM_PATH.match(fixSlashes(s))
+        if n:
+            return n.group(1)
+        return ''
+
+    def package(self, s):
+        # Return the package. Empty string returned on fail.
+        # Ex: Lorg/gjt/sp/jedit/gui/statusbar/LineSepWidgetFactory$LineSepWidget -->
+        #     org/gjt/sp/jedit/gui/statusbar
+        m = REGEX_PACKAGE.match(self.normalize(s))
+        if m:
+            return m.group(1)
+        return ''
+
+    def project(self, s):
+        # Return the root folder in the given path. Empty string returned on fail.
+        # In Eclipse, the root folder would be the project folder.
+        # Ex: /jEdit/src/org/gjt/sp/jedit/search --> jEdit
+        m = REGEX_PROJECT.match(fixSlashes(s))
+        if m:
+            return m.group(1)
+        return ''
+
+    #==============================================================================#
+    # Helper methods for initial weights on the graph                              #
+    #==============================================================================#
+    # Each of these mehtods define a different level of granularity for navigations
+    # PFIS3 supports betwee-method, between-class and between-package navigations.
+    # These functions are passed in as parameters and rely on the list of methods
+    # generated by buildPaths
+
+    def between_method(a, b):
+        # A navigation between methods occurs when two consecutive FQNs do not match
+        return a != b
+
+    def between_class(self, a, b):
+        # A navigation between classes occurs when two consecutive normalized class
+        # paths do not match
+        return self.normalize(a) != self.normalize(b)
+
+    def between_package(self, a, b):
+        # A navigation between packages occurs when two conscutive pacakes do not
+        # match
+        return self.package(a) != self.package(b)
+
+
+def loadLanguageSpecifics(language):
+    #TODO: add a processor for JS
+    processor = JavaProcessor()
+    return processor
 
 
 def main():
-    # These will all eventually be passed in as parameters
+    #todo: These will all eventually be passed in as parameters
     dbPath = '/Users/Dave/Desktop/code/pfis3/data/p8l_debug.db'
     tempDbPath = '/Users/Dave/Desktop/p8l_debug_temp.db'
     stopWordsPath = '/Users/Dave/Desktop/code/pfis3/data/je.txt'
     ouputLogPath = '/Users/Dave/Desktop/pfis3_test.txt'
     projectSrcFolderPath = '/Users/Dave/Desktop/p8l-vanillaMusic/src'
-    
+
+    language = "JAVA"
+    processor = loadLanguageSpecifics(language)
+
     # Start by making a working copy of the database
     copyDatabase(dbPath, tempDbPath)
     
@@ -176,15 +242,14 @@ def main():
     predAlgs = [pfisWithHistory]
     
     
-    p = buildPath(tempDbPath, between_method);
+    paths = buildPath(tempDbPath, processor.between_method, processor);
     stopWords = loadStopWords(stopWordsPath)
-    l = Log(ouputLogPath);
-    predictAllNavigations(p, stopWords, l, tempDbPath, projectSrcFolderPath, \
-                          predAlgs)
+    log = Log(ouputLogPath)
+    predictAllNavigations(processor, paths, stopWords, log, tempDbPath, projectSrcFolderPath, predAlgs)
 
-    sys.exit(0);
-    
-def predictAllNavigations(navPathObj, stopWords, logObj, dbFile, \
+    sys.exit(0)
+
+def predictAllNavigations(processor, navPathObj, stopWords, logObj, dbFile, \
                           projectSrcFolderPath, listPredictionAlgorithms):
     navNum = 0
     for entry in navPathObj:
@@ -195,7 +260,7 @@ def predictAllNavigations(navPathObj, stopWords, logObj, dbFile, \
                 print "\tfrom:", entry.prevEntry.method
                 print "\tto:", entry.method
             if entry.prevEntry.unknownMethod:
-                headerFqn = addPFIGJavaFileHeader(dbFile, entry, 
+                headerFqn = addPFIGJavaFileHeader(processor, dbFile, entry,
                                                   projectSrcFolderPath, 
                                                   navPathObj)
                 # Now the graph has the PFIG header nodes in it, but the navPath
@@ -210,29 +275,27 @@ def predictAllNavigations(navPathObj, stopWords, logObj, dbFile, \
             # would be sufficient to just add the new database row data from the
             # previous navigation's time stamp to the current navigation's time
             # stamp
-            g = buildGraph(dbFile, stopWords, entry.timestamp)
+            graph = buildGraph(processor, dbFile, stopWords, entry.timestamp)
             
             for predictAlg in listPredictionAlgorithms:
-                    makePredictions(navPathObj, navNum, g, predictAlg, 
+                    makePredictions(processor, navPathObj, navNum, graph, predictAlg,
                                     resultsLog = logObj)
                     #logObj.saveLog()
             print "=================================================="
-        
+
         navNum += 1
-    
-    
+
+
 def loadStopWords(path):
-    # Load the stop words from a file. The file is expected to have one stop 
+    # Load the stop words from a file. The file is expected to have one stop
     # word per line. Stop words are ignored and not loaded into the PFIS graph.
     words = []
     f = open(path)
-    
     for word in f:
         words.append(word.lower())
-        
     return words
 
-def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
+def addPFIGJavaFileHeader(processor, dbFile, navEntry, projectFolderPath, navPathObj):
     class PFIGFileHeader:
         def __init__(self, fqn, length, dt):
             self.fqn = fqn
@@ -283,7 +346,7 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
         methodFqn, offset = row['target'], int(row['referrer'])
         
         # Get the class of the method    
-        if className == normalize(methodFqn):
+        if className == processor.normalize(methodFqn):
             if lowestOffset == -1 or offset < lowestOffset:
                 lowestOffset = offset
                 fqn = methodFqn[0:methodFqn.rfind('.')]
@@ -307,88 +370,87 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
 # Methods to build the topology                                                #
 #==============================================================================#
 
-def buildGraph(dbFile, stopWords, timestamp):
+def buildGraph(processor, dbFile, stopWords, timestamp):
     global NUM_METHODS_KNOWN_ABOUT
-    # Construct the undirected PFIS graph using the sqlite3 database found at 
+    # Construct the undirected PFIS graph using the sqlite3 database found at
     # dbFile using the list of stop words contained in stopWords.
-    g = nx.Graph()
+    graph = nx.Graph()
     NUM_METHODS_KNOWN_ABOUT = 0
     print "Building PFIS graph..."
-    loadScentRelatedNodes(g, dbFile, stopWords, timestamp)
-    loadTopologyRelatedNodes(g, dbFile, stopWords, timestamp)
-    loadAdjacentMethods(g, dbFile, timestamp)
+    loadScentRelatedNodes(graph, dbFile, stopWords, timestamp)
+    loadTopologyRelatedNodes(processor, graph, dbFile, stopWords, timestamp)
+    loadAdjacentMethods(processor, graph, dbFile, timestamp)
     print "Done building PFIS graph. Graph contains", NUM_METHODS_KNOWN_ABOUT, \
     "method nodes."
-    
-    return g
-    
-def loadScentRelatedNodes(g, dbFile, stopWords, ts):
+
+    return graph
+
+def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
     # Attaches word nodes to the graph. Words nodes come from three types of
     # sources. These words are split according to camel case, or not and also
     # stemmed or not depending on the source of the word. The three cases are
     # described below. Some of the nodes here are then reused when the topology
     # is built in loadTopology.
-    
+
     print "Processing scent. Adding word nodes to the graph..."
-    
+
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute(SCENT_QUERY, [ts]);
-    
+    c.execute(SCENT_QUERY, [timestamp]);
+
     for row in c:
         action, target, referrer = \
             row['action'], fixSlashes(row['target']), \
             fixSlashes(row['referrer'])
-        
-        # Case 1: target and referrer contain either FQNs or file paths, so 
-        # create a  node for every target and referrer. Each of these nodes then 
-        # gets an edge to each of the words within the FQN or path, excluding 
+
+        # Case 1: target and referrer contain either FQNs or file paths, so
+        # create a  node for every target and referrer. Each of these nodes then
+        # gets an edge to each of the words within the FQN or path, excluding
         # stop words. These words are not stemmed.
         if action in ('Package', 'Imports', 'Extends', 'Implements',
                       'Method declaration', 'Constructor invocation',
                       'Method invocation', 'Variable declaration',
                       'Variable type'):
             for word in getWordNodes_splitNoStem(target, stopWords):
-                g.add_edge(target, word)
+                graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
-            
+
             for word in getWordNodes_splitNoStem(referrer, stopWords):
-                g.add_edge(referrer, word)
+                graph.add_edge(referrer, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", referrer, "to", word[1]
-                     
-        # Case 2: For new packages, we want to connect the last part of the 
-        # package's name to the path containing the package (which should have 
+
+        # Case 2: For new packages, we want to connect the last part of the
+        # package's name to the path containing the package (which should have
         # been added by the referrer of 'Package' in the step above).
         elif action in ('New package'):
             for word in getWordNodes_splitNoStem(target, stopWords):
-                g.add_edge(target, word)
+                graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
-                
-        # Case 3: These actions have code content within them. In this case we 
-        # want to add an edge from the FQN node in target to the code content in 
-        # referrer. The FQNs should already exist because of step 1. Words are 
-        # added in two ways. In the first pass, the complete word is added, 
-        # camelCase intact without stemming. In the second pass, the camel case 
-        # is split, the resulting words are stemmed and those are added to the 
+
+        # Case 3: These actions have code content within them. In this case we
+        # want to add an edge from the FQN node in target to the code content in
+        # referrer. The FQNs should already exist because of step 1. Words are
+        # added in two ways. In the first pass, the complete word is added,
+        # camelCase intact without stemming. In the second pass, the camel case
+        # is split, the resulting words are stemmed and those are added to the
         # FQN node.
-        elif action in ('Constructor invocation scent', 
+        elif action in ('Constructor invocation scent',
                         'Method declaration scent', 'Method invocation scent',
-                        'New file header'):    
+                        'New file header'):
             for word in getWordNodes_splitNoStem(referrer, stopWords):
-                g.add_edge(target, word)
+                graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
-        
+
             for word in getWordNodes_splitCamelAndStem(referrer, stopWords):
-                g.add_edge(target, word)
+                graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
     c.close()
     conn.close()
-    
     print "Done processing scent."
-    
-def loadTopologyRelatedNodes(g, dbFile, stopWords, ts):
-    # This method creates adds many edges to g according to the things logged by 
+
+def loadTopologyRelatedNodes(processor, graph, dbFile, stopWords, timestamp):
+    # This method creates adds many edges to g according to the things logged by
     # PFIG. Specifically they are as follows:
     # 1. A node called "packages" to all packages (as a folder path)
     # 2. A node called "packages" to all project folder names in Eclipse
@@ -405,33 +467,33 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords, ts):
     # occurs between two methods that is relevant to prediction is when one
     # method calls another since that's the only way to link two FQNs that are
     # methods.
-    
+
     print "Processing topology. Adding location nodes to the graph..."
-    
+
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute(TOPOLOGY_QUERY, [ts])
-        
+    c.execute(TOPOLOGY_QUERY, [timestamp])
+
     for row in c:
         action, target, referrer, = \
             row['action'], fixSlashes(row['target']), \
             fixSlashes(row['referrer'])
-            
-        ntarget = normalize(target)
-        nreferrer = normalize(referrer)
-        pack = package(target)
-        proj = project(target)
-        
+
+        ntarget = processor.normalize(target)
+        nreferrer = processor.normalize(referrer)
+        pack = processor.package(target)
+        proj = processor.project(target)
+
         # Link the 'packages' node to new packages. Packages is a root node that
         # all the packages are connected to
         if action == 'New Package':
-            g.add_edge('packages', referrer)
+            graph.add_edge('packages', referrer)
         else:
             # Always connect target to referrer. Examples follow:
             # Package: /jEdit/src/org/gjt/sp/jedit/gui/StatusBar.java
             #           --> org/gjt/sp/jedit/gui
-            # Imports: /jEdit/src/org/gjt/sp/jedit/bufferset/BufferSet.java 
+            # Imports: /jEdit/src/org/gjt/sp/jedit/bufferset/BufferSet.java
             #           --> Lorg/gjt/sp/util/Log;
             # Extends: Lorg/gjt/sp/jedit/View; --> Ljavax/swing/JFrame;
             # Implements: Lorg/gjt/sp/jedit/bufferset/BufferSet$PathSorter;
@@ -441,82 +503,81 @@ def loadTopologyRelatedNodes(g, dbFile, stopWords, ts):
             # Constructor invocation: ?
             # Method invocation: Ljava/lang/String;.equals(Ljava/lang/Object;)Z
             #           --> scope.toString().equals(s)
-            # Variable declaration: 
+            # Variable declaration:
             #           Lorg/gjt/sp/jedit/bufferset/BufferSet;.sort()V
             #           --> Lorg/gjt/sp/jedit/bufferset/BufferSet;
             #               .sort()V#listeners
-            # Variable type: 
-            # Lorg/gjt/sp/jedit/bufferset/BufferSet;.moveBuffer(II)V#newPosition 
+            # Variable type:
+            # Lorg/gjt/sp/jedit/bufferset/BufferSet;.moveBuffer(II)V#newPosition
             #           --> I
             # New package: /jEdit/src/org/gjt/sp/jedit ---> jEdit
             # Open call hierarchy: org/gjt/sp/jedit/gui/StatusBar
             #          --> Lorg/gjt/sp/jedit/gui/StatusBar;.updateCaretStatus()V
-            g.add_edge(target, referrer)
+            graph.add_edge(target, referrer)
             if VERBOSE_BUILD: print "\tAdding edge from", target, "to", referrer
-        
+
             # Connect the project name and the packages to the root packages
             # node
             if proj != '':
-                g.add_edge('packages', proj)
+                graph.add_edge('packages', proj)
                 if VERBOSE_BUILD: print "\tAdding edge from 'packages' to", proj
-                
+
             if pack != '':
-                g.add_edge('packages', pack)
+                graph.add_edge('packages', pack)
                 if VERBOSE_BUILD: print "\tAdding edge from 'packages' to", pack
-                
-            # Attach packages to each class by their normalized path which 
+
+            # Attach packages to each class by their normalized path which
             # starts with the package name. See normalize().
             # Ex: org/gjt/sp/jedit --> org/gjt/sp/jedit/View
             if pack != '' and ntarget != '':
-                g.add_edge(pack, ntarget)
-                if VERBOSE_BUILD: 
+                graph.add_edge(pack, ntarget)
+                if VERBOSE_BUILD:
                     print "\tAdding edge from", pack, "to", ntarget
-                
+
             # Attach all package paths to the project node
             # Ex: jEdit --> org/gjt/sp/jedit/gui
             if pack != '' and proj != '':
-                g.add_edge(proj, pack)
+                graph.add_edge(proj, pack)
                 if VERBOSE_BUILD: print "\tAdding edge from", proj, "to", pack
-                
+
             # Attaches normalized paths to FQNs See normalize().
-            # Ex: org/gjt/sp/jedit/bufferset/BufferSet 
+            # Ex: org/gjt/sp/jedit/bufferset/BufferSet
             #       --> Lorg/gjt/sp/jedit/bufferset/BufferSet;.sort()V
             if ntarget != '':
-                g.add_edge(ntarget, target)
-                if VERBOSE_BUILD: 
+                graph.add_edge(ntarget, target)
+                if VERBOSE_BUILD:
                     print "\tAdding edge from", ntarget, "to", target
-                
+
             # Attaches FQNs to normalized paths See normalize().
             # Ex: Lorg/gjt/sp/jedit/bufferset/BufferSet;.sort()V#listeners
             #       --> org/gjt/sp/jedit/bufferset/BufferSet
             if nreferrer != '':
-                g.add_edge(nreferrer, referrer)
+                graph.add_edge(nreferrer, referrer)
                 if VERBOSE_BUILD:
                     print "\tAdding edge from", nreferrer, "to", referrer
-            
+
             # Attaches two FQNs normalized paths to each other. See normalize().
             # In most cases, this will be self-referential, but in the case of
             # Imports and Extends, this can link two different classes.
             # Ex: org/gjt/sp/jedit/bufferset/BufferSet
             #        --> org/gjt/sp/util/Log;
             if ntarget != '' and nreferrer != '':
-                g.add_edge(ntarget, nreferrer)
-                if VERBOSE_BUILD: 
+                graph.add_edge(ntarget, nreferrer)
+                if VERBOSE_BUILD:
                     print "\tAdding edge from", ntarget, "to", nreferrer
     c.close
     conn.close
-    
+
     global NUM_METHODS_KNOWN_ABOUT
-    
-    for item in g.nodes_iter():
+
+    for item in graph.nodes_iter():
         if item != '' and \
                       not wordNode(item) and \
                       '#' not in item and ';.' in item:
             NUM_METHODS_KNOWN_ABOUT += 1
-    
     print "Done processing topology."
-    
-def loadAdjacentMethods(g, dbFile, ts):
+
+def loadAdjacentMethods(processor, graph, dbFile, timestamp):
     # Creates links between two methods that are adjacent in a class file. A
     # method is considered to be adjacent if it is the next method to be defined
     # in a class, even if there is stuff in between (like field declarations or
@@ -524,18 +585,18 @@ def loadAdjacentMethods(g, dbFile, ts):
 
 
     # A mapping of method offsets to method names per class
-    # { class --> [ { "referrer" --> method offset, "target" 
-    #   --> method }, ... ] } 
+    # { class --> [ { "referrer" --> method offset, "target"
+    #   --> method }, ... ] }
     offsets = {}
-    
+
     #----------------------------------------------------------------------#
     # Inner methods for loadAdjacentMethods                                #
-    #----------------------------------------------------------------------# 
+    #----------------------------------------------------------------------#
     def sorted_insert(l, item):
-        # Insert the method declaration offset according to its position in the 
+        # Insert the method declaration offset according to its position in the
         # class.
         # l: the dictionary of the class the method belongs to
-        # item: contains the method offset and the method in the following 
+        # item: contains the method offset and the method in the following
         #    format: { "referrer" --> method offset, "target" --> method }
         l.insert(bisect.bisect_left(l, item), item)
 
@@ -548,7 +609,7 @@ def loadAdjacentMethods(g, dbFile, ts):
         # target: the FQN of the method to update
         # referrer: the character offset from the top of the file to the
         #   beginning of this method
-    
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
@@ -562,64 +623,63 @@ def loadAdjacentMethods(g, dbFile, ts):
         # always current as of this timestamp.
         sorted_insert(offsets[loc2],
                       {'referrer': referrer, 'target': target})
-        
-        # In each class, add an edge between two FQN methods if they are 
+
+        # In each class, add an edge between two FQN methods if they are
         # adjacent in the same class.
         for i in range(len(offsets[loc2])):
             if i + 1 < len(offsets[loc2]):
-                g.add_edge(offsets[loc2][i]['target'],
-                                offsets[loc2][i + 1]['target'])
-                if VERBOSE_BUILD: 
+                graph.add_edge(offsets[loc2][i]['target'],
+                               offsets[loc2][i + 1]['target'])
+                if VERBOSE_BUILD:
                     print "\tAdding edge from", offsets[loc2][i]['target'], \
                             "to", offsets[loc2][i + 1]['target']
-                            
+
     print "Processing adjacency. Adding adjacent methods to the graph..."
-    
+
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute(ADJACENCY_QUERY, [ts])
+    c.execute(ADJACENCY_QUERY, [timestamp])
 
     for row in c:
         timestamp, target, referrer = \
             iso8601.parse_date(row['timestamp']), row['target'], \
             int(row['referrer'])
-        
+
         # Get the method's class
-        loc = normalize(target)
+        loc = processor.normalize(target)
         if loc:
             add_offset(timestamp, loc, target, referrer)
     c.close()
     conn.close()
-    
     print "Done processing adjacency."
-    
+
 #==============================================================================#
 # Helper methods for building the graph                                        #
 #==============================================================================#
-    
+
 def fixSlashes(s):
     # Replaces '\' with '/'
     return REGEX_FIX_SLASHES.sub('/', s)
-    
+
 def getWordNodes_splitNoStem(s, stopWords):
-    # Returns a list of word nodes from the given string after stripping all 
-    # non-alphanumeric characters. A word node is a tuple containing 'word' and 
-    # a String containing the word. Words are always lower case. No stemming is 
+    # Returns a list of word nodes from the given string after stripping all
+    # non-alphanumeric characters. A word node is a tuple containing 'word' and
+    # a String containing the word. Words are always lower case. No stemming is
     # done in this case.
     return [('word', word.lower()) \
                 for word in re.split(r'\W+|\s+', s) \
                 if word != '' and word.lower() not in stopWords]
-                
+
 def getWordNodes_splitCamelAndStem(s, stopWords):
     # Returns a list of word nodes from the given string after stripping all
-    # non-alphanumeric characters, splitting camel case and stemming each word. 
-    # A word node is a tuple that contains 'word' and a String containing the 
+    # non-alphanumeric characters, splitting camel case and stemming each word.
+    # A word node is a tuple that contains 'word' and a String containing the
     # word. Words are always lower case.
     return [('word', PorterStemmer().stem(word).lower()) \
                 for word in splitCamelWords(s, stopWords) \
                 if word.lower() not in stopWords]
-                
+
 def splitCamelWords(s, stopWords):
     # Split camel case words. E.g.,
     # camelSplit("HelloWorld.java {{RSSOwl_AtomFeedLoader}}")
@@ -630,48 +690,17 @@ def splitCamelWords(s, stopWords):
         if s[last:match.start()] != '':
             result.append(s[last:match.start()])
         last = match.end()
-        
+
     if s[last:] != '':
         result.append(s[last:])
-        
+
     return result
-    
-def normalize(s):
-    # Return the class indicated in the string. Empty string returned on fail.
-    # File-name example:
-    # Raw file name: jEdit/src/org/gjt/sp/jedit/gui/StatusBar.java
-    # Normalized file name: org/gjt/sp/jedit/gui/StatusBar
 
-    m = REGEX_NORM_ECLIPSE.match(s)
-    if m:
-        return m.group(1)
-    n = REGEX_NORM_PATH.match(fixSlashes(s))
-    if n:
-        return n.group(1)
-    return ''
 
-def package(s):
-    # Return the package. Empty string returned on fail.
-    # Ex: Lorg/gjt/sp/jedit/gui/statusbar/LineSepWidgetFactory$LineSepWidget -->
-    #     org/gjt/sp/jedit/gui/statusbar
-    m = REGEX_PACKAGE.match(normalize(s))
-    if m:
-        return m.group(1)
-    return ''
-
-def project(s):
-    # Return the root folder in the given path. Empty string returned on fail. 
-    # In Eclipse, the root folder would be the project folder.
-    # Ex: /jEdit/src/org/gjt/sp/jedit/search --> jEdit
-    m = REGEX_PROJECT.match(fixSlashes(s))
-    if m:
-        return m.group(1)
-    return ''
-    
 #==============================================================================#
 # Method for determining the path                                              #
 #==============================================================================#
-def buildPath(dbFile, granularityFunc):
+def buildPath(dbFile, granularityFunc, processor):
     # Reconstruct the original method-level path through the source code by
     # matching text selection offsets to method declaration offsets. Text
     # selection offsets occur later in the data than method declaration
@@ -681,22 +710,22 @@ def buildPath(dbFile, granularityFunc):
     # class)
 
     # List of navigations as recorded by PFIG.
-    # [ {"referrer" --> method offset, "loc" --> class }, ... ] 
+    # [ {"referrer" --> method offset, "loc" --> class }, ... ]
     nav = []
-    
+
     # A mapping of method offsets to method names per class
-    # { class --> [ { "offset" --> method start offset, "method" 
-    #   --> method, "end" --> method end offset }, ... ] } 
+    # { class --> [ { "offset" --> method start offset, "method"
+    #   --> method, "end" --> method end offset }, ... ] }
     offsets = {}
-    
+
     # Programmer path for output.
     out = NavPath()
 
     def sorted_insert(l, item):
-        # Insert the method declaration offset according to its position in the 
+        # Insert the method declaration offset according to its position in the
         # class.
         # l: the dictionary of the class the method belongs to
-        # item: contains the method offset and the method in the following 
+        # item: contains the method offset and the method in the following
         #    format: { "referrer" --> method offset, "target" --> method }
         l.insert(bisect.bisect_left(l, item), item)
 
@@ -704,15 +733,15 @@ def buildPath(dbFile, granularityFunc):
         # Add text selection navigation events to a structure.
         # timestamp = the timestamp of this text selection event
         # loc = the class that this text selection event occurred
-        # offset = the number of characters from the top of the file the 
+        # offset = the number of characters from the top of the file the
         #   cursor start position was
-    
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
         if loc2 not in offsets:
             offsets[loc2] = []
-            
+
         nav.append({'timestamp': timestamp, 'offset': offset, 'loc': loc2})
 
     def add_start_offset(loc, method, offset):
@@ -723,55 +752,55 @@ def buildPath(dbFile, granularityFunc):
         # method: the FQN of the method to update
         # offset: the character offset from the top of the file to the
         #   beginning of this method
-    
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
         if loc2 not in offsets:
             offsets[loc2] = []
-            
+
         # Remove any existing occurrence of given target
         for item in offsets[loc2]:
             if item['method'] == target:
                 offsets[loc2].remove(item)
-                
+
         # Maintain an ordered list of method declaration offsets that is
         # always current as of this timestamp.
         sorted_insert(offsets[loc2],
                       {'offset': offset, 'method': method})
-                      
+
     def add_end_offset(loc, method, length):
         # Add the end character offset for passed in class's method. We don't
-        # need to remove and reinsert, because we already did that in 
+        # need to remove and reinsert, because we already did that in
         # add_start_offset()
-        
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
-        
+
         for t in offsets[loc2]:
             if t['method'] == method:
                 t['end'] = t['offset'] + length - 1
-                
+
     def find_method_match(loc, offset):
         # Iterate over offsets and find the method that matches the passed in
         # class and offset
         # loc: The normalized class path to look up
         # offset: The number of characters from the top of the file to look up
-    
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
         if loc2 not in offsets:
             offsets[loc2] = []
-        
+
         if loc2 in offsets:
             for t in offsets[loc2]:
                 if offset >= t['offset'] and offset <= t['end']:
                     return t['method']
-                
+
         return 'UNKNOWN,' + loc2 + ',' + str(offset)
-    
+
     def clean_up_path():
         # Remove navigations to the same location and any navigations that are
         # between methods or after the last method. The only unknown location we
@@ -783,7 +812,7 @@ def buildPath(dbFile, granularityFunc):
             method2 = out.getMethodAt(i + 1)
             method1IsUnknown = out.isUnknownMethodAt(i);
             method2IsUnknown = out.isUnknownMethodAt(i + 1);
-            
+
             # Using the granularity function, remove any identical methods
             # Recall that granularity functions returns true when the two
             # passed-in parameters are true.
@@ -792,16 +821,18 @@ def buildPath(dbFile, granularityFunc):
                     print "\tRemoving duplicate method navigation at", str(i), \
                     method2
                 doDelete = True
-            
+
             # If the granularity is between method, we want to remove any
             # navigations that landed between method definitions and any methods
             # after the end of the file.
-            if not doDelete and granularityFunc == between_method:
+
+            #todo: make sure this "is between method?" comparison is not broken.
+            if not doDelete and granularityFunc == processor.between_method:
                 if method2IsUnknown:
                     tokens = method2.split(',')
                     loc = tokens[1]
                     offset = int(tokens[2])
-                    
+
                     # Remove any methods that are known to be in between two
                     # methods
                     if is_in_gap(loc, offset):
@@ -809,50 +840,50 @@ def buildPath(dbFile, granularityFunc):
                             print "\tRemoving navigation to gap between" \
                             +" methods at", str(i), method2
                         doDelete = True
-                        
+
                 # Remove any duplicates that are in the same gap between methods
-                # but at different offsets    
+                # but at different offsets
                 if not doDelete and method1IsUnknown \
                     and method2IsUnknown:
                     tokens1 = method1.split(',')
                     tokens2 = method2.split(',')
                     loc1 = tokens1[1]
                     loc2 = tokens2[1]
-                    
+
                     if loc1 == loc2:
                         offset1 = int(tokens1[2])
                         offset2 = int(tokens2[2])
-                        
+
                         if in_in_same_gap(loc1, offset1, offset2):
                             if VERBOSE_PATH:
                                 print "\tRemoving duplicate navigation to gap" \
                                 + " between methods at", str(i), method2
                             doDelete = True
-            if doDelete: 
+            if doDelete:
                 out.removeAt(i + 1)
-                
+
     def is_in_gap(loc, offset):
         # Returns true if the given navigation is to a location between method
         # definitions or after the last method defintion for the given class
         # location and offset. Navigations to the top of a file, before the
         # start offset are not considered to be in a gap.
-        
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
-        
-        # If the class in offsets doesn't exist, it's a navigation to a new 
+
+        # If the class in offsets doesn't exist, it's a navigation to a new
         # file. If the location is before the first method, we keep it as it is
         # a header navigation
         if loc2 not in offsets or offset < offsets[loc2][0]['offset']:
             return False
-        
+
         classOffsets = offsets[loc2]
-        
+
         # Return true if the offset is past the last method.
         if offset > classOffsets[-1]['end']:
             return True
-        
+
         # Return true if the offset is in between two methods
         if loc2 in offsets and len(classOffsets) > 1:
             for i in range(len(classOffsets) - 1):
@@ -862,26 +893,26 @@ def buildPath(dbFile, granularityFunc):
                     return True
 
         return False
-    
+
     def in_in_same_gap(loc, offset1, offset2):
-        
+
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
-        
-        # If the class in offsets doesn't exist, it's a navigation to a new 
+
+        # If the class in offsets doesn't exist, it's a navigation to a new
         # file. If the location is before the first method, we keep it as it is
         # a header navigation
         if loc2 not in offsets:
             return False
-        
+
         classOffsets = offsets[loc2]
-        
+
         # Return true if the offsets are past the last method.
         if offset > classOffsets[-1]['end'] \
             and offset2 > classOffsets[-1]['end']:
             return True
-        
+
         # Return true if the offsets are in between the same two methods
         if loc2 in offsets and len(classOffsets) > 1:
             for i in range(len(classOffsets) - 1):
@@ -892,16 +923,16 @@ def buildPath(dbFile, granularityFunc):
                     and offset2 > currMethod['end'] \
                     and offset2 < nextMethod['offset']:
                     return True
-                
+
         return False
-                
+
     print "Building path..."
 
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
-    
+
     # We need to combine data from method offsets and text cursor offsets
-        
+
     # Store all the text selection offsets into the nav data structure
     c = conn.cursor()
     c.execute(PATH_QUERY_1)
@@ -909,124 +940,90 @@ def buildPath(dbFile, granularityFunc):
         timestamp, target, referrer = \
             (iso8601.parse_date(row['timestamp']), row['target'], \
             int(row['referrer']))
-        
-        # Get the class of the method    
-        loc = normalize(target)
+
+        # Get the class of the method
+        loc = processor.normalize(target)
         if loc:
             add_nav(timestamp, loc, referrer)
     c.close()
-    
+
     # The positions of the method declaration offsets could potentially change
     # between navigations. For example, text can be added or removed. To account
-    # for this, each navigation must be handled independently with only the 
+    # for this, each navigation must be handled independently with only the
     # data leading up to the navigation informing the offsets.
-    
+
     for navData in nav:
         currentTime = navData["timestamp"]
         offset = navData["offset"]
         navLoc = navData["loc"]
-        
+
         # Clear the offsets from the last iteration
         offsets.clear()
-        
-        # Fill the offsets data structure with all known method declaration 
-        # start positions. 
+
+        # Fill the offsets data structure with all known method declaration
+        # start positions.
         c = conn.cursor()
         c.execute(PATH_QUERY_2, [currentTime])
         for row in c:
             target, referrer = row['target'], int(row['referrer'])
-            
+
             # Get the class of the method
-            loc = normalize(target)
+            loc = processor.normalize(target)
             if loc:
                 add_start_offset(loc, target, referrer)
         c.close()
-    
-        # Insert the end positions of all the methods in the offset data 
+
+        # Insert the end positions of all the methods in the offset data
         # structure
         c = conn.cursor()
         c.execute(PATH_QUERY_3, [currentTime])
         for row in c:
             target, referrer = row['target'], int(row['referrer'])
-            
+
             # Get the class of the method
-            loc = normalize(target)
+            loc = processor.normalize(target)
             if loc:
                 add_end_offset(loc, target, referrer)
         c.close()
-        
+
         # Lookup the offset in navs and get the method. Each element in navs
         # gets looked up and added to NavPath object as a NavPathEntry
         entry = NavPathEntry(currentTime, find_method_match(navLoc, offset))
         out.addEntry(entry)
-        
-        #out.append({'target': find_method_match(navLoc, offset), 
+
+        #out.append({'target': find_method_match(navLoc, offset),
         #    'timestamp': currentTime})
-            
     conn.close()
     print "Cleaning up path according to specified granularity..."
     clean_up_path()
-    
-    if VERBOSE_PATH: 
+
+    if VERBOSE_PATH:
         print out.toStr()
 
     print "Done building path."
     return out
 
-#==============================================================================#
-# Helper methods for initial weights on the graph                              #
-#==============================================================================#
-# Each of these mehtods define a different level of granularity for navigations
-# PFIS3 supports betwee-method, between-class and between-package navigations.
-# These functions are passed in as parameters and rely on the list of methods
-# generated by buildPaths
 
-def between_method(a, b):
-    # A navigation between methods occurs when two consecutive FQNs do not match
-    return a != b
-
-def between_class(a, b):
-    # A navigation between classes occurs when two consecutive normalized class
-    # paths do not match
-    return normalize(a) != normalize(b)
-
-def between_package(a, b):
-    # A navigation between packages occurs when two conscutive pacakes do not
-    # match
-    return package(a) != package(b)
-
-
-
-
-
-
-
-
-
-
-
-    
-def makePredictions(navPath, navNum, graph, algorithmFunc, resultsLog,
-                    granularityFunc = between_method, 
+def makePredictions(processor, navPath, navNum, graph, algorithmFunc, granularityFunc, resultsLog,
                     bugReportWordList = []):
-    # Iterate through the navigations with the selected granularityFunc and call 
+    # Iterate through the navigations with the selected granularityFunc and call
     # the algorithmFunc for each navigation to a new location (navigations are
-    # specified by the granularityFunc). Results are stored in the resultsLog  
+    # specified by the granularityFunc). Results are stored in the resultsLog
     # data structure.
     #print "make Predictions called"
     entry = navPath.getEntryAt(navNum)
     if granularityFunc(entry.prevEntry.method, entry.method):
-        algorithmFunc(resultsLog, navPath, graph, entry.prevEntry, entry, \
+        algorithmFunc(processor, resultsLog, navPath, graph, entry.prevEntry, entry, \
                       navNum, bugReportWordList)
 
-def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i, 
+def pfisWithHistory(processor, resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
                     bugReportWordList):
     # One of the possible algorithm fucntions.
     # This version pre-weighs the participant's path with initial starting
-    # weights before spreading activation. The current step is weighed with 
+    # weights before spreading activation. The current step is weighed with
     # INITIAL_ACTIVATION and every step in the past is decayed by the
     # PATH_DECAY_FACTOR.
-    
+
     def getInitialPathWeights():
         # Weigh the navigation path prior to spreading activation. If the
         # programmer has been to the same location several times, the highest
@@ -1035,13 +1032,13 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
 
         a = INITIAL_ACTIVATION
         dictOfInitialWeights = {}
-        # Set the dictOfInitialWeights of all bugReportWordList in 
+        # Set the dictOfInitialWeights of all bugReportWordList in
         # bugReportWordList to INITIAL_ACTIVATION
         for word in bugReportWordList:
             dictOfInitialWeights[word] = INITIAL_ACTIVATION
-            
+
         # Iterate over resultsLog backwards. For each navigation with both start
-        # and end nodes in the graph, apply a starting weight on those nodes 
+        # and end nodes in the graph, apply a starting weight on those nodes
         # with a decay factor specified by PATH_DECAY_FACTOR
         for j in reversed(range(navPath.getLength())):
             #print j, navPath[j]['target'];
@@ -1050,13 +1047,13 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
                 or dictOfInitialWeights[jMethod] < a:
                 dictOfInitialWeights[jMethod] = a
             a *= PATH_DECAY_FACTOR
-            
+
         return dictOfInitialWeights
-                
+
     ties = -1 # Added by me
     prevMethod = prevNavEntry.method
     currMethod = currNavEntry.method
-    
+
     # There are two possibiliites when making a prediction
     # Possibility 1: Both the prevNavEntry (the one that we are predicting from)
     # and the currNavEntry (the location the programmer acually went) exits in 
@@ -1065,22 +1062,22 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
     if prevMethod in graph and currMethod in graph:
         # Initially seed some of the weights
         dictOfInitialWeights = getInitialPathWeights()
-        
+
         # Create an Activation object with those weights
         actObj = Activation(dictOfInitialWeights)
-        
-        # Spread activationa and get a list of all the nodes that have a 
+
+        # Spread activationa and get a list of all the nodes that have a
         # non-zero weight
         activation = actObj.spread(graph)
-        
+
         rank, length, ties = \
             getResultRank(graph, currNavEntry.method, activation, navNum=i)
         if VERBOSE_PREDICT:
             print '\tLocation found. Rank =', rank
-            
-        e = LogEntry(i, rank, ties, length, prevMethod, currMethod, 
-                     between_class(prevMethod, currMethod), 
-                     between_package(prevMethod, currMethod), 
+
+        e = LogEntry(i, rank, ties, length, prevMethod, currMethod,
+                     processor.between_class(prevMethod, currMethod),
+                     processor.between_package(prevMethod, currMethod),
                      currNavEntry.timestamp)
         resultsLog.addEntry(e);
     # Possibility 2, the method is unknown or somehow not in the graph, so we
@@ -1089,15 +1086,14 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
         if VERBOSE_PREDICT:
             print '\tLocation not found.'
         e = LogEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prevMethod,
-                     currMethod, 
-                     between_class(prevMethod, currMethod), 
-                     between_package(prevMethod, currMethod), 
+                     currMethod,
+                     processor.between_class(prevMethod, currMethod),
+                     processor.between_package(prevMethod, currMethod),
                      currNavEntry.timestamp)
         resultsLog.addEntry(e);
-        
 
 ## CODE BELOW STILL NEEDS TO BE REFACTORED
-        
+
 def getResultRank(graph, currNav, activation, navNum=0):
     # sorts list of activations desc
     last = activation[0][0]
@@ -1105,7 +1101,7 @@ def getResultRank(graph, currNav, activation, navNum=0):
     scores = [val for (item,val) in activation if item != '' and \
                       item != last and not wordNode(item) and \
                       '#' not in item and ';.' in item]
-    
+
     targets = [item for (item,val) in activation if item != '' and \
                       item != last and not wordNode(item) and \
                       '#' not in item and ';.' in item]
@@ -1125,45 +1121,42 @@ def getResultRank(graph, currNav, activation, navNum=0):
     ties = rankTies[ranks[rank - 1]]
     #methods[agent][item] = (len(ranks) - ranks[i]) / (len(ranks) - 1)
     #writeScores(navNum, targets, ranks, scores) -- REMOVED BY ME
-    #print "End:", currNav, "\trank:", rank, "\tranks[rank-1]:", ranks[rank - 1], "\tscores[rank-1]:", scores[rank-1] 
+    #print "End:", currNav, "\trank:", rank, "\tranks[rank-1]:", ranks[rank - 1], "\tscores[rank-1]:", scores[rank-1]
     return (len(ranks) - ranks[rank - 1]), len(targets), ties
     #return (len(ranks) - ranks[rank - 1]) / (len(ranks) - 1), len(targets)
     #else:
     #    return 999998, len(targets)
-    
+
 def mapRankToTieCount(ranks):
 # uses methods to create a mapping from the rank to the number of instances
 # of that rank in the rank listing
 # methods: { agent id --> { method --> rank }
 # o: { rank --> number ties }
-    
+
     o = {}
-    
-    for rank in ranks:      
+    for rank in ranks:
         if rank not in o:
             o[rank] = 1
         else:
             o[rank] = o[rank] + 1
-                
     return o
-    
+
+
 #def writeScores(navnum, methods, ranks, scores):
 # Writes the contents of methods to the specified file
 
 #    for i in range(len(methods)):
 #        activation_root.write("%d,%s,%s,%s\n" % (navnum, methods[i], (len(ranks) - ranks[i]), scores[i]))
-    
-#The following were pulled from the stats.py package
 
-    
+#The following were pulled from the stats.py package
 def rankTransform(scoresForMethods):
     #We need to add all the zero entries here
     extendedList = [0] * NUM_METHODS_KNOWN_ABOUT;
     for i in range(len(scoresForMethods)):
         extendedList[i] = scoresForMethods[i]
-    
+
     # At this point, there's a sorted list of scores for every known method
-    
+
     scoresVector, ranksVector = shellsort(extendedList)
     sumranks = 0
     dupcount = 0
@@ -1214,8 +1207,5 @@ def copyDatabase(dbpath, newdbpath):
     shutil.copyfile(dbpath, newdbpath)
     print "Done."
 
-
-
-    
 if __name__ == "__main__":
     main()
