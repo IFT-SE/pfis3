@@ -241,7 +241,7 @@ def addPFIGJavaFileHeader(processor, dbFile, navEntry, projectFolderPath, navPat
     _, className, _ = navEntry.prevEntry.method.split(",")
     ts = navEntry.timestamp
 
-    classFilePath = os.path.join("/Users/srutis90/Projects/VFT/Cryo2Pfig/jsparser/src/", className[1:] + processor.FileExtension)
+    classFilePath = os.path.join(projectFolderPath, className + processor.FileExtension)
     print classFilePath
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
