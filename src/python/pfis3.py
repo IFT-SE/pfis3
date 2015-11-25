@@ -90,7 +90,7 @@ def print_usage():
 def parseArgs():
 
     arguments = {
-        "outputLogPath" : None,
+        "outputPath" : None,
         "stopWordsPath" : True,
         "tempDbPath" : None,
         "dbPath" : None,
@@ -111,10 +111,10 @@ def parseArgs():
 
     def setConventionBasedArguments(argsMap):
         argsMap["tempDbPath"] = argsMap["dbPath"] + "_temp"
-        argsMap["outputLogPath"] = argsMap["dbPath"] + "_log"
+        argsMap["outputPath"] = argsMap["dbPath"] + "_out"
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "d:s:l:p")
+        opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to PFIS")
@@ -153,7 +153,7 @@ def main():
     
     paths = buildPath(args["tempDbPath"], processor.between_method, processor);
     stopWords = loadStopWords(args["stopWordsPath"])
-    log = Log(args["outputLogPath"])
+    log = Log(args["outputPath"])
     predictAllNavigations(processor, paths, stopWords, log, args["tempDbPath"], args["projectSrcFolderPath"], predAlgs)
 
     sys.exit(0)
@@ -188,7 +188,7 @@ def predictAllNavigations(processor, navPathObj, stopWords, logObj, dbFile, \
             
             for predictAlg in listPredictionAlgorithms:
                     makePredictions(processor, navPathObj, navNum, graph, predictAlg,
-                                    resultsLog = logObj)
+                                    processor.between_method, resultsLog = logObj)
                     #logObj.saveLog()
             print "=================================================="
 
@@ -240,8 +240,9 @@ def addPFIGJavaFileHeader(processor, dbFile, navEntry, projectFolderPath, navPat
     
     _, className, _ = navEntry.prevEntry.method.split(",")
     ts = navEntry.timestamp
-    classFilePath = os.path.join(projectFolderPath, className + ".java")
-    
+
+    classFilePath = os.path.join("/Users/srutis90/Projects/VFT/Cryo2Pfig/jsparser/src/", className[1:] + processor.FileExtension)
+    print classFilePath
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     
