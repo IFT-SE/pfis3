@@ -11,7 +11,7 @@ class AbstractLanguageHelper:
         self.REGEX_NORM_PATH = re.compile(normalizedPathRegex)
         self.REGEX_PACKAGE = re.compile(packageRegex)
 
-    def fixSlashes(s):
+    def fixSlashes(self, s):
         # Replaces '\' with '/'
         return AbstractLanguageHelper.REGEX_FIX_SLASHES.sub('/', s)
 
