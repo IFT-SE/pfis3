@@ -1,5 +1,5 @@
-from java_processor import JavaHelper
-from js_processor import JavaScriptHelper
+from javaHelper import JavaHelper
+from jsHelper import JavaScriptHelper
 
 class Languages:
         JAVA = "JAVA"
