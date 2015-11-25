@@ -522,7 +522,7 @@ def loadAdjacentMethods(processor, graph, dbFile, timestamp):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 = processor.getOuterClass(loc)
         if loc2 not in offsets:
             offsets[loc2] = []
         # Remove any existing occurrence of given target
@@ -642,7 +642,7 @@ def buildPath(dbFile, granularityFunc, processor):
         # offset = the number of characters from the top of the file the
         #   cursor start position was
 
-        loc2 = processor.adjustInnerLocations(loc)
+        loc2 = processor.getOuterClass(loc)
         if loc2 not in offsets:
             offsets[loc2] = []
 
@@ -659,7 +659,7 @@ def buildPath(dbFile, granularityFunc, processor):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = processor.adjustInnerLocations(loc)
+        loc2 = processor.getOuterClass(loc)
         if loc2 not in offsets:
             offsets[loc2] = []
 
@@ -680,7 +680,7 @@ def buildPath(dbFile, granularityFunc, processor):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 = processor.getOuterClass(loc)
 
         for t in offsets[loc2]:
             if t['method'] == method:
@@ -694,7 +694,7 @@ def buildPath(dbFile, granularityFunc, processor):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 =  processor.getOuterClass(loc)
         if loc2 not in offsets:
             offsets[loc2] = []
 
@@ -774,7 +774,7 @@ def buildPath(dbFile, granularityFunc, processor):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 = processor.getOuterClass(loc)
 
         # If the class in offsets doesn't exist, it's a navigation to a new
         # file. If the location is before the first method, we keep it as it is
@@ -802,7 +802,7 @@ def buildPath(dbFile, granularityFunc, processor):
 
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
-        loc2 = loc.split('$')[0]
+        loc2 = processor.getOuterClass(loc)
 
         # If the class in offsets doesn't exist, it's a navigation to a new
         # file. If the location is before the first method, we keep it as it is

@@ -59,7 +59,7 @@ class JavaProcessor:
         # match
         return self.package(a) != self.package(b)
 
-    def adjustInnerLocations(self, loc):
+    def getOuterClass(self, loc):
         # This split allows inner classes to be handled properly, by setting the
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]

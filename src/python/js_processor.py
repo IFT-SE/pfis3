@@ -58,5 +58,5 @@ class JavaScriptProcessor:
         # match
         return self.package(a) != self.package(b)
 
-    def adjustInnerLocations(self, loc):
+    def getOuterClass(self, loc):
         return loc
