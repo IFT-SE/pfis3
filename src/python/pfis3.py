@@ -9,13 +9,13 @@ import shutil
 import os
 import datetime
 import getopt
+import re
 
 #imports for PFIS related classes
 from navpath import *
 from log import *
-from java_processor import JavaProcessor
-from js_processor import JavaScriptProcessor
-from regex import *
+from java_processor import JavaHelper
+from js_processor import JavaScriptHelper
 
 # VOCAB:
 # prevNavEntry = The navigation that we are predicting from
@@ -38,6 +38,7 @@ PATH_QUERY_1 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE
 PATH_QUERY_2 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
 PATH_QUERY_3 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration length' AND timestamp <= ? ORDER BY timestamp"
 
+REGEX_SPLIT_CAMEL_CASE = re.compile(r'_|\W+|\s+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=[0-9]+)|(?<=[0-9])(?=[a-zA-Z]+)')
 
 
 NUM_METHODS_KNOWN_ABOUT = 0
@@ -78,9 +79,9 @@ class Activation:
 def loadLanguageSpecifics(language):
     #TODO: add a processor for JS
     if(language == "JAVA"):
-        processor = JavaProcessor()
+        processor = JavaHelper()
     elif (language == "JS"):
-        processor = JavaScriptProcessor()
+        processor = JavaScriptHelper()
     return processor
 
 def print_usage():
@@ -287,7 +288,7 @@ def buildGraph(processor, dbFile, stopWords, timestamp):
     graph = nx.Graph()
     NUM_METHODS_KNOWN_ABOUT = 0
     print "Building PFIS graph..."
-    loadScentRelatedNodes(graph, dbFile, stopWords, timestamp)
+    loadScentRelatedNodes(processor, graph, dbFile, stopWords, timestamp)
     loadTopologyRelatedNodes(processor, graph, dbFile, stopWords, timestamp)
     loadAdjacentMethods(processor, graph, dbFile, timestamp)
     print "Done building PFIS graph. Graph contains", NUM_METHODS_KNOWN_ABOUT, \
@@ -295,7 +296,7 @@ def buildGraph(processor, dbFile, stopWords, timestamp):
 
     return graph
 
-def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
+def loadScentRelatedNodes(processor, graph, dbFile, stopWords, timestamp):
     # Attaches word nodes to the graph. Words nodes come from three types of
     # sources. These words are split according to camel case, or not and also
     # stemmed or not depending on the source of the word. The three cases are
@@ -311,8 +312,8 @@ def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
 
     for row in c:
         action, target, referrer = \
-            row['action'], fixSlashes(row['target']), \
-            fixSlashes(row['referrer'])
+            row['action'], processor.fixSlashes(row['target']), \
+            processor.fixSlashes(row['referrer'])
 
         # Case 1: target and referrer contain either FQNs or file paths, so
         # create a  node for every target and referrer. Each of these nodes then
@@ -387,8 +388,8 @@ def loadTopologyRelatedNodes(processor, graph, dbFile, stopWords, timestamp):
 
     for row in c:
         action, target, referrer, = \
-            row['action'], fixSlashes(row['target']), \
-            fixSlashes(row['referrer'])
+            row['action'], processor.fixSlashes(row['target']), \
+            processor.fixSlashes(row['referrer'])
 
         ntarget = processor.normalize(target)
         nreferrer = processor.normalize(referrer)
