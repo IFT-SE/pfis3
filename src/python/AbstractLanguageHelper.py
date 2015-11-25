@@ -1,4 +1,5 @@
 import re
+import os
 
 class AbstractLanguageHelper:
 
@@ -62,3 +63,6 @@ class AbstractLanguageHelper:
         # match
         return self.package(a) != self.package(b)
 
+
+    def getFileName(self, projectFolderPath, className, extn):
+        return os.path.join(projectFolderPath, className + extn)

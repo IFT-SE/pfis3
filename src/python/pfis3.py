@@ -238,8 +238,8 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
     _, className, _ = navEntry.prevEntry.method.split(",")
     ts = navEntry.timestamp
 
-    classFilePath = os.path.join(projectFolderPath, className + PROCESSOR.FileExtension)
-    print classFilePath
+    #classFilePath = os.path.join(projectFolderPath, className + PROCESSOR.FileExtension)
+    classFilePath = PROCESSOR.getFileName(projectFolderPath, className, PROCESSOR.FileExtension)
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     

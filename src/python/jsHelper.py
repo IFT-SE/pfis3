@@ -1,4 +1,5 @@
 from AbstractLanguageHelper import AbstractLanguageHelper
+import os
 
 class JavaScriptHelper (AbstractLanguageHelper):
 
@@ -23,3 +24,6 @@ class JavaScriptHelper (AbstractLanguageHelper):
         if pos:
             return string[:pos]
         return ''
+
+    def getFileName(self, projectFolderPath, className, extn):
+        return os.path.join(projectFolderPath, className[1:] + extn)
