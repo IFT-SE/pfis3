@@ -132,6 +132,7 @@ def main():
     args = parseArgs()
 
     #Initialize the processor with the appropriate language specific processor
+    global PROCESSOR
     PROCESSOR = LanguageHelperFactory.getLanguageHelper(args["language"])
 
     # Start by making a working copy of the database
