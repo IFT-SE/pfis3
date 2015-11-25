@@ -6,6 +6,7 @@ class AbstractLanguageHelper:
     REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+);.*") #todo: why is this called eclipse?
     REGEX_PROJECT = re.compile(r"\/(.*)\/src/.*")
 
+
     def __init__(self, fileExtension, normalizedPathRegex, packageRegex):
         self.FileExtension = fileExtension
         self.REGEX_NORM_PATH = re.compile(normalizedPathRegex)

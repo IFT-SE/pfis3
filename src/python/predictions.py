@@ -1,4 +1,4 @@
-class LogEntry:
+class PredictionEntry:
     def __init__(self, navNum, timestamp, rank, numTies, length,
                  fromLoc, toLoc, classLoc, packageLoc):
         self.navNum = str(navNum)
@@ -15,7 +15,7 @@ class LogEntry:
             + self.numTimes + '\t' + self.length + '\t' + self.fromLoc + '\t' \
             + self.classLoc + '\t' + self.packageLoc
 
-class Log:
+class Predictions:
     def __init__(self, filePath):
         self.filePath = filePath;
         self.entries = []
