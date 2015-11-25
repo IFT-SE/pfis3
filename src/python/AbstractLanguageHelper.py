@@ -35,7 +35,7 @@ class AbstractLanguageHelper:
         # Return the root folder in the given path. Empty string returned on fail.
         # In Eclipse, the root folder would be the project folder.
         # Ex: /jEdit/src/org/gjt/sp/jedit/search --> jEdit
-        m = REGEX_PROJECT.match(fixSlashes(s))
+        m = AbstractLanguageHelper.REGEX_PROJECT.match(self.fixSlashes(s))
         if m:
             return m.group(1)
         return ''
