@@ -6,7 +6,6 @@ import iso8601
 import bisect
 import copy
 import shutil
-import os
 import datetime
 import getopt
 import re
@@ -27,14 +26,28 @@ VERBOSE_BUILD = 0
 VERBOSE_PATH = 0
 VERBOSE_PREDICT = 1
 
-HEADER_QUERY_1 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' and timestamp < ? ORDER BY timestamp DESC"
-HEADER_QUERY_2 = "INSERT INTO logger_log (user, timestamp, action, target, referrer, agent) VALUES (?, ?, ?, ?, ?, ?)"
-SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'New package', 'New file header') AND timestamp <= ?"
-TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN ('Package', 'Imports', 'Extends', 'Implements', 'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'New package', 'Open call hierarchy') AND timestamp <= ?"
-ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
-PATH_QUERY_1 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
-PATH_QUERY_2 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
-PATH_QUERY_3 = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration length' AND timestamp <= ? ORDER BY timestamp"
+METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
+                 "WHERE action = 'Method declaration offset' and timestamp < ? ORDER BY timestamp DESC"
+INSERT_QUERY = "INSERT INTO logger_log (user, timestamp, action, target, referrer, agent) VALUES (?, ?, ?, ?, ?, ?)"
+SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
+              "('Package', 'Imports', 'Extends', 'Implements', " \
+              "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
+              "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', " \
+              "'New package', 'New file header') " \
+              "AND timestamp <= ?"
+TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
+                 "('Package', 'Imports', 'Extends', 'Implements', " \
+                 "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
+                 "'New package', 'Open call hierarchy') " \
+                 "AND timestamp <= ?"
+ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' " \
+                  "AND timestamp <= ? ORDER BY timestamp"
+TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' " \
+                              "ORDER BY timestamp"
+METHOD_DECLARATION_OFFSETS_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
+                                              "WHERE action = 'Method declaration offset' AND timestamp <= ? ORDER BY timestamp"
+METHOD_DECLARATION_LENGTH_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
+                                             "WHERE action = 'Method declaration length' AND timestamp <= ? ORDER BY timestamp"
 
 REGEX_SPLIT_CAMEL_CASE = re.compile(r'_|\W+|\s+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=[0-9]+)|(?<=[0-9])(?=[a-zA-Z]+)')
 
@@ -149,9 +162,11 @@ def main():
     outputFile = Predictions(args["outputPath"])
     predictAllNavigations(navigationPath, stopWords, outputFile, args["tempDbPath"], args["projectSrcFolderPath"], predictionAlgorithms)
 
+    print "Saving log to file : ", args["outputPath"]
+    outputFile.saveLog()
     sys.exit(0)
 
-def predictAllNavigations(navPathObj, stopWords, logObj, dbFile, \
+def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
                           projectSrcFolderPath, listPredictionAlgorithms):
     navNum = 0
     for entry in navPathObj:
@@ -181,8 +196,7 @@ def predictAllNavigations(navPathObj, stopWords, logObj, dbFile, \
             
             for predictAlg in listPredictionAlgorithms:
                     makePredictions(navPathObj, navNum, graph, predictAlg,
-                                    PROCESSOR.between_method, resultsLog = logObj)
-                    #logObj.saveLog()
+                                    PROCESSOR.between_method, resultsLog = outputFile)
             print "=================================================="
 
         navNum += 1
@@ -225,10 +239,10 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
         timestamp = pfigHeader.timestamp
         
         c = conn.cursor()
-        c.execute(HEADER_QUERY_2, [dummy, timestamp, 'Method declaration', pfigHeader.fqnClass, pfigHeader.fqn, dummy])
-        c.execute(HEADER_QUERY_2, [dummy, timestamp, 'Method declaration offset', pfigHeader.fqn, str(0), dummy])
-        c.execute(HEADER_QUERY_2, [dummy, timestamp, 'Method declaration length', pfigHeader.fqn, str(pfigHeader.length), dummy])
-        c.execute(HEADER_QUERY_2, [dummy, timestamp, 'Method declaration scent', pfigHeader.fqn, contents, dummy])
+        c.execute(INSERT_QUERY, [dummy, timestamp, 'Method declaration', pfigHeader.fqnClass, pfigHeader.fqn, dummy])
+        c.execute(INSERT_QUERY, [dummy, timestamp, 'Method declaration offset', pfigHeader.fqn, str(0), dummy])
+        c.execute(INSERT_QUERY, [dummy, timestamp, 'Method declaration length', pfigHeader.fqn, str(pfigHeader.length), dummy])
+        c.execute(INSERT_QUERY, [dummy, timestamp, 'Method declaration scent', pfigHeader.fqn, contents, dummy])
         conn.commit()
         c.close()
         print "Done adding header to database."
@@ -244,7 +258,7 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
     conn.row_factory = sqlite3.Row
     
     c = conn.cursor()
-    c.execute(HEADER_QUERY_1, [ts])
+    c.execute(METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY, [ts])
     lowestOffset = -1
     fqn = None
     out = None
@@ -287,6 +301,7 @@ def buildGraph(dbFile, stopWords, timestamp):
     loadScentRelatedNodes(graph, dbFile, stopWords, timestamp)
     loadTopologyRelatedNodes(graph, dbFile, stopWords, timestamp)
     loadAdjacentMethods(graph, dbFile, timestamp)
+
     print "Done building PFIS graph. Graph contains", NUM_METHODS_KNOWN_ABOUT, \
     "method nodes."
 
@@ -392,6 +407,7 @@ def loadTopologyRelatedNodes(graph, dbFile, stopWords, timestamp):
         pack = PROCESSOR.package(target)
         proj = PROCESSOR.project(target)
 
+
         # Link the 'packages' node to new packages. Packages is a root node that
         # all the packages are connected to
         if action == 'New Package':
@@ -476,12 +492,12 @@ def loadTopologyRelatedNodes(graph, dbFile, stopWords, timestamp):
     conn.close
 
     global NUM_METHODS_KNOWN_ABOUT
-
     for item in graph.nodes_iter():
         if item != '' and \
                       not wordNode(item) and \
                       '#' not in item and ';.' in item:
             NUM_METHODS_KNOWN_ABOUT += 1
+
     print "Done processing topology."
 
 def loadAdjacentMethods(graph, dbFile, timestamp):
@@ -622,7 +638,7 @@ def buildPath(dbFile, granularityFunc):
     offsets = {}
 
     # Programmer path for output.
-    out = NavPath()
+    navPath = NavPath()
 
     def sorted_insert(l, item):
         # Insert the method declaration offset according to its position in the
@@ -707,12 +723,12 @@ def buildPath(dbFile, granularityFunc):
         # between methods or after the last method. The only unknown location we
         # keep is are one that occur before the beginning of the first method as
         # those will become header navigations
-        for i in reversed(range(out.getLength() - 1)):
+        for i in reversed(range(navPath.getLength() - 1)):
             doDelete = False
-            method1 = out.getMethodAt(i)
-            method2 = out.getMethodAt(i + 1)
-            method1IsUnknown = out.isUnknownMethodAt(i);
-            method2IsUnknown = out.isUnknownMethodAt(i + 1);
+            method1 = navPath.getMethodAt(i)
+            method2 = navPath.getMethodAt(i + 1)
+            method1IsUnknown = navPath.isUnknownMethodAt(i);
+            method2IsUnknown = navPath.isUnknownMethodAt(i + 1);
 
             # Using the granularity function, remove any identical methods
             # Recall that granularity functions returns true when the two
@@ -760,8 +776,12 @@ def buildPath(dbFile, granularityFunc):
                                 print "\tRemoving duplicate navigation to gap" \
                                 + " between methods at", str(i), method2
                             doDelete = True
+
+            if VERBOSE_PATH:
+                print navPath.getMethodAt(i+1), ": ", doDelete
+
             if doDelete:
-                out.removeAt(i + 1)
+                navPath.removeAt(i + 1)
 
     def is_in_gap(loc, offset):
         # Returns true if the given navigation is to a location between method
@@ -836,7 +856,7 @@ def buildPath(dbFile, granularityFunc):
 
     # Store all the text selection offsets into the nav data structure
     c = conn.cursor()
-    c.execute(PATH_QUERY_1)
+    c.execute(TEXT_SELECTION_OFFSET_QUERY)
     for row in c:
         timestamp, target, referrer = \
             (iso8601.parse_date(row['timestamp']), row['target'], \
@@ -864,7 +884,7 @@ def buildPath(dbFile, granularityFunc):
         # Fill the offsets data structure with all known method declaration
         # start positions.
         c = conn.cursor()
-        c.execute(PATH_QUERY_2, [currentTime])
+        c.execute(METHOD_DECLARATION_OFFSETS_UNTIL_TIME_QUERY, [currentTime])
         for row in c:
             target, referrer = row['target'], int(row['referrer'])
 
@@ -877,7 +897,7 @@ def buildPath(dbFile, granularityFunc):
         # Insert the end positions of all the methods in the offset data
         # structure
         c = conn.cursor()
-        c.execute(PATH_QUERY_3, [currentTime])
+        c.execute(METHOD_DECLARATION_LENGTH_UNTIL_TIME_QUERY, [currentTime])
         for row in c:
             target, referrer = row['target'], int(row['referrer'])
 
@@ -890,20 +910,21 @@ def buildPath(dbFile, granularityFunc):
         # Lookup the offset in navs and get the method. Each element in navs
         # gets looked up and added to NavPath object as a NavPathEntry
         entry = NavPathEntry(currentTime, find_method_match(navLoc, offset))
-        out.addEntry(entry)
+        navPath.addEntry(entry)
 
         #out.append({'target': find_method_match(navLoc, offset),
         #    'timestamp': currentTime})
     conn.close()
+
     print "Cleaning up path according to specified granularity..."
     clean_up_path()
+    print navPath.toStr()
 
     if VERBOSE_PATH:
-        print out.toStr()
+        print navPath.toStr()
 
     print "Done building path."
-    return out
-
+    return navPath
 
 def makePredictions(navPath, navNum, graph, algorithmFunc, granularityFunc, resultsLog,
                     bugReportWordList = []):
@@ -941,7 +962,8 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
         # Iterate over resultsLog backwards. For each navigation with both start
         # and end nodes in the graph, apply a starting weight on those nodes
         # with a decay factor specified by PATH_DECAY_FACTOR
-        for j in reversed(range(navPath.getLength())):
+
+        for j in reversed(range(i)):
             #print j, navPath[j]['target'];
             jMethod = navPath.getMethodAt(j)
             if jMethod not in dictOfInitialWeights \
@@ -998,6 +1020,7 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
 def getResultRank(graph, currNav, activation, navNum=0):
     # sorts list of activations desc
     last = activation[0][0]
+
     #Here he removes everything but methods from activation
     scores = [val for (item,val) in activation if item != '' and \
                       item != last and not wordNode(item) and \
@@ -1006,7 +1029,8 @@ def getResultRank(graph, currNav, activation, navNum=0):
     targets = [item for (item,val) in activation if item != '' and \
                       item != last and not wordNode(item) and \
                       '#' not in item and ';.' in item]
-    #print "\ttargets vector has", len(targets), "nodes"
+    # print "\ttargets vector has", len(targets), "nodes"
+
     rank = 0
     #found = 0
     for item in targets:
@@ -1020,13 +1044,7 @@ def getResultRank(graph, currNav, activation, navNum=0):
     ranks = rankTransform(scores) # Returns a list of ranks that account for ties in reverse order
     rankTies = mapRankToTieCount(ranks)
     ties = rankTies[ranks[rank - 1]]
-    #methods[agent][item] = (len(ranks) - ranks[i]) / (len(ranks) - 1)
-    #writeScores(navNum, targets, ranks, scores) -- REMOVED BY ME
-    #print "End:", currNav, "\trank:", rank, "\tranks[rank-1]:", ranks[rank - 1], "\tscores[rank-1]:", scores[rank-1]
     return (len(ranks) - ranks[rank - 1]), len(targets), ties
-    #return (len(ranks) - ranks[rank - 1]) / (len(ranks) - 1), len(targets)
-    #else:
-    #    return 999998, len(targets)
 
 def mapRankToTieCount(ranks):
 # uses methods to create a mapping from the rank to the number of instances
@@ -1052,6 +1070,7 @@ def mapRankToTieCount(ranks):
 #The following were pulled from the stats.py package
 def rankTransform(scoresForMethods):
     #We need to add all the zero entries here
+
     extendedList = [0] * NUM_METHODS_KNOWN_ABOUT;
     for i in range(len(scoresForMethods)):
         extendedList[i] = scoresForMethods[i]

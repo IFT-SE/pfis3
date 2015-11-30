@@ -20,11 +20,17 @@ class Predictions:
         self.filePath = filePath;
         self.entries = []
 
+    def getHeaderString(self):
+        return "Nav No"+ '\t' + "Timestamp" + '\t' + "Rank" + '\t' \
+            + "Times" + '\t' + "Length" + '\t' + "From loc" + '\t' \
+            + "Class loc" + '\t' + "Package loc" + "\n"
+
     def addEntry(self, logEntry):
         self.entries.append(logEntry);
 
     def saveLog(self):
         logFile = open(self.filePath, 'w');
+        logFile.write(self.getHeaderString())
         for entry in self.entries:
             logFile.write(entry.getString() + '\n');
         logFile.close();
