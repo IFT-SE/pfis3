@@ -1,6 +1,6 @@
 class PredictionEntry:
-    def __init__(self, navNum, timestamp, rank, numTies, length,
-                 fromLoc, toLoc, classLoc, packageLoc):
+    def __init__(self, navNum, rank, numTies, length,
+                 fromLoc, toLoc, classLoc, packageLoc, timestamp):
         self.navNum = str(navNum)
         self.timestamp = str(timestamp)
         self.rank = str(rank)
