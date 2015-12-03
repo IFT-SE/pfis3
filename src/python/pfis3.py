@@ -23,8 +23,8 @@ from languageHelperFactory import LanguageHelperFactory
 
 
 VERBOSE_BUILD = 0
-VERBOSE_PATH = 0
-VERBOSE_PREDICT = 1
+VERBOSE_PATH = 1
+VERBOSE_PREDICT = 0
 
 METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
                  "WHERE action = 'Method declaration offset' and timestamp < ? ORDER BY timestamp DESC"
@@ -172,8 +172,8 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
     for entry in navPathObj:
         if entry.prevEntry:
             print "=================================================="
+            print "Making prediction(s) for navigation #"+ str(navNum)
             if VERBOSE_PREDICT:
-                print "Predicting navigation #"+ str(navNum)
                 print "\tfrom:", entry.prevEntry.method
                 print "\tto:", entry.method
             if entry.prevEntry.unknownMethod:
@@ -197,10 +197,10 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
             for predictAlg in listPredictionAlgorithms:
                     makePredictions(navPathObj, navNum, graph, predictAlg,
                                     PROCESSOR.between_method, resultsLog = outputFile)
+            print "Done making predictions."
             print "=================================================="
 
         navNum += 1
-
 
 def loadStopWords(path):
     # Load the stop words from a file. The file is expected to have one stop
@@ -918,7 +918,6 @@ def buildPath(dbFile, granularityFunc):
 
     print "Cleaning up path according to specified granularity..."
     clean_up_path()
-    print navPath.toStr()
 
     if VERBOSE_PATH:
         print navPath.toStr()
