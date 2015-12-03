@@ -716,7 +716,7 @@ def buildPath(dbFile, granularityFunc):
                 if offset >= t['offset'] and offset <= t['end']:
                     return t['method']
 
-        return 'UNKNOWN,' + loc2 + ',' + str(offset)
+        return loc2 + ',UNKNOWN' + ',' + str(offset)
 
     def clean_up_path():
         # Remove navigations to the same location and any navigations that are
