@@ -24,7 +24,7 @@ from languageHelperFactory import LanguageHelperFactory
 
 VERBOSE_BUILD = 0
 VERBOSE_PATH = 0
-VERBOSE_PREDICT = 1
+VERBOSE_PREDICT = 0
 
 METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
                  "WHERE action = 'Method declaration offset' and timestamp < ? ORDER BY timestamp DESC"
@@ -918,7 +918,7 @@ def buildPath(dbFile, granularityFunc):
 
     print "Cleaning up path according to specified granularity..."
     clean_up_path()
-    print navPath.toStr()
+    #print navPath.toStr()
 
     if VERBOSE_PATH:
         print navPath.toStr()
@@ -973,7 +973,7 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
 
         return dictOfInitialWeights
 
-    ties = -1 # Added by me
+    ties_ = -1 # Added by me
     prevMethod = prevNavEntry.method
     currMethod = currNavEntry.method
 
@@ -993,31 +993,106 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
         # non-zero weight
         activation = actObj.spread(graph)
 
-        rank, length, ties = \
-            getResultRank(graph, currNavEntry.method, activation, navNum=i)
+        rank_, length_, ties_ = \
+            getResultRank_obsolete(currNavEntry.method, activation)
+
+        rank, length, predictions = \
+            getResultRank(currNavEntry.method, activation)
+
         if VERBOSE_PREDICT:
             print '\tLocation found. Rank =', rank
 
-        e = PredictionEntry(i, rank, ties, length, prevMethod, currMethod,
+        e = PredictionEntry(i, rank, rank_, ties_, length, length_, prevMethod, currMethod,
                             PROCESSOR.between_class(prevMethod, currMethod),
                             PROCESSOR.between_package(prevMethod, currMethod),
-                            currNavEntry.timestamp)
+                            currNavEntry.timestamp, predictions)
         resultsLog.addEntry(e);
     # Possibility 2, the method is unknown or somehow not in the graph, so we
     # mark it as such
     else:
         if VERBOSE_PREDICT:
             print '\tLocation not found.'
-        e = PredictionEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prevMethod,
+        e = PredictionEntry(i, 999999, 999999, ties_, NUM_METHODS_KNOWN_ABOUT, NUM_METHODS_KNOWN_ABOUT, prevMethod,
                             currMethod,
                             PROCESSOR.between_class(prevMethod, currMethod),
                             PROCESSOR.between_package(prevMethod, currMethod),
                             currNavEntry.timestamp)
         resultsLog.addEntry(e);
 
+
+
+def getResultRank(currNav, activation):
+
+    # sorts list of activations desc
+    last = activation[0][0]
+
+
+    def getObj(item, val):
+        return {
+            "target" : item,
+            "score" : val
+        }
+
+    weightedObjs = [getObj(item, val) for (item,val) in activation if item != '' and \
+                      item != last and not wordNode(item) and \
+                      '#' not in item and ';.' in item]
+
+    knownScoresCount = len(weightedObjs)
+    for i in range(NUM_METHODS_KNOWN_ABOUT-knownScoresCount):
+        weightedObjs.append(getObj("", 0))
+
+    def sortByScore(a, b):
+        key = "score"
+        return cmp(a[key], b[key])
+
+    sortedObjs = sorted(weightedObjs, sortByScore)
+    rank = len(sortedObjs)
+
+    i = -1
+    for obj in sortedObjs:
+        i = i + 1
+
+        obj["rank"] = rank
+        rank = rank - 1
+
+    currNavIndex = -1
+    for obj in sortedObjs:
+        currNavIndex = currNavIndex + 1
+        if currNav == obj["target"]:
+            break
+
+    n = len(sortedObjs)
+    sameScoreOcurrence = 1
+    rankTiesMap = {}
+
+    for i in range(n):
+        if i < n-1 and (sortedObjs[i]["score"] == sortedObjs[i+1]["score"]):
+            #there is more of the same score coming, keep a count
+            sameScoreOcurrence = sameScoreOcurrence + 1
+        else:
+            #compute median of scores
+            minRank = sortedObjs[i]["rank"]
+            maxRank = minRank + sameScoreOcurrence - 1
+            rank = minRank #(maxRank + minRank) / 2.0
+
+            #accumulate all targets for the rank, and fill in the ranks for the targets
+            targets = []
+            for j in range(sameScoreOcurrence):
+                sortedObjs[i-j]["rank"] = rank
+                targets.append(sortedObjs[i-j]["target"])
+                rankTiesMap[rank] = targets
+
+            #sequence processed, restart from 1
+            sameScoreOcurrence = 1
+
+    rank = sortedObjs[currNavIndex]["rank"]
+
+    tiesForRank = rankTiesMap[rank]
+    return (rank, knownScoresCount, tiesForRank)
+
 ## CODE BELOW STILL NEEDS TO BE REFACTORED
 
-def getResultRank(graph, currNav, activation, navNum=0):
+def getResultRank_obsolete(currNav, activation):
     # sorts list of activations desc
     last = activation[0][0]
 
@@ -1031,7 +1106,7 @@ def getResultRank(graph, currNav, activation, navNum=0):
                       '#' not in item and ';.' in item]
     # print "\ttargets vector has", len(targets), "nodes"
 
-    rank = 0
+    rank = -1
     #found = 0
     for item in targets:
         rank += 1
@@ -1042,9 +1117,12 @@ def getResultRank(graph, currNav, activation, navNum=0):
     #if found:
         #scores = []
     ranks = rankTransform(scores) # Returns a list of ranks that account for ties in reverse order
+
     rankTies = mapRankToTieCount(ranks)
-    ties = rankTies[ranks[rank - 1]]
-    return (len(ranks) - ranks[rank - 1]), len(targets), ties
+
+    ties = rankTies[ranks[rank]]
+
+    return (len(ranks) - ranks[rank]), len(targets), ties
 
 def mapRankToTieCount(ranks):
 # uses methods to create a mapping from the rank to the number of instances
@@ -1078,6 +1156,7 @@ def rankTransform(scoresForMethods):
     # At this point, there's a sorted list of scores for every known method
 
     scoresVector, ranksVector = shellsort(extendedList)
+
     sumranks = 0
     dupcount = 0
     resultRankList = [0] * NUM_METHODS_KNOWN_ABOUT
