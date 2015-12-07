@@ -1024,21 +1024,72 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
 def getResultRank(currNav, activation):
 
     # sorts list of activations desc
-    last = activation[0][0]
+    knownScoresCount, sortedObjs = getMethodsSortedByScore(activation)
+    assignConsecutiveRanksWithoutHandlingTies(sortedObjs)
 
+    rankTiesMap = updateRanksForTies(sortedObjs)
+
+    rank = getRankOfNav(currNav, sortedObjs)
+
+    tiesForRank = rankTiesMap[1]
+    return (rank, knownScoresCount, tiesForRank)
+
+
+def updateRanksForTies(sortedObjs):
+    sameScoreOcurrence = 1
+    rankTiesMap = {}
+    for i in range(NUM_METHODS_KNOWN_ABOUT):
+        if i < NUM_METHODS_KNOWN_ABOUT - 1 and (sortedObjs[i]["score"] == sortedObjs[i + 1]["score"]):
+            # there is more of the same score coming, keep a count
+            sameScoreOcurrence = sameScoreOcurrence + 1
+        else:
+            # compute median of scores
+            minRank = sortedObjs[i]["rank"]
+            maxRank = minRank + sameScoreOcurrence - 1
+            rank = minRank  # (maxRank + minRank) / 2.0
+
+            # accumulate all targets for the rank, and fill in the ranks for the targets
+            targets = []
+            for j in range(sameScoreOcurrence):
+                sortedObjs[i - j]["rank"] = rank
+                targets.append(sortedObjs[i - j]["target"])
+                rankTiesMap[rank] = targets
+
+            # sequence processed, restart from 1
+            sameScoreOcurrence = 1
+    return rankTiesMap
+
+
+def assignConsecutiveRanksWithoutHandlingTies(sortedObjs):
+    rank = len(sortedObjs)
+    i = -1
+    for obj in sortedObjs:
+        i = i + 1
+        obj["rank"] = rank
+        rank = rank - 1
+
+
+def getRankOfNav(currNav, sortedObjs):
+    for obj in sortedObjs:
+        if(obj["target"] == currNav):
+            return obj["rank"]
+
+
+def getMethodsSortedByScore(activation):
+    last = activation[0][0]
 
     def getObj(item, val):
         return {
-            "target" : item,
-            "score" : val
+            "target": item,
+            "score": val
         }
 
-    weightedObjs = [getObj(item, val) for (item,val) in activation if item != '' and \
-                      item != last and not wordNode(item) and \
-                      '#' not in item and ';.' in item]
-
+    weightedObjs = [getObj(item, val) for (item, val) in activation if item != '' and \
+                    item != last and not wordNode(item) and \
+                    '#' not in item and ';.' in item]
     knownScoresCount = len(weightedObjs)
-    for i in range(NUM_METHODS_KNOWN_ABOUT-knownScoresCount):
+
+    for i in range(NUM_METHODS_KNOWN_ABOUT - knownScoresCount):
         weightedObjs.append(getObj("", 0))
 
     def sortByScore(a, b):
@@ -1046,49 +1097,8 @@ def getResultRank(currNav, activation):
         return cmp(a[key], b[key])
 
     sortedObjs = sorted(weightedObjs, sortByScore)
-    rank = len(sortedObjs)
+    return knownScoresCount, sortedObjs
 
-    i = -1
-    for obj in sortedObjs:
-        i = i + 1
-
-        obj["rank"] = rank
-        rank = rank - 1
-
-    currNavIndex = -1
-    for obj in sortedObjs:
-        currNavIndex = currNavIndex + 1
-        if currNav == obj["target"]:
-            break
-
-    n = len(sortedObjs)
-    sameScoreOcurrence = 1
-    rankTiesMap = {}
-
-    for i in range(n):
-        if i < n-1 and (sortedObjs[i]["score"] == sortedObjs[i+1]["score"]):
-            #there is more of the same score coming, keep a count
-            sameScoreOcurrence = sameScoreOcurrence + 1
-        else:
-            #compute median of scores
-            minRank = sortedObjs[i]["rank"]
-            maxRank = minRank + sameScoreOcurrence - 1
-            rank = minRank #(maxRank + minRank) / 2.0
-
-            #accumulate all targets for the rank, and fill in the ranks for the targets
-            targets = []
-            for j in range(sameScoreOcurrence):
-                sortedObjs[i-j]["rank"] = rank
-                targets.append(sortedObjs[i-j]["target"])
-                rankTiesMap[rank] = targets
-
-            #sequence processed, restart from 1
-            sameScoreOcurrence = 1
-
-    rank = sortedObjs[currNavIndex]["rank"]
-
-    tiesForRank = rankTiesMap[rank]
-    return (rank, knownScoresCount, tiesForRank)
 
 ## CODE BELOW STILL NEEDS TO BE REFACTORED
 
