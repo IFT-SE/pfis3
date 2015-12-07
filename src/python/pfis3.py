@@ -796,7 +796,7 @@ def buildPath(dbFile, granularityFunc):
         # If the class in offsets doesn't exist, it's a navigation to a new
         # file. If the location is before the first method, we keep it as it is
         # a header navigation
-        if loc2 not in offsets or offset < offsets[loc2][0]['offset']:
+        if loc2 not in offsets or not offsets[loc2] or offset < offsets[loc2][0]['offset']:
             return False
 
         classOffsets = offsets[loc2]
