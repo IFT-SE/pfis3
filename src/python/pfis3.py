@@ -26,6 +26,7 @@ VERBOSE_BUILD = 0
 VERBOSE_PATH = 0
 VERBOSE_PREDICT = 0
 
+
 METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
                  "WHERE action = 'Method declaration offset' and timestamp < ? ORDER BY timestamp DESC"
 INSERT_QUERY = "INSERT INTO logger_log (user, timestamp, action, target, referrer, agent) VALUES (?, ?, ?, ?, ?, ?)"
@@ -151,7 +152,6 @@ def main():
     # Start by making a working copy of the database
     copyDatabase(args["dbPath"], args["tempDbPath"])
     
-    
     # The set of predictive algorithms to run
     predictionAlgorithms = [pfisWithHistory]
     
@@ -159,16 +159,31 @@ def main():
     navigationPath = buildPath(args["tempDbPath"], PROCESSOR.between_method);
 
     stopWords = loadStopWords(args["stopWordsPath"])
-    outputFile = Predictions(args["outputPath"])
-    predictAllNavigations(navigationPath, stopWords, outputFile, args["tempDbPath"], args["projectSrcFolderPath"], predictionAlgorithms)
+    predictions = Predictions(args["outputPath"])
+
+    predictAllNavigations(navigationPath, stopWords, predictions, args["tempDbPath"], args["projectSrcFolderPath"], predictionAlgorithms)
 
     print "Saving log to file : ", args["outputPath"]
-    outputFile.saveLog()
+    predictions.saveLog()
     sys.exit(0)
 
-def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
+def predictAllNavigations(navPathObj, stopWords, predictions, dbFile, \
                           projectSrcFolderPath, listPredictionAlgorithms):
     navNum = 0
+
+    for entry in navPathObj:
+        if entry.prevEntry and entry.prevEntry.unknownMethod:
+            headerFqn = addPFIGJavaFileHeader(dbFile, entry,
+                                              projectSrcFolderPath,
+                                              navPathObj)
+            # Now the graph has the PFIG header nodes in it, but the navPath
+            # has to be changed to reflect the new nodes that we added. We
+            # have to check if headerFqn is not none, since it will return
+            # None on navigations between two unknown methods
+            if headerFqn:
+                entry.prevEntry.method = headerFqn
+                entry.prevEntry.unknownMethod = False
+
     for entry in navPathObj:
         if entry.prevEntry:
             print "=================================================="
@@ -176,18 +191,7 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
                 print "Predicting navigation #"+ str(navNum)
                 print "\tfrom:", entry.prevEntry.method
                 print "\tto:", entry.method
-            if entry.prevEntry.unknownMethod:
-                headerFqn = addPFIGJavaFileHeader(dbFile, entry,
-                                                  projectSrcFolderPath, 
-                                                  navPathObj)
-                # Now the graph has the PFIG header nodes in it, but the navPath
-                # has to be changed to reflect the new nodes that we added. We
-                # have to check if headerFqn is not none, since it will return
-                # None on navigations between two unknown methods
-                if headerFqn:
-                    entry.prevEntry.method = headerFqn
-                    entry.prevEntry.unknownMethod = False
-                
+
             # TODO: The graph does not need to be regenerated each time, it
             # would be sufficient to just add the new database row data from the
             # previous navigation's time stamp to the current navigation's time
@@ -196,7 +200,7 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
             
             for predictAlg in listPredictionAlgorithms:
                     makePredictions(navPathObj, navNum, graph, predictAlg,
-                                    PROCESSOR.between_method, resultsLog = outputFile)
+                                    PROCESSOR.between_method, resultsLog = predictions)
             print "=================================================="
 
         navNum += 1
@@ -249,11 +253,11 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
         print "Done adding PFIG Header."
         
     
-    _, className, _ = navEntry.prevEntry.method.split(",")
+    className, _, _ = navEntry.prevEntry.method.split(",")
     ts = navEntry.timestamp
 
-    #classFilePath = os.path.join(projectFolderPath, className + PROCESSOR.FileExtension)
     classFilePath = PROCESSOR.getFileName(projectFolderPath, className, PROCESSOR.FileExtension)
+    print("Insert header: ", classFilePath)
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     
@@ -389,6 +393,8 @@ def loadTopologyRelatedNodes(graph, dbFile, stopWords, timestamp):
     # occurs between two methods that is relevant to prediction is when one
     # method calls another since that's the only way to link two FQNs that are
     # methods.
+
+    #FQN : Fully Qualified Name
 
     print "Processing topology. Adding location nodes to the graph..."
 
@@ -973,7 +979,6 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
 
         return dictOfInitialWeights
 
-    ties_ = -1 # Added by me
     prevMethod = prevNavEntry.method
     currMethod = currNavEntry.method
 
@@ -993,16 +998,13 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
         # non-zero weight
         activation = actObj.spread(graph)
 
-        rank_, length_, ties_ = \
-            getResultRank_obsolete(currNavEntry.method, activation)
-
         rank, length, predictions = \
             getResultRank(currNavEntry.method, activation)
 
         if VERBOSE_PREDICT:
             print '\tLocation found. Rank =', rank
 
-        e = PredictionEntry(i, rank, rank_, ties_, length, length_, prevMethod, currMethod,
+        e = PredictionEntry(i, rank, length, prevMethod, currMethod,
                             PROCESSOR.between_class(prevMethod, currMethod),
                             PROCESSOR.between_package(prevMethod, currMethod),
                             currNavEntry.timestamp, predictions)
@@ -1012,13 +1014,12 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
     else:
         if VERBOSE_PREDICT:
             print '\tLocation not found.'
-        e = PredictionEntry(i, 999999, 999999, ties_, NUM_METHODS_KNOWN_ABOUT, NUM_METHODS_KNOWN_ABOUT, prevMethod,
+        e = PredictionEntry(i, 999999, NUM_METHODS_KNOWN_ABOUT, prevMethod,
                             currMethod,
                             PROCESSOR.between_class(prevMethod, currMethod),
                             PROCESSOR.between_package(prevMethod, currMethod),
                             currNavEntry.timestamp)
         resultsLog.addEntry(e);
-
 
 
 def getResultRank(currNav, activation):

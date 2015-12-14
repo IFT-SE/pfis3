@@ -45,5 +45,5 @@ class NavPathEntry:
         self.prevEntry = None
         self.unknownMethod = False
 
-        if method.startswith("UNKNOWN"):
+        if method.__contains__("UNKNOWN"):
             self.unknownMethod = True;
