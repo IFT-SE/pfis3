@@ -172,25 +172,25 @@ def predictAllNavigations(navPathObj, stopWords, predictions, dbFile, \
     navNum = 0
 
     for entry in navPathObj:
-        if entry.prevEntry and entry.prevEntry.unknownMethod:
-            headerFqn = addPFIGJavaFileHeader(dbFile, entry,
-                                              projectSrcFolderPath,
-                                              navPathObj)
-            # Now the graph has the PFIG header nodes in it, but the navPath
-            # has to be changed to reflect the new nodes that we added. We
-            # have to check if headerFqn is not none, since it will return
-            # None on navigations between two unknown methods
-            if headerFqn:
-                entry.prevEntry.method = headerFqn
-                entry.prevEntry.unknownMethod = False
-
-    for entry in navPathObj:
         if entry.prevEntry:
             print "=================================================="
             if VERBOSE_PREDICT:
                 print "Predicting navigation #"+ str(navNum)
                 print "\tfrom:", entry.prevEntry.method
                 print "\tto:", entry.method
+
+
+            if entry.prevEntry.unknownMethod:
+                headerFqn = addPFIGJavaFileHeader(dbFile, entry,
+                                                  projectSrcFolderPath,
+                                                  navPathObj)
+                # Now the graph has the PFIG header nodes in it, but the navPath
+                # has to be changed to reflect the new nodes that we added. We
+                # have to check if headerFqn is not none, since it will return
+                # None on navigations between two unknown methods
+                if headerFqn:
+                    entry.prevEntry.method = headerFqn
+                    entry.prevEntry.unknownMethod = False
 
             # TODO: The graph does not need to be regenerated each time, it
             # would be sufficient to just add the new database row data from the
@@ -229,7 +229,6 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
             self.timestamp = dt.strftime("%Y-%m-%d %H:%M:%S." + str(ms))
                 
     def insertHeaderIntoDb(pfigHeader, classFilePath):
-        print "Adding PFIG Header...", pfigHeader.fqn
         print "Reading file contents..."
         f = open(classFilePath, 'r')
         # TODO: Verify that contents is being handled by the predictive
@@ -250,14 +249,12 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
         conn.commit()
         c.close()
         print "Done adding header to database."
-        print "Done adding PFIG Header."
-        
+
     
     className, _, _ = navEntry.prevEntry.method.split(",")
     ts = navEntry.timestamp
 
     classFilePath = PROCESSOR.getFileName(projectFolderPath, className, PROCESSOR.FileExtension)
-    print("Insert header: ", classFilePath)
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
     
