@@ -170,7 +170,6 @@ def main():
 def predictAllNavigations(navPathObj, stopWords, predictions, dbFile, \
                           projectSrcFolderPath, listPredictionAlgorithms):
     navNum = 0
-
     for entry in navPathObj:
         if entry.prevEntry:
             print "=================================================="
@@ -1018,18 +1017,30 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
                             currNavEntry.timestamp)
         resultsLog.addEntry(e);
 
+def getLeastRank(rankTiesMap):
+    ranks = rankTiesMap.keys()
+    leastRank = sorted(ranks)[0]
+    return leastRank
 
 def getResultRank(currNav, activation):
 
-    # sorts list of activations desc
+    # sorts list of activations in desc
     knownScoresCount, sortedObjs = getMethodsSortedByScore(activation)
+
     assignConsecutiveRanksWithoutHandlingTies(sortedObjs)
 
     rankTiesMap = updateRanksForTies(sortedObjs)
 
     rank = getRankOfNav(currNav, sortedObjs)
 
-    tiesForRank = rankTiesMap[1]
+    print currNav
+    if(rank == None):
+        for obj in sortedObjs:
+            print obj["target"], obj["score"], obj["rank"]
+
+
+    lowestRank = getLeastRank(rankTiesMap)
+    tiesForRank = rankTiesMap[lowestRank]
     return (rank, knownScoresCount, tiesForRank)
 
 
@@ -1044,7 +1055,7 @@ def updateRanksForTies(sortedObjs):
             # compute median of scores
             minRank = sortedObjs[i]["rank"]
             maxRank = minRank + sameScoreOcurrence - 1
-            rank = minRank  # (maxRank + minRank) / 2.0
+            rank = (maxRank + minRank) / 2.0
 
             # accumulate all targets for the rank, and fill in the ranks for the targets
             targets = []
@@ -1060,9 +1071,7 @@ def updateRanksForTies(sortedObjs):
 
 def assignConsecutiveRanksWithoutHandlingTies(sortedObjs):
     rank = len(sortedObjs)
-    i = -1
     for obj in sortedObjs:
-        i = i + 1
         obj["rank"] = rank
         rank = rank - 1
 
@@ -1095,6 +1104,7 @@ def getMethodsSortedByScore(activation):
         return cmp(a[key], b[key])
 
     sortedObjs = sorted(weightedObjs, sortByScore)
+
     return knownScoresCount, sortedObjs
 
 
