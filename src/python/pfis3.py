@@ -23,7 +23,7 @@ from languageHelperFactory import LanguageHelperFactory
 
 
 VERBOSE_BUILD = 0
-VERBOSE_PATH = 1
+VERBOSE_PATH = 0
 VERBOSE_PREDICT = 0
 
 METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
@@ -151,7 +151,6 @@ def main():
     # Start by making a working copy of the database
     copyDatabase(args["dbPath"], args["tempDbPath"])
     
-    
     # The set of predictive algorithms to run
     predictionAlgorithms = [pfisWithHistory]
     
@@ -159,14 +158,15 @@ def main():
     navigationPath = buildPath(args["tempDbPath"], PROCESSOR.between_method);
 
     stopWords = loadStopWords(args["stopWordsPath"])
-    outputFile = Predictions(args["outputPath"])
-    predictAllNavigations(navigationPath, stopWords, outputFile, args["tempDbPath"], args["projectSrcFolderPath"], predictionAlgorithms)
+    predictions = Predictions(args["outputPath"])
+
+    predictAllNavigations(navigationPath, stopWords, predictions, args["tempDbPath"], args["projectSrcFolderPath"], predictionAlgorithms)
 
     print "Saving log to file : ", args["outputPath"]
-    outputFile.saveLog()
+    predictions.saveLog()
     sys.exit(0)
 
-def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
+def predictAllNavigations(navPathObj, stopWords, predictions, dbFile, \
                           projectSrcFolderPath, listPredictionAlgorithms):
     navNum = 0
     for entry in navPathObj:
@@ -176,9 +176,11 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
             if VERBOSE_PREDICT:
                 print "\tfrom:", entry.prevEntry.method
                 print "\tto:", entry.method
+
+
             if entry.prevEntry.unknownMethod:
                 headerFqn = addPFIGJavaFileHeader(dbFile, entry,
-                                                  projectSrcFolderPath, 
+                                                  projectSrcFolderPath,
                                                   navPathObj)
                 # Now the graph has the PFIG header nodes in it, but the navPath
                 # has to be changed to reflect the new nodes that we added. We
@@ -187,7 +189,7 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
                 if headerFqn:
                     entry.prevEntry.method = headerFqn
                     entry.prevEntry.unknownMethod = False
-                
+
             # TODO: The graph does not need to be regenerated each time, it
             # would be sufficient to just add the new database row data from the
             # previous navigation's time stamp to the current navigation's time
@@ -196,8 +198,7 @@ def predictAllNavigations(navPathObj, stopWords, outputFile, dbFile, \
             
             for predictAlg in listPredictionAlgorithms:
                     makePredictions(navPathObj, navNum, graph, predictAlg,
-                                    PROCESSOR.between_method, resultsLog = outputFile)
-            print "Done making predictions."
+                                    PROCESSOR.between_method, resultsLog=predictions)
             print "=================================================="
 
         navNum += 1
@@ -225,7 +226,6 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
             self.timestamp = dt.strftime("%Y-%m-%d %H:%M:%S." + str(ms))
                 
     def insertHeaderIntoDb(pfigHeader, classFilePath):
-        print "Adding PFIG Header...", pfigHeader.fqn
         print "Reading file contents..."
         f = open(classFilePath, 'r')
         # TODO: Verify that contents is being handled by the predictive
@@ -246,13 +246,11 @@ def addPFIGJavaFileHeader(dbFile, navEntry, projectFolderPath, navPathObj):
         conn.commit()
         c.close()
         print "Done adding header to database."
-        print "Done adding PFIG Header."
-        
+
     
-    _, className, _ = navEntry.prevEntry.method.split(",")
+    className, _, _ = navEntry.prevEntry.method.split(",")
     ts = navEntry.timestamp
 
-    #classFilePath = os.path.join(projectFolderPath, className + PROCESSOR.FileExtension)
     classFilePath = PROCESSOR.getFileName(projectFolderPath, className, PROCESSOR.FileExtension)
     conn = sqlite3.connect(dbFile)
     conn.row_factory = sqlite3.Row
@@ -389,6 +387,8 @@ def loadTopologyRelatedNodes(graph, dbFile, stopWords, timestamp):
     # occurs between two methods that is relevant to prediction is when one
     # method calls another since that's the only way to link two FQNs that are
     # methods.
+
+    #FQN : Fully Qualified Name
 
     print "Processing topology. Adding location nodes to the graph..."
 
@@ -716,7 +716,7 @@ def buildPath(dbFile, granularityFunc):
                 if offset >= t['offset'] and offset <= t['end']:
                     return t['method']
 
-        return 'UNKNOWN,' + loc2 + ',' + str(offset)
+        return loc2 + ',UNKNOWN' + ',' + str(offset)
 
     def clean_up_path():
         # Remove navigations to the same location and any navigations that are
@@ -972,7 +972,6 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
 
         return dictOfInitialWeights
 
-    ties = -1 # Added by me
     prevMethod = prevNavEntry.method
     currMethod = currNavEntry.method
 
@@ -992,58 +991,120 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
         # non-zero weight
         activation = actObj.spread(graph)
 
-        rank, length, ties = \
-            getResultRank(graph, currNavEntry.method, activation, navNum=i)
+        rank, length, predictions = \
+            getResultRank(currNavEntry.method, activation)
+
         if VERBOSE_PREDICT:
             print '\tLocation found. Rank =', rank
 
-        e = PredictionEntry(i, rank, ties, length, prevMethod, currMethod,
+        e = PredictionEntry(i, rank, length, prevMethod, currMethod,
                             PROCESSOR.between_class(prevMethod, currMethod),
                             PROCESSOR.between_package(prevMethod, currMethod),
-                            currNavEntry.timestamp)
+                            currNavEntry.timestamp, predictions)
         resultsLog.addEntry(e);
     # Possibility 2, the method is unknown or somehow not in the graph, so we
     # mark it as such
     else:
         if VERBOSE_PREDICT:
             print '\tLocation not found.'
-        e = PredictionEntry(i, 999999, ties, NUM_METHODS_KNOWN_ABOUT, prevMethod,
+        e = PredictionEntry(i, 999999, NUM_METHODS_KNOWN_ABOUT, prevMethod,
                             currMethod,
                             PROCESSOR.between_class(prevMethod, currMethod),
                             PROCESSOR.between_package(prevMethod, currMethod),
                             currNavEntry.timestamp)
         resultsLog.addEntry(e);
 
-## CODE BELOW STILL NEEDS TO BE REFACTORED
+def getLeastRank(rankTiesMap):
+    ranks = rankTiesMap.keys()
+    leastRank = sorted(ranks)[0]
+    return leastRank
 
-def getResultRank(graph, currNav, activation, navNum=0):
-    # sorts list of activations desc
+def getResultRank(currNav, activation):
+
+    # sorts list of activations in desc
+    knownScoresCount, sortedObjs = getMethodsSortedByScore(activation)
+
+    assignConsecutiveRanksWithoutHandlingTies(sortedObjs)
+
+    rankTiesMap = updateRanksForTies(sortedObjs)
+
+    rank = getRankOfNav(currNav, sortedObjs)
+
+    print currNav
+    if(rank == None):
+        for obj in sortedObjs:
+            print obj["target"], obj["score"], obj["rank"]
+
+
+    lowestRank = getLeastRank(rankTiesMap)
+    tiesForRank = rankTiesMap[lowestRank]
+    return (rank, knownScoresCount, tiesForRank)
+
+
+def updateRanksForTies(sortedObjs):
+    sameScoreOcurrence = 1
+    rankTiesMap = {}
+    for i in range(NUM_METHODS_KNOWN_ABOUT):
+        if i < NUM_METHODS_KNOWN_ABOUT - 1 and (sortedObjs[i]["score"] == sortedObjs[i + 1]["score"]):
+            # there is more of the same score coming, keep a count
+            sameScoreOcurrence = sameScoreOcurrence + 1
+        else:
+            # compute median of scores
+            minRank = sortedObjs[i]["rank"]
+            maxRank = minRank + sameScoreOcurrence - 1
+            rank = (maxRank + minRank) / 2.0
+
+            # accumulate all targets for the rank, and fill in the ranks for the targets
+            targets = []
+            for j in range(sameScoreOcurrence):
+                sortedObjs[i - j]["rank"] = rank
+                targets.append(sortedObjs[i - j]["target"])
+                rankTiesMap[rank] = targets
+
+            # sequence processed, restart from 1
+            sameScoreOcurrence = 1
+    return rankTiesMap
+
+
+def assignConsecutiveRanksWithoutHandlingTies(sortedObjs):
+    rank = len(sortedObjs)
+    for obj in sortedObjs:
+        obj["rank"] = rank
+        rank = rank - 1
+
+
+def getRankOfNav(currNav, sortedObjs):
+    for obj in sortedObjs:
+        if(obj["target"] == currNav):
+            return obj["rank"]
+
+
+def getMethodsSortedByScore(activation):
     last = activation[0][0]
 
-    #Here he removes everything but methods from activation
-    scores = [val for (item,val) in activation if item != '' and \
-                      item != last and not wordNode(item) and \
-                      '#' not in item and ';.' in item]
+    def getObj(item, val):
+        return {
+            "target": item,
+            "score": val
+        }
 
-    targets = [item for (item,val) in activation if item != '' and \
-                      item != last and not wordNode(item) and \
-                      '#' not in item and ';.' in item]
-    # print "\ttargets vector has", len(targets), "nodes"
+    weightedObjs = [getObj(item, val) for (item, val) in activation if item != '' and \
+                    item != last and not wordNode(item) and \
+                    '#' not in item and ';.' in item]
+    knownScoresCount = len(weightedObjs)
 
-    rank = 0
-    #found = 0
-    for item in targets:
-        rank += 1
-        #print rank, item, val
-        if item == currNav:
-    #        #found = 1
-            break
-    #if found:
-        #scores = []
-    ranks = rankTransform(scores) # Returns a list of ranks that account for ties in reverse order
-    rankTies = mapRankToTieCount(ranks)
-    ties = rankTies[ranks[rank - 1]]
-    return (len(ranks) - ranks[rank - 1]), len(targets), ties
+    for i in range(NUM_METHODS_KNOWN_ABOUT - knownScoresCount):
+        weightedObjs.append(getObj("", 0))
+
+    def sortByScore(a, b):
+        key = "score"
+        return cmp(a[key], b[key])
+
+    sortedObjs = sorted(weightedObjs, sortByScore)
+
+    return knownScoresCount, sortedObjs
+
+
 
 def mapRankToTieCount(ranks):
 # uses methods to create a mapping from the rank to the number of instances
@@ -1060,12 +1121,6 @@ def mapRankToTieCount(ranks):
     return o
 
 
-#def writeScores(navnum, methods, ranks, scores):
-# Writes the contents of methods to the specified file
-
-#    for i in range(len(methods)):
-#        activation_root.write("%d,%s,%s,%s\n" % (navnum, methods[i], (len(ranks) - ranks[i]), scores[i]))
-
 #The following were pulled from the stats.py package
 def rankTransform(scoresForMethods):
     #We need to add all the zero entries here
@@ -1077,6 +1132,7 @@ def rankTransform(scoresForMethods):
     # At this point, there's a sorted list of scores for every known method
 
     scoresVector, ranksVector = shellsort(extendedList)
+
     sumranks = 0
     dupcount = 0
     resultRankList = [0] * NUM_METHODS_KNOWN_ABOUT

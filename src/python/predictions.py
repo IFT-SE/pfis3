@@ -1,19 +1,25 @@
 class PredictionEntry:
-    def __init__(self, navNum, rank, numTies, length,
-                 fromLoc, toLoc, classLoc, packageLoc, timestamp):
+    def __init__(self, navNum, rank, length,
+                 fromLoc, toLoc, classLoc, packageLoc, timestamp, predictions=[]):
+
         self.navNum = str(navNum)
         self.timestamp = str(timestamp)
         self.rank = str(rank)
-        self.numTimes = str(numTies)
+        self.numTimes = str(len(predictions))
         self.length = str(length)
         self.fromLoc = fromLoc
+        self.toLoc = toLoc
         self.classLoc = str(classLoc)
         self.packageLoc = str(packageLoc)
+        self.predictions = predictions
+
 
     def getString(self):
         return self.navNum + '\t' + self.timestamp + '\t' + self.rank + '\t' \
-            + self.numTimes + '\t' + self.length + '\t' + self.fromLoc + '\t' \
-            + self.classLoc + '\t' + self.packageLoc
+            + self.numTimes + '\t' + self.length + '\t' \
+            + self.fromLoc + '\t' + self.toLoc + '\t' \
+            + self.classLoc + '\t' + self.packageLoc + '\t' \
+            + str(len(self.predictions)) + '\t' + str(self.predictions)
 
 class Predictions:
     def __init__(self, filePath):
@@ -22,8 +28,10 @@ class Predictions:
 
     def getHeaderString(self):
         return "Nav No"+ '\t' + "Timestamp" + '\t' + "Rank" + '\t' \
-            + "Times" + '\t' + "Length" + '\t' + "From loc" + '\t' \
-            + "Class loc" + '\t' + "Package loc" + "\n"
+            + "Times" + '\t' + "Length" + '\t' \
+            + "From loc" + '\t' + "To loc" + '\t'\
+            + "Class loc" + '\t' + "Package loc" + "\t" +  \
+             "No of ties" + "\t" + "Predictions" + "\n"
 
     def addEntry(self, logEntry):
         self.entries.append(logEntry);
