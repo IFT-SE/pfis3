@@ -1108,39 +1108,6 @@ def getMethodsSortedByScore(activation):
     return knownScoresCount, sortedObjs
 
 
-## CODE BELOW STILL NEEDS TO BE REFACTORED
-
-def getResultRank_obsolete(currNav, activation):
-    # sorts list of activations desc
-    last = activation[0][0]
-
-    #Here he removes everything but methods from activation
-    scores = [val for (item,val) in activation if item != '' and \
-                      item != last and not wordNode(item) and \
-                      '#' not in item and ';.' in item]
-
-    targets = [item for (item,val) in activation if item != '' and \
-                      item != last and not wordNode(item) and \
-                      '#' not in item and ';.' in item]
-    # print "\ttargets vector has", len(targets), "nodes"
-
-    rank = -1
-    #found = 0
-    for item in targets:
-        rank += 1
-        #print rank, item, val
-        if item == currNav:
-    #        #found = 1
-            break
-    #if found:
-        #scores = []
-    ranks = rankTransform(scores) # Returns a list of ranks that account for ties in reverse order
-
-    rankTies = mapRankToTieCount(ranks)
-
-    ties = rankTies[ranks[rank]]
-
-    return (len(ranks) - ranks[rank]), len(targets), ties
 
 def mapRankToTieCount(ranks):
 # uses methods to create a mapping from the rank to the number of instances
@@ -1156,12 +1123,6 @@ def mapRankToTieCount(ranks):
             o[rank] = o[rank] + 1
     return o
 
-
-#def writeScores(navnum, methods, ranks, scores):
-# Writes the contents of methods to the specified file
-
-#    for i in range(len(methods)):
-#        activation_root.write("%d,%s,%s,%s\n" % (navnum, methods[i], (len(ranks) - ranks[i]), scores[i]))
 
 #The following were pulled from the stats.py package
 def rankTransform(scoresForMethods):
