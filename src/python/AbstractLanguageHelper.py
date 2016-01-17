@@ -66,3 +66,6 @@ class AbstractLanguageHelper:
 
     def getFileName(self, projectFolderPath, className, extn):
         return os.path.join(projectFolderPath, className + extn)
+
+    def ignore_rank(self, string):
+        return False
