@@ -41,6 +41,9 @@ class AbstractLanguageHelper:
         if m:
             return m.group(1)
         return ''
+    
+    def hasCorrectExtension(self, filePath):
+        return filePath.lower().endswith(self.FileExtension)
 
     #==============================================================================#
     # Helper methods for initial weights on the graph                              #
@@ -66,6 +69,3 @@ class AbstractLanguageHelper:
 
     def getFileName(self, projectFolderPath, className, extn):
         return os.path.join(projectFolderPath, className + extn)
-
-    def ignore_rank(self, string):
-        return False

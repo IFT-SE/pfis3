@@ -992,7 +992,7 @@ def pfisWithHistory(resultsLog, navPath, graph, prevNavEntry, currNavEntry, i,
         activation = actObj.spread(graph)
 
         rank, length, predictions = \
-            getResultRank(currMethod, activation)
+            getResultRank(currNavEntry.method, activation)
 
         if VERBOSE_PREDICT:
             print '\tLocation found. Rank =', rank
@@ -1029,6 +1029,12 @@ def getResultRank(currNav, activation):
     rankTiesMap = updateRanksForTies(sortedObjs)
 
     rank = getRankOfNav(currNav, sortedObjs)
+
+    print currNav
+    if(rank == None):
+        for obj in sortedObjs:
+            print obj["target"], obj["score"], obj["rank"]
+
 
     lowestRank = getLeastRank(rankTiesMap)
     tiesForRank = rankTiesMap[lowestRank]
@@ -1084,9 +1090,7 @@ def getMethodsSortedByScore(activation):
 
     weightedObjs = [getObj(item, val) for (item, val) in activation if item != '' and \
                     item != last and not wordNode(item) and \
-                    '#' not in item and ';.' in item and \
-                    PROCESSOR.ignore_rank(item) != True]
-
+                    '#' not in item and ';.' in item]
     knownScoresCount = len(weightedObjs)
 
     for i in range(NUM_METHODS_KNOWN_ABOUT - knownScoresCount):

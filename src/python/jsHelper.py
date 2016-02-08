@@ -3,8 +3,6 @@ import os
 
 class JavaScriptHelper (AbstractLanguageHelper):
 
-    JS_STD_PREFIX = "JS_Std_lib/"
-
     def __init__(self):
         fileExtension = ".js"
         normalizedPathRegex = r"(.*)\.js"
@@ -17,6 +15,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
         # File-name example:
         # Raw file name: jEdit/src/org/gjt/sp/jedit/gui/StatusBar.java
         # Normalized file name: org/gjt/sp/jedit/gui/StatusBar
+
         m = self.REGEX_NORM_ECLIPSE.match(string)
         if m:
             return m.group(1)
@@ -28,7 +27,3 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
     def getFileName(self, projectFolderPath, className, extn):
         return os.path.join(projectFolderPath, className[1:] + extn)
-
-    def ignore_rank(self, target):
-        is_std = target.startswith(JavaScriptHelper.JS_STD_PREFIX)
-        return is_std
