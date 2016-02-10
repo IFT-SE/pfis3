@@ -18,8 +18,8 @@ def main():
     navPath = NavigationPath(db_copy, langHelper, projSrc, verbose = True)
     
     recency = Recency(navPath, langHelper)
-    for i in range(1, 17):
-        print recency.getPredictionAt(i).getString()
+    for prediction in recency.getAllPredictions():
+        print prediction.getString()
     
 def copyDatabase(dbpath, newdbpath):
     print "Making a working copy of the database..."

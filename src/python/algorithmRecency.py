@@ -34,7 +34,12 @@ class Recency(PredictiveAlgorithm):
                                navToPredict.toFileNav.timestamp)
     
     def getAllPredictions(self):
-        raise NotImplementedError("getAllPredictions: Not Implmented")
+        predictions = []
+        
+        for i in range(1, self.navPath.getLength()):
+            predictions.append(self.getPredictionAt(i))
+            
+        return predictions
     
     def __getOrderedRecentMethods(self, navNum):
         visitedMethods = []
