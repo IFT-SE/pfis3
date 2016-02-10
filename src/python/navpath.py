@@ -127,9 +127,9 @@ class NavigationPath(object):
                 fromMethodPatch = self.knownPatches.findMethodByOffset(fromNavigation.filePath, fromNavigation.offset)
             navigation = Navigation(fromNavigation, toNavigation.clone())
             
-            if navigation.fromFileNav and fromMethodPatch:
+            if navigation.fromFileNav is not None and fromMethodPatch is not None:
                 navigation.fromFileNav.methodFqn = fromMethodPatch.fqn
-            if navigation.toFileNav and toMethodPatch:
+            if navigation.toFileNav is not None and toMethodPatch is not None:
                 navigation.toFileNav.methodFqn = toMethodPatch.fqn
             
             if not navigation.isToSameMethod():
@@ -165,18 +165,18 @@ class Navigation(object):
         self.toFileNav = toFileNav
         
     def isToSameMethod(self):
-        if self.fromFileNav and self.toFileNav:
-            if self.fromFileNav.methodFqn and self.toFileNav.methodFqn:
+        if self.fromFileNav is not None and self.toFileNav is not None:
+            if self.fromFileNav.methodFqn is not None and self.toFileNav.methodFqn is not None:
                 return self.fromFileNav.methodFqn == self.toFileNav.methodFqn
         return False
     
     def isFromUnknown(self):
-        if self.fromFileNav and self.fromFileNav.methodFqn:
+        if self.fromFileNav is not None and self.fromFileNav.methodFqn is not None:
             return False
         return True
     
     def isToUnknown(self):
-        if self.toFileNav and self.toFileNav.methodFqn:
+        if self.toFileNav is not None and self.toFileNav.methodFqn is not None:
             return False
         return True
     
@@ -187,9 +187,9 @@ class Navigation(object):
         fromLoc = None
         toLoc = None
         
-        if self.fromFileNav:
+        if self.fromFileNav is not None:
             fromLoc = self.fromFileNav.toStr()
-        if self.toFileNav:
+        if self.toFileNav is not None:
             toLoc = self.toFileNav.toStr()
             
         return str(fromLoc) + ' --> ' + str(toLoc)
@@ -207,7 +207,7 @@ class FileNavigation(object):
         return fileNavClone
         
     def toStr(self):
-        if self.methodFqn:
+        if self.methodFqn is not None:
             return self.methodFqn
         return str(self.filePath) + ' at ' + str(self.offset)
         
