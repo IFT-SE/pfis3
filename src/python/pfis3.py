@@ -332,11 +332,11 @@ def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
                       'Method declaration', 'Constructor invocation',
                       'Method invocation', 'Variable declaration',
                       'Variable type'):
-            for word in getWordNodes_splitNoStem(target, stopWords):
+            for word in __getWordNodes_splitNoStem(target, stopWords):
                 graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
 
-            for word in getWordNodes_splitNoStem(referrer, stopWords):
+            for word in __getWordNodes_splitNoStem(referrer, stopWords):
                 graph.add_edge(referrer, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", referrer, "to", word[1]
 
@@ -344,7 +344,7 @@ def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
         # package's name to the path containing the package (which should have
         # been added by the referrer of 'Package' in the step above).
         elif action in ('New package'):
-            for word in getWordNodes_splitNoStem(target, stopWords):
+            for word in __getWordNodes_splitNoStem(target, stopWords):
                 graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
 
@@ -358,11 +358,11 @@ def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
         elif action in ('Constructor invocation scent',
                         'Method declaration scent', 'Method invocation scent',
                         'New file header'):
-            for word in getWordNodes_splitNoStem(referrer, stopWords):
+            for word in __getWordNodes_splitNoStem(referrer, stopWords):
                 graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
 
-            for word in getWordNodes_splitCamelAndStem(referrer, stopWords):
+            for word in __getWordNodes_splitCamelAndStem(referrer, stopWords):
                 graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
     c.close()
@@ -581,7 +581,7 @@ def loadAdjacentMethods(graph, dbFile, timestamp):
 # Helper methods for building the graph                                        #
 #==============================================================================#
 
-def getWordNodes_splitNoStem(s, stopWords):
+def __getWordNodes_splitNoStem(s, stopWords):
     # Returns a list of word nodes from the given string after stripping all
     # non-alphanumeric characters. A word node is a tuple containing 'word' and
     # a String containing the word. Words are always lower case. No stemming is
@@ -590,16 +590,16 @@ def getWordNodes_splitNoStem(s, stopWords):
                 for word in re.split(r'\W+|\s+', s) \
                 if word != '' and word.lower() not in stopWords]
 
-def getWordNodes_splitCamelAndStem(s, stopWords):
+def __getWordNodes_splitCamelAndStem(s, stopWords):
     # Returns a list of word nodes from the given string after stripping all
     # non-alphanumeric characters, splitting camel case and stemming each word.
     # A word node is a tuple that contains 'word' and a String containing the
     # word. Words are always lower case.
     return [('word', PorterStemmer().stem(word).lower()) \
-                for word in splitCamelWords(s, stopWords) \
+                for word in __splitCamelWords(s, stopWords) \
                 if word.lower() not in stopWords]
 
-def splitCamelWords(s, stopWords):
+def __splitCamelWords(s, stopWords):
     # Split camel case words. E.g.,
     # camelSplit("HelloWorld.java {{RSSOwl_AtomFeedLoader}}")
     # --> ['Hello', 'World', 'java', 'RSS', 'Owl', 'Atom', 'Feed', 'Loader']

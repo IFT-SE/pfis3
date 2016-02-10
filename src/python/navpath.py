@@ -3,6 +3,8 @@ import iso8601
 from pfigFileHeader import PFIGFileHeader
 from knownPatches import KnownPatches
 
+## TODO (dp): Handle navigations to locations with no method declarations.
+
 class NavPath:
     def __init__(self):
         self.navPath = []
@@ -60,19 +62,21 @@ class NavigationPath(object):
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
     METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length') AND timestamp <= ? ORDER BY timestamp"
     
-    def __init__(self, dbFilePath, langHelper, projectFolderPath):
+    def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
         self.navigations = []
         self.fileNavigations = []
         self.dbFilePath = dbFilePath
         self.knownPatches = KnownPatches(langHelper)
         self.langHelper = langHelper
         self.projectFolderPath = projectFolderPath
+        self.VERBOSE_PATH = verbose
         
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row
         self.__findFileNavigationsInDb(conn)
         self.__findMethodsForFileNavigations(conn)
-        self.__printNavigations()
+        if self.VERBOSE_PATH:
+            self.__printNavigations()
         conn.close()
         
     def __findFileNavigationsInDb(self, conn):
@@ -140,10 +144,10 @@ class NavigationPath(object):
         if prevNav.isToUnknown() and currNav.isFromUnknown():
             if self.knownPatches.findMethodByOffset(currNav.fromFileNav.filePath, currNav.fromFileNav.offset) is None:
                 if prevNav.toFileNav.filePath == currNav.fromFileNav.filePath and prevNav.toFileNav.offset == currNav.fromFileNav.offset:
-                    print prevNav.toFileNav.toStr(), 'is being converted to header: '
+                    if self.VERBOSE_PATH:
+                            print prevNav.toFileNav.toStr(), 'is being converted to header'
                     header = PFIGFileHeader.addPFIGJavaFileHeader(conn, currNav, self.projectFolderPath, self.langHelper)
                     currNav.fromFileNav.methodFqn = header
-                    print header
                     self.knownPatches.addFilePatch(header)
             
     
@@ -151,6 +155,9 @@ class NavigationPath(object):
         for i in range(len(self.navigations)):
             navigation = self.navigations[i]
             print str(i), navigation.toStr()
+            
+    def getLength(self):
+        return len(self.navigations)
 
 class Navigation(object):
     def __init__(self, fromFileNav, toFileNav):

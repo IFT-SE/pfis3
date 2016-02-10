@@ -34,36 +34,48 @@ class PfisGraph(object):
         self.graph = None
         self.methods = None
         self.endTimestamp = '0'
-        self.navPath = NavigationPath(dbFilePath, langHelper, projSrc)
+        self.navNumber = -1
+        self.navPath = NavigationPath(dbFilePath, langHelper, projSrc, verbose = True)
         self.__initGraph()
     
     def __initGraph(self):
-        conn = sqlite3.connect(self.dbFilePath)
-        conn.row_factory = sqlite3.Row
         self.graph = nx.Graph()
         self.methods = []
+        self.updateGraphByOneNavigation()
+        
+    def updateGraphByOneNavigation(self):
+        conn = sqlite3.connect(self.dbFilePath)
+        conn.row_factory = sqlite3.Row
         
         newEndTimestamp = 0
-        if len(self.navPath.navigations) > 0:
-            newEndTimestamp = self.navPath.navigations[0].toFileNav.timestamp
-            
+
+        if self.navNumber < self.navPath.getLength() - 1:
+            self.navNumber += 1
+            newEndTimestamp = self.navPath.navigations[self.navNumber].toFileNav.timestamp
         
         self.__addScentNodesUpTo(conn, newEndTimestamp)
         #self.__addTopologyNodes(conn)
         #self.__addAdjacencyNodes(conn)
+        
+        self.endTimestamp = newEndTimestamp
+    
         conn.close()
         
-        
-    
     def __addScentNodesUpTo(self, conn, newEndTimestamp):
         c = conn.cursor()
+        if self.VERBOSE_BUILD:
+            print "Executing scent query from ", self.endTimestamp, "to", newEndTimestamp
         num = c.execute(self.SCENT_QUERY, [self.endTimestamp, newEndTimestamp])
         
         for row in c:
             action, target, referrer = \
                 row['action'], self.langHelper.fixSlashes(row['target']), \
                 self.langHelper.fixSlashes(row['referrer'])
-        
+            
+            # Note that these can return None if the relation is undefined
+            targetNodeType = NodeType.getTargetNodeType(action, target)
+            referrerNodeType = NodeType.getReferrerNodeType(action, referrer)
+
             # Case 1: target and referrer contain either FQNs or file paths, so
             # create a  node for every target and referrer. Each of these nodes then
             # gets an edge to each of the words within the FQN or path, excluding
@@ -72,23 +84,13 @@ class PfisGraph(object):
                           'Method declaration', 'Constructor invocation',
                           'Method invocation', 'Variable declaration',
                           'Variable type'):
-                for word in self.getWordNodes_splitNoStem(target, self.stopWords):
-                    self.graph.add_edge(target, word)
-                    if self.VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
+                for word in self.__getWordNodes_splitNoStem(target, self.stopWords):
+                    self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         
-                for word in self.getWordNodes_splitNoStem(referrer, self.stopWords):
-                    self.graph.add_edge(referrer, word)
-                    if self.VERBOSE_BUILD: print "\tAdding edge from", referrer, "to", word[1]
+                for word in self.__getWordNodes_splitNoStem(referrer, self.stopWords):
+                    self.__addEdge(referrer, word, referrerNodeType, NodeType.WORD, EdgeType.CONTAINS)
         
-            # Case 2: For new packages, we want to connect the last part of the
-            # package's name to the path containing the package (which should have
-            # been added by the referrer of 'Package' in the step above).
-            elif action in ('New package'):
-                for word in self.getWordNodes_splitNoStem(target, self.stopWords):
-                    self.graph.add_edge(target, word)
-                    if self.VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
-        
-            # Case 3: These actions have code content within them. In this case we
+            # Case 2: These actions have code content within them. In this case we
             # want to add an edge from the FQN node in target to the code content in
             # referrer. The FQNs should already exist because of step 1. Words are
             # added in two ways. In the first pass, the complete word is added,
@@ -98,13 +100,11 @@ class PfisGraph(object):
             elif action in ('Constructor invocation scent',
                             'Method declaration scent', 'Method invocation scent',
                             'New file header'):
-                for word in self.getWordNodes_splitNoStem(referrer, self.stopWords):
-                    self.graph.add_edge(target, word)
-                    if self.VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
-        
-                for word in self.getWordNodes_splitCamelAndStem(referrer, self.stopWords):
-                    self.graph.add_edge(target, word)
-                    if self.VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
+                for word in self.__getWordNodes_splitNoStem(referrer, self.stopWords):
+                    self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+                    
+                for word in self.__getWordNodes_splitCamelAndStem(referrer, self.stopWords):
+                    self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         c.close()
         conn.close()
         
@@ -115,25 +115,32 @@ class PfisGraph(object):
     # Helper methods for building the graph                                        #
     #==============================================================================#
     
-    def getWordNodes_splitNoStem(self, s, stopWords):
+    def __addEdge(self, node1, node2, node1Type, node2Type, edgeType):
+        self.graph.add_edge(node1, node2, type = edgeType)
+        self.graph.node[node1]['type'] = node1Type
+        self.graph.node[node2]['type'] = node2Type
+        #if self.VERBOSE_BUILD: 
+        print "\tAdding edge from", node1, "to", node2, "of type", edgeType
+    
+    def __getWordNodes_splitNoStem(self, s, stopWords):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters. A word node is a tuple containing 'word' and
         # a String containing the word. Words are always lower case. No stemming is
         # done in this case.
-        return [('word', word.lower()) \
+        return [word.lower() \
                     for word in re.split(r'\W+|\s+', s) \
                     if word != '' and word.lower() not in stopWords]
     
-    def getWordNodes_splitCamelAndStem(self, s, stopWords):
+    def __getWordNodes_splitCamelAndStem(self, s, stopWords):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters, splitting camel case and stemming each word.
         # A word node is a tuple that contains 'word' and a String containing the
         # word. Words are always lower case.
-        return [('word', PorterStemmer().stem(word).lower()) \
-                    for word in self.splitCamelWords(s, stopWords) \
+        return [PorterStemmer().stem(word).lower() \
+                    for word in self.__splitCamelWords(s, stopWords) \
                     if word.lower() not in stopWords]
     
-    def splitCamelWords(self, s, stopWords):
+    def __splitCamelWords(self, s, stopWords):
         # Split camel case words. E.g.,
         # camelSplit("HelloWorld.java {{RSSOwl_AtomFeedLoader}}")
         # --> ['Hello', 'World', 'java', 'RSS', 'Owl', 'Atom', 'Feed', 'Loader']
@@ -149,22 +156,69 @@ class PfisGraph(object):
     
         return result
    
-class PFIGNode(object):
+
+class NodeType(object):
+    PACKAGE = 0
+    FILE = 1
+    CLASS = 2
+    METHOD = 3
+    VARIABLE = 4
+    PRIMITIVE = 5
+    PROJECT = 6
+    WORD = 7
     
-    class NodeType(object):
-        PACKAGE = 0
-        CLASS = 1
-        METHOD = 2
-        VARIABLE = 3
-        IMPORT = 4
-        EXTENDS = 5
-        PROJECT = 6
-        WORD = 7
+    __targetNodes = {}
+    __targetNodes["Extends"] = CLASS
+    __targetNodes["Implements"] = CLASS
+    __targetNodes["Imports"] = FILE
+    __targetNodes["Method declaration"] = CLASS
+    __targetNodes["Method declaration scent"] = METHOD
+    __targetNodes["Method invocation"] = METHOD
+    __targetNodes["Method invocation scent"] = METHOD
+    __targetNodes["New file header"] = METHOD
+    __targetNodes["Package"] = FILE
+    __targetNodes["Variable type"] = VARIABLE
+                
+    __referrerNodes = {}
+    __referrerNodes["Extends"] = CLASS
+    __referrerNodes["Implements"] = CLASS
+    __referrerNodes["Imports"] = CLASS
+    __referrerNodes["Method declaration"] = METHOD
+    __referrerNodes["Method invocation"] = METHOD
+    __referrerNodes["Package"] = FILE
+    __referrerNodes["Package Explorer tree"] = PACKAGE
+    __referrerNodes["Variable declaration"] = VARIABLE
+                    
+    @staticmethod
+    def getTargetNodeType(action, target):
+        if action == 'Variable declaration':
+            if target.find('.') == -1:
+                return NodeType.CLASS
+            else:
+                return NodeType.METHOD
         
-    def __init__(self, nodeType, value):
-        self.nodeType = nodeType
-        self.value = value
+        if action in NodeType.__targetNodes:
+            return NodeType.__targetNodes[action]
+        
+        return None
+                
+    @staticmethod
+    def getReferrerNodeType(action, referrer):
+        if action == 'Variable type':
+            if len(referrer) == 1:
+                return NodeType.PRIMITIVE
+            else:
+                return NodeType.CLASS
+            
+        if action in NodeType.__referrerNodes:
+            return NodeType.__referrerNodes[action]
+        
+        return None
+        
     
-        
-    
-        
+class EdgeType(object):
+    CONTAINS = 0
+    IMPORTS = 1
+    EXTENDS = 2
+    IMPLEMENTS = 3
+    CALLS = 4

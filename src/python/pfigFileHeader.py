@@ -10,12 +10,12 @@ class PFIGFileHeader:
     def addPFIGJavaFileHeader(conn, navigation, projectFolderPath, langHelper):
         # We will replace the fromNav in the navigation with a pfisHeader
         className = langHelper.normalize(navigation.fromFileNav.filePath)
-        print "Class name normalized: " + className
+        #print "Class name normalized: " + className
         #className, _, _ = navEntry.prevEntry.method.split(",")
         #ts = navEntry.timestamp
-        print navigation.toStr()
-        print "From timestamp:", navigation.fromFileNav.timestamp
-        print "To (query) timestamp:", navigation.toFileNav.timestamp
+        #print navigation.toStr()
+        #print "From timestamp:", navigation.fromFileNav.timestamp
+        #print "To (query) timestamp:", navigation.toFileNav.timestamp
     
         classFilePath = langHelper.getFileName(projectFolderPath, className, langHelper.FileExtension)
         
@@ -35,7 +35,7 @@ class PFIGFileHeader:
                     fqn = methodFqn[0:methodFqn.rfind('.')]
                     
         c.close()
-        print "Lowest offset =", lowestOffset
+        #print "Lowest offset =", lowestOffset
         
         if lowestOffset > -1:
             fqn = fqn + '.pfigheader()V'
@@ -50,14 +50,14 @@ class PFIGFileHeader:
     
     @staticmethod
     def __insertHeaderIntoDb(pfigHeader, classFilePath, conn):
-        print "Reading file contents..."
+        #print "Reading file contents..."
         f = open(classFilePath, 'r')
         # TODO: Verify that contents is being handled by the predictive
         # algorithms correctly. They currently contain newlines, which the graph
         # producing code may be sensitive to.
         contents = f.read(pfigHeader.length)
-        print "Done reading file contents."
-        print "Adding header to database..."
+        #print "Done reading file contents."
+        #print "Adding header to database..."
         
         dummy = "auto-generated"
         timestamp = pfigHeader.timestamp
@@ -69,7 +69,7 @@ class PFIGFileHeader:
         c.execute(PFIGFileHeader.__INSERT_QUERY, [dummy, timestamp, 'Method declaration scent', pfigHeader.fqn, contents, dummy])
         conn.commit()
         c.close()
-        print "Done adding header to database."
+        #print "Done adding header to database."
         
 class HeaderData:
     def __init__(self, fqn, length, dt):
