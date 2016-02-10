@@ -1,5 +1,6 @@
 from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import PredictionEntry
+
 class Recency(PredictiveAlgorithm):
     
     def __init__(self, navPath, langHelper):
@@ -7,10 +8,12 @@ class Recency(PredictiveAlgorithm):
         self.langHelper = langHelper
         
     def getPredictionAt(self, navNum):
+        if navNum < 1 or navNum >= self.navPath.getLength():
+            raise RuntimeError('getPredictionAt: navNum must be > 0 and less than the length of self.navPath') 
+        
         methods = self.__getOrderedRecentMethods(navNum)
         navToPredict = self.navPath.navigations[navNum]
         
-
         if not navToPredict.isToUnknown():
             # This is the method we want to predict
             toMethodFqn = navToPredict.toFileNav.methodFqn
