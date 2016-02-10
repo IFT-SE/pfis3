@@ -7,7 +7,7 @@ class Recency(PredictiveAlgorithm):
         self.langHelper = langHelper
         
     def getPredictionAt(self, navNum):
-        methods = self.__getOrderedRecentMethods()
+        methods = self.__getOrderedRecentMethods(navNum)
         navToPredict = self.navPath.navigations[navNum]
         
 
@@ -18,7 +18,6 @@ class Recency(PredictiveAlgorithm):
             
             rank = 0
             for methodFqn in methods:
-                rank += 1
                 if methodFqn == toMethodFqn:
                     return PredictionEntry(navNum, rank, len(methods),
                                            fromMethodFqn,
@@ -26,6 +25,7 @@ class Recency(PredictiveAlgorithm):
                                            self.langHelper.between_class(fromMethodFqn, toMethodFqn),
                                            self.langHelper.between_package(fromMethodFqn, toMethodFqn),
                                            navToPredict.toFileNav.timestamp)
+                rank += 1
         
         return PredictionEntry(navNum, 999999, len(methods), 
                                navToPredict.fromFileNav.toStr(), 
@@ -36,10 +36,11 @@ class Recency(PredictiveAlgorithm):
     def getAllPredictions(self):
         raise NotImplemented()
     
-    def __getOrderedRecentMethods(self):
+    def __getOrderedRecentMethods(self, navNum):
         visitedMethods = []
         
-        for nav in self.navPath.navigations:
+        for i in range(navNum + 1):
+            nav = self.navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
                 if visitedMethod in visitedMethods:
