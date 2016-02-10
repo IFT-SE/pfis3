@@ -19,7 +19,7 @@ class AbstractLanguageHelper:
 
 
     def normalize(self, string):
-        raise Exception("Normalize: Not implemented Exception")
+        raise NotImplementedError("Normalize: Not implemented")
 
     def getOuterClass(self, loc):
         return loc

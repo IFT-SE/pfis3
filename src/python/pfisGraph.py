@@ -65,7 +65,7 @@ class PfisGraph(object):
         c = conn.cursor()
         if self.VERBOSE_BUILD:
             print "Executing scent query from ", self.endTimestamp, "to", newEndTimestamp
-        num = c.execute(self.SCENT_QUERY, [self.endTimestamp, newEndTimestamp])
+        c.execute(self.SCENT_QUERY, [self.endTimestamp, newEndTimestamp])
         
         for row in c:
             action, target, referrer = \
@@ -108,7 +108,8 @@ class PfisGraph(object):
         c.close()
         conn.close()
         
-   # def __loadTopologyNodes(self, conn):
+    def __loadTopologyNodes(self, conn):
+        raise NotImplementedError()
         
    # def __loadAdjacencyNodes(self, conn):
     #==============================================================================#
@@ -222,3 +223,4 @@ class EdgeType(object):
     EXTENDS = 2
     IMPLEMENTS = 3
     CALLS = 4
+    ADJACENT = 5

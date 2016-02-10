@@ -5,8 +5,8 @@ class PredictiveAlgorithm(object):
         self.__navPath = navPath
         
     def getPredictionAt(self, navNum):
-        raise NotImplemented()
+        raise NotImplementedError("getPredictionAt: Not Implemented")
     
     def getAllPredictions(self):
-        raise NotImplemented()
+        raise NotImplementedError("getAllPredictions: Not Implemented")
         
