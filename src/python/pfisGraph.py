@@ -65,6 +65,9 @@ class PfisGraph(object):
     
         conn.close()
         
+    def makePrediction(self, predictiveAlgorithm):
+        predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)
+        
     def __addScentNodesUpTo(self, conn, newEndTimestamp):
         # Inserts nodes into the graph up to a given timestamp in the database
         # provided by the conn.
@@ -251,10 +254,13 @@ class PfisGraph(object):
         
         for methods in adjacentMethodLists:
             for i in range(1, len(methods)):
-                self.__addEdge(methods[i], methods[i - 1], 
+                self.__addEdge(methods[i].fqn, methods[i - 1].fqn, 
                                NodeType.METHOD, 
                                NodeType.METHOD, 
                                EdgeType.ADJACENT)
+#                 print '\t\tAdded edge from '
+#                 print '\t\t\t' + methods[i - 1].fqn + ' to '
+#                 print '\t\t\t' + methods[i].fqn
         
         print "\tDone processing adjacency."
         self.__printGraphStats()

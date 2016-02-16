@@ -37,7 +37,12 @@ class PFIGFileHeader:
         c.close()
         #print "Lowest offset =", lowestOffset
         
-        if lowestOffset > -1:
+        # Create a header if the navigation was before the first method's
+        # starting position. Add the header's declaration immediately after the 
+        # navigation to it. That way, the first navigation to the file will be
+        # to an unknown location, but any navigation that follows will be seen
+        # as a navigation to the header.
+        if lowestOffset > -1 and navigation.fromFileNav.offset < lowestOffset:
             fqn = fqn + '.pfigheader()V'
             dt = iso8601.parse_date(navigation.fromFileNav.timestamp)
             dt += datetime.timedelta(milliseconds=1)
@@ -45,6 +50,9 @@ class PFIGFileHeader:
             pfigHeader = HeaderData(fqn, lowestOffset, dt)
             PFIGFileHeader.__insertHeaderIntoDb(pfigHeader, classFilePath, conn)
         
+        # This will return None if the location was not found or if it is in a 
+        # gap between two methods. Either way it shouldn't be counted as a
+        # navigation
         return pfigHeader
     
     @staticmethod

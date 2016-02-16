@@ -3,8 +3,6 @@ import iso8601
 from pfigFileHeader import PFIGFileHeader
 from knownPatches import KnownPatches
 
-## TODO (dp): Handle navigations to locations with no method declarations.
-
 class NavPath:
     def __init__(self):
         self.navPath = []
@@ -73,9 +71,13 @@ class NavigationPath(object):
         
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row
+        
+        if self.VERBOSE_PATH:
+            print 'Building path...'
         self.__findFileNavigationsInDb(conn)
         self.__findMethodsForFileNavigations(conn)
         if self.VERBOSE_PATH:
+            print 'Done building path.'
             self.__printNavigations()
         conn.close()
         
@@ -113,10 +115,24 @@ class NavigationPath(object):
         # self.knownMethods to reflect the most recent state of the code up to
         # each navigation.
         # After building the known methods, we test an entry from
-        # fileNavigations against the set of known methods by offset. This
+        # fileNavigations against the set of known methods by offset. This is
+        # what maps Text selection offsets to methods.
         prevNavigation = None
         
+        # Iterate over the data gathered from the Text selection offsets
         for toNavigation in self.fileNavigations:
+            if self.VERBOSE_PATH:
+                print '\tProcessing text selection offset: ' + toNavigation.toStr()
+            
+            # For every navigation's timestamp, we fill the knownMethods object
+            # with the details of every method declaration up to the timestamp
+            # of the toNavigation. The knownMethods object will be queried to
+            # determine in which method (if any) a text selection offset occurs.
+            
+            # Note that the queries here are by a method's FQN. This allows us
+            # to update the method's declaration info if it gets updated at some
+            # point in the future.
+            
             c = conn.execute(self.METHOD_DECLARATIONS_QUERY, [toNavigation.timestamp])
             for row in c:
                 action, target, referrer = row['action'], \
@@ -132,17 +148,33 @@ class NavigationPath(object):
                     method = self.knownPatches.findMethodByFqn(target)
                     if method is not None:
                         method.length = int(referrer);
+                        
+            # We query known methods here to see if the offset of the current
+            # toNavigation is among the known patches.
             
             toMethodPatch = self.knownPatches.findMethodByOffset(toNavigation.filePath, toNavigation.offset)
+            
             fromNavigation = None
             fromMethodPatch = None
+            
+            # Recall that navigations contains the navigation data after its
+            # been translated to methods and headers
+            
+            # If there was at least 1 navigation already, the to destination
+            # from the previous navigation serves as this navigations from. A
+            # clone is necessary since this may be later transformed into a 
+            # PFIG header and we don't want to affect the to destination from
+            # the previous navigation.
             
             if len(self.navigations) > 0:
                 prevNavigation = self.navigations[-1]
                 fromNavigation = prevNavigation.toFileNav.clone()
                 fromMethodPatch = self.knownPatches.findMethodByOffset(fromNavigation.filePath, fromNavigation.offset)
+            
+            # Create the navigation object representing this navigation
             navigation = Navigation(fromNavigation, toNavigation.clone())
             
+            # Set method FQN data
             if navigation.fromFileNav is not None and fromMethodPatch is not None:
                 navigation.fromFileNav.methodFqn = fromMethodPatch.fqn
             if navigation.toFileNav is not None and toMethodPatch is not None:
@@ -150,35 +182,64 @@ class NavigationPath(object):
             
             if not navigation.isToSameMethod():
                 self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, navigation)
-                self.navigations.append(navigation)
+                
+                # If the current navigation's from does not have a method FQN,
+                # then it was not a valid navigation, so don't count it, except
+                # for the first navigation where fromFileNav itself should be
+                # None
+                if navigation.fromFileNav is None or navigation.fromFileNav.methodFqn is not None:
+                    self.navigations.append(navigation)
         c.close()
         
     def __addPFIGFileHeadersIfNeeded(self, conn, prevNav, currNav):
-        if not prevNav:
+        # If it's the first navigation, don't do anything
+        if prevNav is None:
             return 
         
+        # If the previous navigation's to is not a known method and the current
+        # navigation's from is the same unknown method, then this might need to
+        # be converted to a header.
         if prevNav.isToUnknown() and currNav.isFromUnknown():
             if self.knownPatches.findMethodByOffset(currNav.fromFileNav.filePath, currNav.fromFileNav.offset) is None:
                 if prevNav.toFileNav.filePath == currNav.fromFileNav.filePath and prevNav.toFileNav.offset == currNav.fromFileNav.offset:
                     if self.VERBOSE_PATH:
-                            print prevNav.toFileNav.toStr(), 'is being converted to header'
+                            print '\tChecking if ' + prevNav.toFileNav.toStr() + ' is a header...'
                     headerData = PFIGFileHeader.addPFIGJavaFileHeader(conn, currNav, self.projectFolderPath, self.langHelper)
-                    currNav.fromFileNav.methodFqn = headerData.fqn
-                    self.knownPatches.addFilePatch(headerData.fqn)
-                    method = self.knownPatches.findMethodByFqn(headerData.fqn)
-                    method.startOffset = 0
-                    method.length = headerData.length
+                    
+                    # If headerData comes back as not None, then it was indeed a
+                    # header and needs to be added to navigation and 
+                    # knownPatches.
+                    if headerData is not None:
+                        if self.VERBOSE_PATH:
+                            print '\tConverted to ' + headerData.fqn
+                        
+                        # Add to the navigation and the knownPatches
+                        currNav.fromFileNav.methodFqn = headerData.fqn
+                        self.knownPatches.addFilePatch(headerData.fqn)
+                        
+                        # Update the properties
+                        method = self.knownPatches.findMethodByFqn(headerData.fqn)
+                        method.startOffset = 0
+                        method.length = headerData.length
+                    
+                    elif self.VERBOSE_PATH:
+                        print '\tNot a header.'
             
     
     def __printNavigations(self):
+        print "Navigation path:"
         for i in range(len(self.navigations)):
             navigation = self.navigations[i]
-            print str(i), navigation.toStr()
+            print '\t' + str(i) + ':\t' + navigation.toStr()
             
     def getLength(self):
         return len(self.navigations)
 
 class Navigation(object):
+    # A navigation is a tuple representing one programmer navigation through the
+    # code. fromFileNav represents the where the programmer navigated from and 
+    # toFileNav represents where the programmer navigated to. Both of these
+    # parameters should be FileNavigation objects.
     def __init__(self, fromFileNav, toFileNav):
         self.fromFileNav = fromFileNav
         self.toFileNav = toFileNav
@@ -214,6 +275,11 @@ class Navigation(object):
         return str(fromLoc) + ' --> ' + str(toLoc)
         
 class FileNavigation(object):
+    # A file navigation represents the Text selection offset data that was 
+    # captured by PFIG. The Text selection offset occurs any time a programmer's
+    # text cursor position changes. If we determine that the text cursor is in a
+    # method that the programmer has knowledge of then, methodFqn has that info.
+    # If methodFqn is none, then this was a navigation to an 'unknown location'
     def __init__(self, timestamp, filePath, offset):
         self.timestamp = timestamp
         self.filePath = filePath;
