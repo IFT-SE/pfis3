@@ -23,7 +23,7 @@ class PFIGFileHeader:
         c.execute(PFIGFileHeader.__METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY, [navigation.toFileNav.timestamp])
         lowestOffset = -1
         fqn = None
-        out = None
+        pfigHeader = None
         
         for row in c:
             methodFqn, offset = row['target'], int(row['referrer'])
@@ -44,9 +44,8 @@ class PFIGFileHeader:
             
             pfigHeader = HeaderData(fqn, lowestOffset, dt)
             PFIGFileHeader.__insertHeaderIntoDb(pfigHeader, classFilePath, conn)
-            out = pfigHeader.fqn
         
-        return out
+        return pfigHeader
     
     @staticmethod
     def __insertHeaderIntoDb(pfigHeader, classFilePath, conn):

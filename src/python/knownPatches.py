@@ -2,7 +2,6 @@ class KnownPatches(object):
 
     def __init__(self, languageHelper):
         self.langHelper = languageHelper
-        self.methodToFileMap = {}
         self.files = {}
         
     def addFilePatch(self, filePathOrFqn):
@@ -15,12 +14,12 @@ class KnownPatches(object):
             if self.__isMethodFqn(filePathOrFqn):
                 if not self.__getMethodInMethodList(filePathOrFqn, self.files[norm]):
                     self.files[norm].append(MethodPatch(filePathOrFqn))
-                    #print "    Added method", filePathOrFqn
                     
     def findMethodByFqn(self, fqn):
         norm = self.langHelper.normalize(fqn)
         if norm in self.files:
             return self.__getMethodInMethodList(fqn, self.files[norm])
+        return None
                     
     def findMethodByOffset(self, filePath, offset):
         #print "Looking for ", filePath, offset
@@ -34,6 +33,16 @@ class KnownPatches(object):
             if method.isOffsetInMethod(offset):
                 return method
         return None
+    
+    def getAdajecentMethods(self):
+        adjacentMethodLists = []
+        
+        for norm in self.files:
+            sortedMethods = sorted(self.files[norm], key=lambda method: method.startOffset)
+            adjacentMethodLists.append(sortedMethods)
+            
+        return adjacentMethodLists
+            
 
     def __isMethodFqn(self, filePathOrFqn):
         if filePathOrFqn.startswith('L') \
@@ -47,6 +56,15 @@ class KnownPatches(object):
             if method.fqn == methodFqn:
                 return method
         return None
+    
+    def toStr(self):
+        s = ''
+        for norm in self.files:
+            s += norm + '\n'
+            for methodPatch in self.files[norm]:
+                s += methodPatch.toStr() + '\n'
+                
+        return s
     
 class MethodPatch(object):
     
@@ -63,4 +81,7 @@ class MethodPatch(object):
         if offset >= self.startOffset and offset < endOffset:
             return True
         return False
+    
+    def toStr(self):
+        return str(self.startOffset) + ' to ' + str(self.startOffset + self.length - 1) + ': ' + self.fqn
         

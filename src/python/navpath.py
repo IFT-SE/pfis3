@@ -80,6 +80,11 @@ class NavigationPath(object):
         conn.close()
         
     def __findFileNavigationsInDb(self, conn):
+        # Here, we find all the instances of Text selection offset actions in
+        # the PFIG log. These are stored into the self.fileNavigations list. We
+        # remove any obvious duplicates that have the same file path and offset
+        # in this function. We store time stamps here since they will be used to
+        # determine if self.knownMethods entries need to be added or updated.
         c = conn.cursor()
         c.execute(self.TEXT_SELECTION_OFFSET_QUERY)
         
@@ -99,22 +104,33 @@ class NavigationPath(object):
         c.close()
         
     def __findMethodsForFileNavigations(self, conn):
+        # Here we map the file paths and offsets in the fileNavigations list to
+        # FQNs of methods. This is done by querying for all the Method
+        # declarations within the database and storing that data to the
+        # self.knownMethods object. The insertions into knownMethods will create
+        # entries if they are new or update them if they already exist. Since
+        # code can be changed between navigations, we need to update 
+        # self.knownMethods to reflect the most recent state of the code up to
+        # each navigation.
+        # After building the known methods, we test an entry from
+        # fileNavigations against the set of known methods by offset. This
         prevNavigation = None
         
         for toNavigation in self.fileNavigations:
             c = conn.execute(self.METHOD_DECLARATIONS_QUERY, [toNavigation.timestamp])
             for row in c:
-                action, target, referrer = row['action'], row['target'], row['referrer']
+                action, target, referrer = row['action'], \
+                    row['target'], row['referrer']
                 
                 if action == 'Method declaration':
                     self.knownPatches.addFilePatch(referrer)
                 elif action == 'Method declaration offset':
                     method = self.knownPatches.findMethodByFqn(target)
-                    if method:
+                    if method is not None:
                         method.startOffset = int(referrer);
                 elif action == 'Method declaration length':
                     method = self.knownPatches.findMethodByFqn(target)
-                    if method:
+                    if method is not None:
                         method.length = int(referrer);
             
             toMethodPatch = self.knownPatches.findMethodByOffset(toNavigation.filePath, toNavigation.offset)
@@ -146,9 +162,12 @@ class NavigationPath(object):
                 if prevNav.toFileNav.filePath == currNav.fromFileNav.filePath and prevNav.toFileNav.offset == currNav.fromFileNav.offset:
                     if self.VERBOSE_PATH:
                             print prevNav.toFileNav.toStr(), 'is being converted to header'
-                    header = PFIGFileHeader.addPFIGJavaFileHeader(conn, currNav, self.projectFolderPath, self.langHelper)
-                    currNav.fromFileNav.methodFqn = header
-                    self.knownPatches.addFilePatch(header)
+                    headerData = PFIGFileHeader.addPFIGJavaFileHeader(conn, currNav, self.projectFolderPath, self.langHelper)
+                    currNav.fromFileNav.methodFqn = headerData.fqn
+                    self.knownPatches.addFilePatch(headerData.fqn)
+                    method = self.knownPatches.findMethodByFqn(headerData.fqn)
+                    method.startOffset = 0
+                    method.length = headerData.length
             
     
     def __printNavigations(self):
