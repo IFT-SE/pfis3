@@ -21,7 +21,7 @@ class KnownPatches(object):
                 
             # Add the method if it doesn't already exist in the file
             if self.__isMethodFqn(filePathOrFqn):
-                if self.__getMethodInMethodList(filePathOrFqn, self.files[norm]) is not None:
+                if self.__getMethodInMethodList(filePathOrFqn, self.files[norm]) is None:
                     self.files[norm].append(MethodPatch(filePathOrFqn))
                     
     def findMethodByFqn(self, fqn):
