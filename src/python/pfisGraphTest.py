@@ -1,14 +1,12 @@
 from pfisGraph import PfisGraph
 from languageHelperFactory import LanguageHelperFactory, Languages
 import shutil
-from navpath import NavigationPath
 from algorithmRecency import Recency
-import networkx as nx
 from algorithmAdjacency import Adjacency
 
 
 def main():    
-    db = '/Users/Dave/Desktop/code/p3l_debug.db'
+    db = '/Users/Dave/Desktop/code/p8l_debug.db'
     db_copy = '/Users/Dave/Desktop/code/PFIG_temp.db'
     copyDatabase(db, db_copy)
     
@@ -18,32 +16,14 @@ def main():
     
     graph = PfisGraph(db_copy, langHelper, projSrc, stopWords = stopWords)
     graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
+    prediction = graph.makePrediction(Adjacency(langHelper))
+    print str(prediction)
     graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(Adjacency())
-#     graph.updateGraphByOneNavigation()
-#     graph.updateGraphByOneNavigation()
-#     graph.updateGraphByOneNavigation()
-#     graph.updateGraphByOneNavigation()
-    
-#     navPath = graph.getNavigationPath()
-#     recency = Recency(navPath, langHelper)
-#     for prediction in recency.getAllPredictions():
-#         print prediction.getString()
+    prediction = graph.makePrediction(Recency(langHelper))
+    print str(prediction)
     
 def copyDatabase(dbpath, newdbpath):
     print "Making a working copy of the database..."

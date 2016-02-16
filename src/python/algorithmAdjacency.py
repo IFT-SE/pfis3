@@ -4,28 +4,33 @@ from pfisGraph import EdgeType
 
 class Adjacency(PredictiveAlgorithm):
     
+    def __init__(self, langHelper):
+        PredictiveAlgorithm.__init__(self, langHelper)
+    
     def makePrediction(self, pfisGraph, navPath, navNumber):
-        navToPredict = navPath.navigations[navNumber]
-        if navToPredict.fromFileNav is None:
-            raise RuntimeError('makePrediction: Cannot make a prediction for the 1st navigation')
+        if navNumber < 1 or navNumber >= navPath.getLength():
+            raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
-        fromMethod = navToPredict.fromFileNav.methodFqn
+        navToPredict = navPath.navigations[navNumber]
+        fromMethodFqn = navToPredict.fromFileNav.methodFqn
         methodToPredict = navToPredict.toFileNav.methodFqn
-        print "Predicting:" + str(navToPredict)
         
         if methodToPredict is not None and methodToPredict in pfisGraph.graph.node:
-            print "We can make a prediction"
-            result = self.__isAdjacent(pfisGraph, fromMethod, methodToPredict) 
+            result = self.__isAdjacent(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
-                print "Methods are adjacent. Length = " + str(result)
+                return PredictionEntry(navNumber, result, self.__getAdjacentLength(pfisGraph, fromMethodFqn), 
+                           fromMethodFqn, 
+                           methodToPredict,
+                           self.langHelper.between_class(fromMethodFqn, methodToPredict),
+                           self.langHelper.between_package(fromMethodFqn, methodToPredict),
+                           navToPredict.toFileNav.timestamp)
         
         else:
-            print "We cannot make a prediction"
-#             return PredictionEntry(navNumber, 999999, len(methods), 
-#                            navToPredict.fromFileNav.toStr(), 
-#                            navToPredict.toFileNav.toStr(),
-#                            False, False,
-#                            navToPredict.toFileNav.timestamp)
+            return PredictionEntry(navNumber, 999999, self.__getAdjacentLength(pfisGraph, fromMethodFqn), 
+                           str(navToPredict.fromFileNav), 
+                           str(navToPredict.toFileNav),
+                           False, False,
+                           navToPredict.toFileNav.timestamp)
     
     def __isAdjacent(self, pfisGraph, fromMethod, methodToPredict):
         if fromMethod not in pfisGraph.graph.node:
@@ -50,6 +55,29 @@ class Adjacency(PredictiveAlgorithm):
             else:
                 return 1 + self.__searchFor(pfisGraph, currentMethod, method, methodToFind)
         return -1
+    
+    def __getAdjacentLength(self, pfisGraph, currentMethod):
+        adjacentMethods = self.__getNeighborsMarkedAdjacent(pfisGraph, currentMethod)
+        total = 0
+        
+        for method in adjacentMethods:
+            total += self.__getAdjacentLengthHelper(pfisGraph, currentMethod, method)
+            
+        return total
+    
+    def __getAdjacentLengthHelper(self, pfisGraph, fromMethod, currentMethod):
+        adjacentMethods = self.__getNeighborsMarkedAdjacent(pfisGraph, currentMethod)
+        
+        if len(adjacentMethods) == 1 and adjacentMethods[0] == fromMethod:
+            return 1
+        
+        for method in adjacentMethods:
+            if method == fromMethod: continue
+            else:
+                return 1 + self.__getAdjacentLengthHelper(pfisGraph, currentMethod, method)
+        
+        return 0
+        
     
     def __getNeighborsMarkedAdjacent(self, pfisGraph, node):
         adjacentNeighbors = []

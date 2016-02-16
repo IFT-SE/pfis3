@@ -2,53 +2,45 @@ from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import PredictionEntry
 
 class Recency(PredictiveAlgorithm):
-    
-    def __init__(self, navPath, langHelper):
-        self.navPath = navPath
-        self.langHelper = langHelper
         
-    def getPredictionAt(self, navNum):
-        if navNum < 1 or navNum >= self.navPath.getLength():
-            raise RuntimeError('getPredictionAt: navNum must be > 0 and less than the length of self.navPath') 
+    def __init__(self, langHelper):
+        PredictiveAlgorithm.__init__(self, langHelper)
         
-        methods = self.__getOrderedRecentMethods(navNum)
-        navToPredict = self.navPath.navigations[navNum]
+    def makePrediction(self, pfisGraph, navPath, navNumber):
+        if navNumber < 1 or navNumber >= navPath.getLength():
+            raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
+        
+        methods = self.__getOrderedRecentMethods(navPath, navNumber)
+        navToPredict = navPath.navigations[navNumber]
         
         if not navToPredict.isToUnknown():
-            # This is the method we want to predict
-            toMethodFqn = navToPredict.toFileNav.methodFqn
+            # methodToPredict is the method we want to predict
+            methodToPredict = navToPredict.toFileNav.methodFqn
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             
             rank = 0
             for methodFqn in methods:
-                if methodFqn == toMethodFqn:
-                    return PredictionEntry(navNum, rank, len(methods),
+                if methodFqn == methodToPredict:
+                    return PredictionEntry(navNumber, rank, len(methods),
                                            fromMethodFqn,
-                                           toMethodFqn,
-                                           self.langHelper.between_class(fromMethodFqn, toMethodFqn),
-                                           self.langHelper.between_package(fromMethodFqn, toMethodFqn),
+                                           methodToPredict,
+                                           self.langHelper.between_class(fromMethodFqn, methodToPredict),
+                                           self.langHelper.between_package(fromMethodFqn, methodToPredict),
                                            navToPredict.toFileNav.timestamp)
                 rank += 1
         
-        return PredictionEntry(navNum, 999999, len(methods), 
+        return PredictionEntry(navNumber, 999999, len(methods), 
                                str(navToPredict.fromFileNav), 
                                str(navToPredict.toFileNav),
                                False, False,
                                navToPredict.toFileNav.timestamp)
-    
-    def getAllPredictions(self):
-        predictions = []
         
-        for i in range(1, self.navPath.getLength()):
-            predictions.append(self.getPredictionAt(i))
-            
-        return predictions
     
-    def __getOrderedRecentMethods(self, navNum):
+    def __getOrderedRecentMethods(self, navPath, navNum):
         visitedMethods = []
         
         for i in range(navNum + 1):
-            nav = self.navPath.navigations[i]
+            nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
                 if visitedMethod in visitedMethods:

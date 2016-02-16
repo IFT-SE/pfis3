@@ -14,7 +14,7 @@ class PredictionEntry:
         self.predictions = predictions
 
 
-    def getString(self):
+    def __str__(self):
         return self.navNum + '\t' + self.timestamp + '\t' + self.rank + '\t' \
             + self.numTimes + '\t' + self.length + '\t' \
             + self.fromLoc + '\t' + self.toLoc + '\t' \
@@ -40,6 +40,6 @@ class Predictions:
         logFile = open(self.filePath, 'w');
         logFile.write(self.getHeaderString())
         for entry in self.entries:
-            logFile.write(entry.getString() + '\n');
+            logFile.write(str(entry) + '\n');
         logFile.close();
 
