@@ -1,28 +1,42 @@
 class KnownPatches(object):
+    # This class keeps track of the classes that the programmers "knows about."
+    # It is used primarily to map from Text selection offset events to actual
+    # methods.
 
     def __init__(self, languageHelper):
         self.langHelper = languageHelper
         self.files = {}
         
     def addFilePatch(self, filePathOrFqn):
+        # Add a file to the known files. Each file is stored according to its
+        # normalized path so that later when we query by FQN, we can quickly
+        # retrieve a file's contents. This is because a normalized FQN should
+        # match a normalized path if both are representing the same class.
         norm = self.langHelper.normalize(filePathOrFqn)
         if norm != '':
+            # Set up the initial empty list if this is the first instance of the
+            # file
             if norm not in self.files:
                 self.files[norm] = []
-                #print "Added class", norm
                 
+            # Add the method if it doesn't already exist in the file
             if self.__isMethodFqn(filePathOrFqn):
-                if not self.__getMethodInMethodList(filePathOrFqn, self.files[norm]):
+                if self.__getMethodInMethodList(filePathOrFqn, self.files[norm]) is not None:
                     self.files[norm].append(MethodPatch(filePathOrFqn))
                     
     def findMethodByFqn(self, fqn):
+        # Query the known patches by a method's FQN. Returns the MethodData
+        # object if it was found, or None if it wasn't. The MethodData object
+        # can then be updated as necessary.
         norm = self.langHelper.normalize(fqn)
         if norm in self.files:
             return self.__getMethodInMethodList(fqn, self.files[norm])
         return None
                     
     def findMethodByOffset(self, filePath, offset):
-        #print "Looking for ", filePath, offset
+        # Query the known patches by an offset. If a method corresponds to this
+        # offset in the given file, then its corresponding MethodData object is
+        # returned, otherwise, None is returned.
         norm = self.langHelper.normalize(filePath)
         
         if norm == '' or norm not in self.files:
@@ -35,6 +49,8 @@ class KnownPatches(object):
         return None
     
     def getAdajecentMethods(self):
+        # Returns a list of method lists where each inner list is the set of
+        # methods in a file ordered by offset.
         adjacentMethodLists = []
         
         for norm in self.files:
@@ -45,6 +61,8 @@ class KnownPatches(object):
             
 
     def __isMethodFqn(self, filePathOrFqn):
+        # Check if this FQN is a method.
+        # TODO: Move this to the langHelper?
         if filePathOrFqn.startswith('L') \
             and ';' in filePathOrFqn \
             and '.' in filePathOrFqn:
@@ -52,6 +70,7 @@ class KnownPatches(object):
         return False
     
     def __getMethodInMethodList(self, methodFqn, methodList):
+        # Return the method data object in the list that matches the desired FQN
         for method in methodList:
             if method.fqn == methodFqn:
                 return method
@@ -66,7 +85,7 @@ class KnownPatches(object):
                 
         return s
     
-# TODO: Can this class and the MethodData class be replaced/merged with the
+# TODO: Can this class and the HeaderData class be replaced/merged with the
 # FileNavigation class? They all seem to hold the same data...
     
 class MethodPatch(object):
