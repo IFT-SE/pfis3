@@ -4,11 +4,12 @@ import shutil
 from navpath import NavigationPath
 from algorithmRecency import Recency
 import networkx as nx
+from algorithmAdjacency import Adjacency
 
 
 def main():    
-    db = '/Users/Dave/Desktop/code/p8l_debug.db'
-    db_copy = '/Users/Dave/Desktop/code/p8l_debug_temp.db'
+    db = '/Users/Dave/Desktop/code/p3l_debug.db'
+    db_copy = '/Users/Dave/Desktop/code/PFIG_temp.db'
     copyDatabase(db, db_copy)
     
     langHelper = LanguageHelperFactory.getLanguageHelper(Languages.JAVA)
@@ -17,10 +18,27 @@ def main():
     
     graph = PfisGraph(db_copy, langHelper, projSrc, stopWords = stopWords)
     graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
     graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
+    graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
+    graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
+    graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
+    graph.updateGraphByOneNavigation()
+    graph.makePrediction(Adjacency())
+#     graph.updateGraphByOneNavigation()
+#     graph.updateGraphByOneNavigation()
+#     graph.updateGraphByOneNavigation()
+#     graph.updateGraphByOneNavigation()
     
 #     navPath = graph.getNavigationPath()
 #     recency = Recency(navPath, langHelper)

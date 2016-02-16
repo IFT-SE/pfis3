@@ -1,5 +1,6 @@
 import iso8601
 import datetime
+from __builtin__ import True
 
 class PFIGFileHeader:
     __INSERT_QUERY = "INSERT INTO logger_log (user, timestamp, action, target, referrer, agent) VALUES (?, ?, ?, ?, ?, ?)"
@@ -34,6 +35,8 @@ class PFIGFileHeader:
                     
         c.close()
         
+        makeHeader = False
+        
         # Create a header if the navigation was before the first method's
         # starting position. Add the header's declaration immediately after the 
         # navigation to it. That way, the first navigation to the file will be
@@ -41,11 +44,22 @@ class PFIGFileHeader:
         # as a navigation to the header.
         if lowestOffset > -1 and navigation.fromFileNav.offset < lowestOffset:
             fqn = fqn + '.pfigheader()V'
+            makeHeader = True
+        
+        # Also create a header if no declarations were found, using the entire
+        # contents of the file as the header. 
+        if lowestOffset == -1:
+            # The fqn here will be none since there were no method declarations.
+            # In this case, we use the class to generate an FQN
+            fqn = 'L' + className + ';.pfigheader()V'    
+            makeHeader = True
+            
+        if makeHeader:
             dt = iso8601.parse_date(navigation.fromFileNav.timestamp)
             dt += datetime.timedelta(milliseconds=1)
             
             pfigHeader = HeaderData(fqn, lowestOffset, dt)
-            PFIGFileHeader.__insertHeaderIntoDb(pfigHeader, classFilePath, conn)
+            PFIGFileHeader.__insertHeaderIntoDb(pfigHeader, classFilePath, conn)     
         
         # This will return None if the location was not found or if it is in a 
         # gap between two methods. Either way it shouldn't be counted as a
@@ -55,6 +69,7 @@ class PFIGFileHeader:
     @staticmethod
     def __insertHeaderIntoDb(pfigHeader, classFilePath, conn):
         f = open(classFilePath, 'r')
+        # This will ready the entire file when given negative number
         contents = f.read(pfigHeader.length)
         
         dummy = "auto-generated"
