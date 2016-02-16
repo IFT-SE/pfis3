@@ -37,7 +37,7 @@ class NavPath:
     def removeAt(self, index):
         del self.navPath[index]
 
-    def toStr(self):
+    def __str__(self):
         out = 'NavPath:\n'
         for entry in self.navPath:
             out += '\t' + entry.method + ' at ' + entry.timestamp +'\n'
@@ -122,7 +122,7 @@ class NavigationPath(object):
         # Iterate over the data gathered from the Text selection offsets
         for toNavigation in self.fileNavigations:
             if self.VERBOSE_PATH:
-                print '\tProcessing text selection offset: ' + toNavigation.toStr()
+                print '\tProcessing text selection offset: ' + str(toNavigation)
             
             # For every navigation's timestamp, we fill the knownMethods object
             # with the details of every method declaration up to the timestamp
@@ -203,7 +203,7 @@ class NavigationPath(object):
             if self.knownPatches.findMethodByOffset(currNav.fromFileNav.filePath, currNav.fromFileNav.offset) is None:
                 if prevNav.toFileNav.filePath == currNav.fromFileNav.filePath and prevNav.toFileNav.offset == currNav.fromFileNav.offset:
                     if self.VERBOSE_PATH:
-                            print '\tChecking if ' + prevNav.toFileNav.toStr() + ' is a header...'
+                            print '\tChecking if ' + str(prevNav.toFileNav) + ' is a header...'
                     headerData = PFIGFileHeader.addPFIGJavaFileHeader(conn, currNav, self.projectFolderPath, self.langHelper)
                     
                     # If headerData comes back as not None, then it was indeed a
@@ -230,7 +230,7 @@ class NavigationPath(object):
         print "Navigation path:"
         for i in range(len(self.navigations)):
             navigation = self.navigations[i]
-            print '\t' + str(i) + ':\t' + navigation.toStr()
+            print '\t' + str(i) + ':\t' + str(navigation)
             
     def getLength(self):
         return len(self.navigations)
@@ -263,14 +263,14 @@ class Navigation(object):
     def clone(self):
         return Navigation(self.fromFileNav.clone(), self.toFileNav.clone())
         
-    def toStr(self):
+    def __str__(self):
         fromLoc = None
         toLoc = None
         
         if self.fromFileNav is not None:
-            fromLoc = self.fromFileNav.toStr()
+            fromLoc = str(self.fromFileNav)
         if self.toFileNav is not None:
-            toLoc = self.toFileNav.toStr()
+            toLoc = str(self.toFileNav)
             
         return str(fromLoc) + ' --> ' + str(toLoc)
         
@@ -291,7 +291,7 @@ class FileNavigation(object):
         fileNavClone.methodFqn = self.methodFqn
         return fileNavClone
         
-    def toStr(self):
+    def __str__(self):
         if self.methodFqn is not None:
             return self.methodFqn
         return str(self.filePath) + ' at ' + str(self.offset)

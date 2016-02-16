@@ -8,15 +8,10 @@ class PFIGFileHeader:
 
     @staticmethod
     def addPFIGJavaFileHeader(conn, navigation, projectFolderPath, langHelper):
-        # We will replace the fromNav in the navigation with a pfisHeader
+        # This function replaces the fromNav in the navigation with a pfisHeader
+        # and also adds that header to the database precisely after it was first
+        # visited.
         className = langHelper.normalize(navigation.fromFileNav.filePath)
-        #print "Class name normalized: " + className
-        #className, _, _ = navEntry.prevEntry.method.split(",")
-        #ts = navEntry.timestamp
-        #print navigation.toStr()
-        #print "From timestamp:", navigation.fromFileNav.timestamp
-        #print "To (query) timestamp:", navigation.toFileNav.timestamp
-    
         classFilePath = langHelper.getFileName(projectFolderPath, className, langHelper.FileExtension)
         
         c = conn.cursor()
@@ -25,6 +20,9 @@ class PFIGFileHeader:
         fqn = None
         pfigHeader = None
         
+        # Iterate over all the method declarations. If the normalized class
+        # names match then we check the offset, looking for the smallest one.
+        # from 0 to that offset will be considered the header file.
         for row in c:
             methodFqn, offset = row['target'], int(row['referrer'])
             
@@ -35,7 +33,6 @@ class PFIGFileHeader:
                     fqn = methodFqn[0:methodFqn.rfind('.')]
                     
         c.close()
-        #print "Lowest offset =", lowestOffset
         
         # Create a header if the navigation was before the first method's
         # starting position. Add the header's declaration immediately after the 
@@ -57,14 +54,8 @@ class PFIGFileHeader:
     
     @staticmethod
     def __insertHeaderIntoDb(pfigHeader, classFilePath, conn):
-        #print "Reading file contents..."
         f = open(classFilePath, 'r')
-        # TODO: Verify that contents is being handled by the predictive
-        # algorithms correctly. They currently contain newlines, which the graph
-        # producing code may be sensitive to.
         contents = f.read(pfigHeader.length)
-        #print "Done reading file contents."
-        #print "Adding header to database..."
         
         dummy = "auto-generated"
         timestamp = pfigHeader.timestamp
@@ -76,15 +67,15 @@ class PFIGFileHeader:
         c.execute(PFIGFileHeader.__INSERT_QUERY, [dummy, timestamp, 'Method declaration scent', pfigHeader.fqn, contents, dummy])
         conn.commit()
         c.close()
-        #print "Done adding header to database."
+        
+# TODO: Can this class and the MethodData class be replaced/merged with the
+# FileNavigation class? They all seem to hold the same data...
         
 class HeaderData:
+    # A class to simply hold the PFIG header data.
     def __init__(self, fqn, length, dt):
         self.fqn = fqn
         self.fqnClass = fqn[0:fqn.find(';') + 1]
         self.length = length
         ms = dt.microsecond / 1000
         self.timestamp = dt.strftime("%Y-%m-%d %H:%M:%S." + str(ms))
-        
-    def isOffsetInHeader(self, offset):
-        raise NotImplementedError

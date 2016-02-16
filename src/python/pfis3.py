@@ -920,7 +920,7 @@ def buildPath(dbFile, granularityFunc):
     clean_up_path()
 
     if VERBOSE_PATH:
-        print navPath.toStr()
+        print str(navPath)
 
     print "Done building path."
     return navPath

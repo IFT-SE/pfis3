@@ -57,14 +57,17 @@ class KnownPatches(object):
                 return method
         return None
     
-    def toStr(self):
+    def __str__(self):
         s = ''
         for norm in self.files:
             s += norm + '\n'
             for methodPatch in self.files[norm]:
-                s += methodPatch.toStr() + '\n'
+                s += str(methodPatch) + '\n'
                 
         return s
+    
+# TODO: Can this class and the MethodData class be replaced/merged with the
+# FileNavigation class? They all seem to hold the same data...
     
 class MethodPatch(object):
     
@@ -82,6 +85,6 @@ class MethodPatch(object):
             return True
         return False
     
-    def toStr(self):
+    def __str__(self):
         return str(self.startOffset) + ' to ' + str(self.startOffset + self.length - 1) + ': ' + self.fqn
         

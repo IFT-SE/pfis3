@@ -31,8 +31,8 @@ class Recency(PredictiveAlgorithm):
                 rank += 1
         
         return PredictionEntry(navNum, 999999, len(methods), 
-                               navToPredict.fromFileNav.toStr(), 
-                               navToPredict.toFileNav.toStr(),
+                               str(navToPredict.fromFileNav), 
+                               str(navToPredict.toFileNav),
                                False, False,
                                navToPredict.toFileNav.timestamp)
     

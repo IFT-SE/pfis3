@@ -11,7 +11,7 @@ class Adjacency(PredictiveAlgorithm):
         
         fromMethod = navToPredict.fromFileNav.methodFqn
         methodToPredict = navToPredict.toFileNav.methodFqn
-        print "Predicting:" + navToPredict.toStr()
+        print "Predicting:" + str(navToPredict)
         
         if methodToPredict is not None and methodToPredict in pfisGraph.graph.node:
             print "We can make a prediction"
