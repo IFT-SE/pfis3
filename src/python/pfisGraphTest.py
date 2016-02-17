@@ -7,30 +7,30 @@ from algorithmPFIS import PFIS
 
 
 def main():    
-    db = '/Users/Dave/Desktop/code/icsme16/p8l_debug.db'
+    db = '/Users/Dave/Desktop/code/icsme15/p3.db'
     db_copy = '/Users/Dave/Desktop/code/PFIG_temp.db'
     copyDatabase(db, db_copy)
     
     langHelper = LanguageHelperFactory.getLanguageHelper(Languages.JAVA)
-    projSrc = langHelper.fixSlashes('/Users/Dave/Desktop/code/p8l-vanillaMusic/src')
-#     projSrc = langHelper.fixSlashes('/Users/Dave/Documents/workspace/jEdit-2548764/src')
+#     projSrc = langHelper.fixSlashes('/Users/Dave/Desktop/code/p8l-vanillaMusic/src')
+    projSrc = langHelper.fixSlashes('/Users/Dave/Documents/workspace/jEdit-2548764/src')
     stopWords = loadStopWords('/Users/Dave/Desktop/code/pfis3/data/je.txt')
     
-    pfis = PFIS(langHelper)
+    pfisWithHistory = PFIS(langHelper, 'PFIS with history', history=True)
+    pfisWithoutHistory = PFIS(langHelper, 'PFIS without history')
+    adjacency = Adjacency(langHelper, 'Adjacency')
+    recency = Recency(langHelper, 'Recency')
+    algorithms = [pfisWithHistory, pfisWithoutHistory, adjacency, recency]
     
     graph = PfisGraph(db_copy, langHelper, projSrc, stopWords = stopWords)
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(pfis)
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(pfis)
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(pfis)
-    graph.updateGraphByOneNavigation()
-    graph.makePrediction(pfis)
-#     prediction = graph.makePrediction(Adjacency(langHelper))
-#     print str(prediction)
-#     prediction = graph.makePrediction(Recency(langHelper))
-#     print str(prediction)
+    results = graph.makeAllPredictions(algorithms)
+    
+    for algorithm in algorithms:
+        print '=========='
+        print 'Results for' + algorithm.name
+        for prediction in results[algorithm.name]:
+            print str(prediction)
+        print '=========='
     
 def copyDatabase(dbpath, newdbpath):
     print "Making a working copy of the database..."

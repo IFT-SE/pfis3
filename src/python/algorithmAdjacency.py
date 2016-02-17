@@ -4,8 +4,8 @@ from pfisGraph import EdgeType
 
 class Adjacency(PredictiveAlgorithm):
     
-    def __init__(self, langHelper):
-        PredictiveAlgorithm.__init__(self, langHelper)
+    def __init__(self, langHelper, name):
+        PredictiveAlgorithm.__init__(self, langHelper, name)
     
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
@@ -15,7 +15,7 @@ class Adjacency(PredictiveAlgorithm):
         fromMethodFqn = navToPredict.fromFileNav.methodFqn
         methodToPredict = navToPredict.toFileNav.methodFqn
         
-        if methodToPredict is not None and methodToPredict in pfisGraph.graph.node:
+        if not navToPredict.isToUnknown() and methodToPredict in pfisGraph.graph.node:
             result = self.__isAdjacent(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
                 return PredictionEntry(navNumber, result, self.__getAdjacentLength(pfisGraph, fromMethodFqn), 

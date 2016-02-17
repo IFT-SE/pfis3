@@ -65,8 +65,29 @@ class PfisGraph(object):
     
         conn.close()
         
-    def makePrediction(self, predictiveAlgorithm):
-        predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)
+    def makeAllPredictions(self, algorithms):
+        if len(self.navPath.navigations) < 2:
+            raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
+        
+        # Build the output data structure
+        results = {}
+        for algorithm in algorithms:
+            results[algorithm.name] = []
+            
+        totalPredictions = len(self.navPath.navigations) - 1
+        
+        for _ in range(1, totalPredictions + 1):
+            self.updateGraphByOneNavigation()
+            print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
+            for algorithm in algorithms:
+                results[algorithm.name].append(self.__makePrediction(algorithm))
+        
+        print 'Done making predictions.'
+        return results 
+        
+    def __makePrediction(self, predictiveAlgorithm):
+        print '\tMaking predictions for ' + predictiveAlgorithm.name + '...'
+        return predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)
         
     def __addScentNodesUpTo(self, conn, newEndTimestamp):
         # Inserts nodes into the graph up to a given timestamp in the database
