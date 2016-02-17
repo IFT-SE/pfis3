@@ -47,7 +47,7 @@ class PFIS(PredictiveAlgorithm):
             print "No prediction possible. A navigation to unknown location has occurred."
         else:
             rank = sortedMethods.index(methodToPredict) + 1
-            print "Prediction possible. Method has rank = " + str(rank)
+            print "Prediction possible. Method has rank = " + str(rank) + '/' + str(len(sortedMethods))
             print methodToPredict + ' has activation value of ' + str(self.mapNodesToActivation[methodToPredict]) 
         
     def __spreadActivation(self, pfisGraph):
