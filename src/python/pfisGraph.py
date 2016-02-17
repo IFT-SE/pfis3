@@ -135,7 +135,7 @@ class PfisGraph(object):
                 for word in self.__getWordNodes_splitNoStem(referrer, self.stopWords):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
                     
-                for word in self.__getWordNodes_splitCamelAndStem(referrer, self.stopWords):
+                for word in self.getWordNodes_splitCamelAndStem(referrer, self.stopWords):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         c.close()
         
@@ -306,7 +306,7 @@ class PfisGraph(object):
                     for word in re.split(r'\W+|\s+', s) \
                     if word != '' and word.lower() not in stopWords]
     
-    def __getWordNodes_splitCamelAndStem(self, s, stopWords):
+    def getWordNodes_splitCamelAndStem(self, s, stopWords):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters, splitting camel case and stemming each word.
         # A word node is a tuple that contains 'word' and a String containing the

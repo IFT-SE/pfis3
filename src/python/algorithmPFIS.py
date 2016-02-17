@@ -6,14 +6,17 @@ class PFIS(PredictiveAlgorithm):
     
     # TODO: Initial words should be stemmed before they are activated
         
-    def __init__(self, langHelper, name, history=False, goal=[], decayFactor = 0.85, decayHistory = 0.9, numSpread = 20):
+    def __init__(self, langHelper, name, history=False, goal = [], \
+                 stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
+                 numSpread = 20):
         PredictiveAlgorithm.__init__(self, langHelper, name)
         self.history = history
         self.goal = goal
+        self.stopWords = stopWords
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
-        self.mapNodesToActivation = None
         self.NUM_SPREAD = numSpread
+        self.mapNodesToActivation = None
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
@@ -81,9 +84,10 @@ class PFIS(PredictiveAlgorithm):
             
     def __initializeGoalWords(self, pfisGraph):
         for word in self.goal:
-                if word in pfisGraph.graph.node:
-                    if pfisGraph.graph.node[word]['type'] == NodeType.WORD:
-                        self.mapNodesToActivation[word] = 1.0
+            for stemmedWord in pfisGraph.getWordNodes_splitCamelAndStem(word, self.stopWords):
+                if stemmedWord in pfisGraph.graph.node:
+                    if pfisGraph.graph.node[stemmedWord]['type'] == NodeType.WORD:
+                        self.mapNodesToActivation[stemmedWord] = 1.0
                     
     def __spreadActivation(self, pfisGraph):
         for node in self.mapNodesToActivation.keys():
