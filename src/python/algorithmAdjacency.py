@@ -25,8 +25,7 @@ class Adjacency(PredictiveAlgorithm):
                            self.langHelper.between_package(fromMethodFqn, methodToPredict),
                            navToPredict.toFileNav.timestamp)
         
-        else:
-            return PredictionEntry(navNumber, 999999, self.__getAdjacentLength(pfisGraph, fromMethodFqn), 
+        return PredictionEntry(navNumber, 999999, self.__getAdjacentLength(pfisGraph, fromMethodFqn), 
                            str(navToPredict.fromFileNav), 
                            str(navToPredict.toFileNav),
                            False, False,
