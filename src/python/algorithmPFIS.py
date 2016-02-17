@@ -49,17 +49,14 @@ class PFIS(PredictiveAlgorithm):
                 
             if methodToPredict in sortedMethods:
                 rank = sortedMethods.index(methodToPredict) + 1
-                return PredictionEntry(navNumber, rank, len(sortedMethods), 
+                return PredictionEntry(navNumber, rank, len(sortedMethods), 0,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
-                       self.langHelper.between_class(fromMethodFqn, methodToPredict),
-                       self.langHelper.between_package(fromMethodFqn, methodToPredict),
                        navToPredict.toFileNav.timestamp)
                 
-        return PredictionEntry(navNumber, 999999, len(sortedMethods), 
+        return PredictionEntry(navNumber, 999999, len(sortedMethods), 0,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
-                       False, False,
                        navToPredict.toFileNav.timestamp) 
 
     def __initializeHistory(self, pfisGraph, navPath, navNumber):

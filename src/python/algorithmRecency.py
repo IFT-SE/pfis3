@@ -21,18 +21,15 @@ class Recency(PredictiveAlgorithm):
             rank = 0
             for methodFqn in methods:
                 if methodFqn == methodToPredict:
-                    return PredictionEntry(navNumber, rank, len(methods),
+                    return PredictionEntry(navNumber, rank, len(methods), 0,
                                            fromMethodFqn,
                                            methodToPredict,
-                                           self.langHelper.between_class(fromMethodFqn, methodToPredict),
-                                           self.langHelper.between_package(fromMethodFqn, methodToPredict),
                                            navToPredict.toFileNav.timestamp)
                 rank += 1
         
-        return PredictionEntry(navNumber, 999999, len(methods), 
+        return PredictionEntry(navNumber, 999999, len(methods), 0,
                                str(navToPredict.fromFileNav), 
                                str(navToPredict.toFileNav),
-                               False, False,
                                navToPredict.toFileNav.timestamp)
         
     
