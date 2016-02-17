@@ -82,7 +82,7 @@ class Adjacency(PredictiveAlgorithm):
         adjacentNeighbors = []
         
         for neighbor in pfisGraph.graph.neighbors(node):
-            if pfisGraph.graph[node][neighbor]['type'] == EdgeType.ADJACENT:
+            if EdgeType.ADJACENT in pfisGraph.graph[node][neighbor]['types']:
                 adjacentNeighbors.append(neighbor)
                 
         return adjacentNeighbors

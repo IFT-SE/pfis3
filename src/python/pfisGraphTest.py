@@ -7,13 +7,13 @@ from algorithmPFIS import PFIS
 
 
 def main():    
-    db = '/Users/Dave/Desktop/code/icsme15/p3.db'
+    db = '/Users/Dave/Desktop/code/icsme16/p1f_debug.db'
     db_copy = '/Users/Dave/Desktop/code/PFIG_temp.db'
     copyDatabase(db, db_copy)
     
     langHelper = LanguageHelperFactory.getLanguageHelper(Languages.JAVA)
-#     projSrc = langHelper.fixSlashes('/Users/Dave/Desktop/code/p8l-vanillaMusic/src')
-    projSrc = langHelper.fixSlashes('/Users/Dave/Documents/workspace/jEdit-2548764/src')
+    projSrc = langHelper.fixSlashes('/Users/Dave/Desktop/code/p8l-vanillaMusic/src')
+#     projSrc = langHelper.fixSlashes('/Users/Dave/Documents/workspace/jEdit-2548764/src')
     stopWords = loadStopWords('/Users/Dave/Desktop/code/pfis3/data/je.txt')
     
     pfisWithHistory = PFIS(langHelper, 'PFIS with history', history=True)

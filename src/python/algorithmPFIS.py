@@ -3,8 +3,6 @@ from predictions import PredictionEntry
 from pfisGraph import NodeType
 
 class PFIS(PredictiveAlgorithm):
-    
-    # TODO: Initial words should be stemmed before they are activated
         
     def __init__(self, langHelper, name, history=False, goal = [], \
                  stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
@@ -95,7 +93,6 @@ class PFIS(PredictiveAlgorithm):
                 continue
             
             neighbors = pfisGraph.graph.neighbors(node)
-            #print '# of neighbors of ' + node + ': ' + str(len(neighbors))
             edgeWeight = 1.0 / len(neighbors)
             for neighbor in neighbors:
                 if neighbor not in self.mapNodesToActivation:

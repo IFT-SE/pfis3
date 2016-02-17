@@ -291,7 +291,11 @@ class PfisGraph(object):
     #==============================================================================#
     
     def __addEdge(self, node1, node2, node1Type, node2Type, edgeType):
-        self.graph.add_edge(node1, node2, type=edgeType)
+        if self.graph.has_edge(node1, node2):
+            self.graph.edge[node1][node2]['types'].append(edgeType)
+        else:
+            self.graph.add_edge(node1, node2, attr_dict={'types': [edgeType]})
+            
         self.graph.node[node1]['type'] = node1Type
         self.graph.node[node2]['type'] = node2Type
         # if self.VERBOSE_BUILD: 
