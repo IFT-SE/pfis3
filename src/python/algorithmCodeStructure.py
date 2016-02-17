@@ -21,7 +21,13 @@ class CodeStructure(PredictiveAlgorithm):
         if not navToPredict.isToUnknown() and methodToPredict in pfisGraph.graph.node:
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
-                return PredictionEntry(navNumber, result, len(self.nodeDistances.keys()), 0,
+                sortedRanks = sorted(self.nodeDistances, key = lambda node: self.nodeDistances[node])
+                firstIndex = self.__getFirstIndex(sortedRanks, result)
+                lastIndex = self.__getLastIndex(sortedRanks, result)
+                numTies = lastIndex - firstIndex + 1
+                rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
+                
+                return PredictionEntry(navNumber, rankWithTies, len(self.nodeDistances.keys()), numTies,
                            fromMethodFqn,
                            methodToPredict,
                            navToPredict.toFileNav.timestamp)
@@ -62,3 +68,13 @@ class CodeStructure(PredictiveAlgorithm):
                     validNeighbors.append(neighbor)
                 
         return validNeighbors
+    
+    def __getFirstIndex(self, sortedRankList, value):
+        for i in range(0, len(sortedRankList)):
+            if self.nodeDistances[sortedRankList[i]] == value: return i
+        return -1
+    
+    def __getLastIndex(self, sortedRankList, value):
+        for i in range(len(sortedRankList) - 1, -1, -1):
+            if self.nodeDistances[sortedRankList[i]] == value: return i
+        return -1

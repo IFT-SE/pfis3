@@ -22,18 +22,15 @@ class Frequency(PredictiveAlgorithm):
             rank = 0
             for methodFqn in methods:
                 if methodFqn == methodToPredict:
-                    return PredictionEntry(navNumber, rank, len(methods),
+                    return PredictionEntry(navNumber, rank, len(methods), 0,
                                            fromMethodFqn,
                                            methodToPredict,
-                                           self.langHelper.between_class(fromMethodFqn, methodToPredict),
-                                           self.langHelper.between_package(fromMethodFqn, methodToPredict),
                                            navToPredict.toFileNav.timestamp)
                 rank += 1
         
-        return PredictionEntry(navNumber, 999999, len(methods), 
+        return PredictionEntry(navNumber, 999999, len(methods), 0,
                                str(navToPredict.fromFileNav), 
                                str(navToPredict.toFileNav),
-                               False, False,
                                navToPredict.toFileNav.timestamp)
         
     
@@ -50,16 +47,13 @@ class Frequency(PredictiveAlgorithm):
                     visitedMethods[visitedMethod] = 1
         
         # Sort methods in visitedMethods (keys) by frequency (values)
-       	# sortedMethodsAndFrequencies equals a list of tupes (visitedMethod, frequency) sorted by frequency
-        print visitedMethods
+        # sortedMethodsAndFrequencies equals a list of tupes (visitedMethod, frequency) sorted by frequency
         sortedMethodsAndFrequencies = sorted(visitedMethods.items(), key=operator.itemgetter(1))
         # Descending order
         sortedMethodsAndFrequencies.reverse()
-        print sortedMethodsAndFrequencies
         
         # Get the first element of each tuple (visitedMethod)
         # sortedMethods equals a list of methods sorted by frequency
         sortedMethods = [pair[0] for pair in sortedMethodsAndFrequencies] 
-        print sortedMethods
         
         return sortedMethods
