@@ -1,7 +1,6 @@
 from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import PredictionEntry
 from collections import deque
-from networkx.classes.function import neighbors
 
 class CodeStructure(PredictiveAlgorithm):
         
@@ -17,9 +16,9 @@ class CodeStructure(PredictiveAlgorithm):
         navToPredict = navPath.navigations[navNumber]
         fromMethodFqn = navToPredict.fromFileNav.methodFqn
         methodToPredict = navToPredict.toFileNav.methodFqn
+        self.nodeDistances = {}
         
         if not navToPredict.isToUnknown() and methodToPredict in pfisGraph.graph.node:
-            self.nodeDistances = {}
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
                 return PredictionEntry(navNumber, result, len(self.nodeDistances.keys()),
