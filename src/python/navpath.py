@@ -53,7 +53,7 @@ class NavPathEntry:
         if method.__contains__("UNKNOWN"):
             self.unknownMethod = True;
             
-### REFACTORING STARTS HERE
+### REFACTORING STARTS HERE. THE ABOVE WILL BE DEAD CODE SOON.
             
 class NavigationPath(object):
     
@@ -118,9 +118,11 @@ class NavigationPath(object):
         # fileNavigations against the set of known methods by offset. This is
         # what maps Text selection offsets to methods.
         prevNavigation = None
+        postProcessing = False
         
         # Iterate over the data gathered from the Text selection offsets
-        for toNavigation in self.fileNavigations:
+        for i in range(len(self.fileNavigations)):
+            toNavigation = self.fileNavigations[i]
             if self.VERBOSE_PATH:
                 print '\tProcessing text selection offset: ' + str(toNavigation)
             
@@ -151,9 +153,7 @@ class NavigationPath(object):
                         
             # We query known methods here to see if the offset of the current
             # toNavigation is among the known patches.
-            
             toMethodPatch = self.knownPatches.findMethodByOffset(toNavigation.filePath, toNavigation.offset)
-            
             fromNavigation = None
             fromMethodPatch = None
             
@@ -182,14 +182,56 @@ class NavigationPath(object):
             
             if not navigation.isToSameMethod():
                 self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, navigation)
+                self.navigations.append(navigation)
                 
-                # If the current navigation's from does not have a method FQN,
-                # then it was not a valid navigation, so don't count it, except
-                # for the first navigation where fromFileNav itself should be
-                # None
-                if navigation.fromFileNav is None or navigation.fromFileNav.methodFqn is not None:
-                    self.navigations.append(navigation)
+                if navigation.fromFileNav is not None:
+                    if navigation.fromFileNav.methodFqn is None:
+                        postProcessing = True
+                        navigation.fromFileNav.isGap = True
+                        prevNavigation.toFileNav.isGap = True
         c.close()
+        
+        if postProcessing:
+            self.__removeGapNavigations()
+            
+    def __removeGapNavigations(self):
+        # We do a second pass over the navigations so that we remove any
+        # parts of the navigation that have been previously identified as being
+        # a navigation to a gap (a space between two method definitions).
+        finalNavigations = []
+        fromNav = None
+        toNav = None
+        foundGap = False
+        
+        for navigation in self.navigations:
+            if not foundGap:
+                if navigation.fromFileNav is None:
+                    if navigation.toFileNav.isGap:
+                        fromNav = navigation.fromFileNav
+                        foundGap = True
+                    else:
+                        finalNavigations.append(navigation)
+                elif not navigation.fromFileNav.isGap and navigation.toFileNav.isGap:
+                    fromNav = navigation.fromFileNav
+                    foundGap = True
+                elif navigation.fromFileNav.isGap and navigation.toFileNav.isGap:
+                    raise RuntimeError('removeGapNavigations: cannot have a navigation with a fromFileNav that is a gap without a prior navigation with a gap in the toFileNav')
+                else:
+                    if not navigation.isToSameMethod():
+                        finalNavigations.append(navigation)
+            elif foundGap:
+                if navigation.fromFileNav.isGap and not navigation.toFileNav.isGap:
+                    toNav = navigation.toFileNav
+                    foundGap = False
+                    newNavigation = Navigation(fromNav, toNav)
+                    if not newNavigation.isToSameMethod():
+                        finalNavigations.append(Navigation(fromNav, toNav))
+                elif navigation.fromFileNav.isGap and navigation.toFileNav.isGap:
+                    continue
+                else:
+                    raise RuntimeError('removeGapNavigations: cannot have a fromFileNav without a gap if the prior navigation had a gap in the toFileNav')
+                    
+        self.navigations = finalNavigations
         
     def __addPFIGFileHeadersIfNeeded(self, conn, prevNav, currNav):
         # If it's the first navigation, don't do anything
@@ -285,6 +327,7 @@ class FileNavigation(object):
         self.filePath = filePath;
         self.offset = offset
         self.methodFqn = None
+        self.isGap = False
         
     def clone(self):
         fileNavClone = FileNavigation(self.timestamp, self.filePath, self.offset)

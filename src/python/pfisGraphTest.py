@@ -18,10 +18,6 @@ def main():
     graph.updateGraphByOneNavigation()
     prediction = graph.makePrediction(Adjacency(langHelper))
     print str(prediction)
-    graph.updateGraphByOneNavigation()
-    graph.updateGraphByOneNavigation()
-    graph.updateGraphByOneNavigation()
-    graph.updateGraphByOneNavigation()
     prediction = graph.makePrediction(Recency(langHelper))
     print str(prediction)
     

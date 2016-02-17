@@ -48,6 +48,33 @@ class KnownPatches(object):
                 return method
         return None
     
+    def isOffsetInGap(self, filePath, offset):
+        # Because there is no gap between the file header and the 1st method, we
+        # only need to consider gaps from the 1st declaration onwards
+        norm = self.langHelper.normalize(filePath)
+        
+        if norm == '' or norm not in self.files:
+            raise RuntimeError('isOffsetInGap: knownPatches does not contain the normalized file: ' + norm)
+        
+        methods = self.files[norm]
+        if len(methods) == 0:
+            return False
+        
+        lowestOffset = methods[0].startOffset
+        
+        for method in methods:
+            if method.startOffset < lowestOffset:
+                lowestOffset = method.startOffset
+            if method.isOffsetInMethod(offset):
+                return False
+        
+        if offset < lowestOffset:
+            # We are in what will eventually be the header, so return False
+            return False
+        
+        return True
+            
+    
     def getAdajecentMethods(self):
         # Returns a list of method lists where each inner list is the set of
         # methods in a file ordered by offset.
