@@ -4,8 +4,8 @@ import operator
 
 class Frequency(PredictiveAlgorithm):
         
-    def __init__(self, langHelper):
-        PredictiveAlgorithm.__init__(self, langHelper)
+    def __init__(self, langHelper, name):
+        PredictiveAlgorithm.__init__(self, langHelper, name)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
@@ -53,6 +53,8 @@ class Frequency(PredictiveAlgorithm):
        	# sortedMethodsAndFrequencies equals a list of tupes (visitedMethod, frequency) sorted by frequency
         print visitedMethods
         sortedMethodsAndFrequencies = sorted(visitedMethods.items(), key=operator.itemgetter(1))
+        # Descending order
+        sortedMethodsAndFrequencies.reverse()
         print sortedMethodsAndFrequencies
         
         # Get the first element of each tuple (visitedMethod)
