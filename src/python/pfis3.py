@@ -362,7 +362,7 @@ def loadScentRelatedNodes(graph, dbFile, stopWords, timestamp):
                 graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
 
-            for word in __getWordNodes_splitCamelAndStem(referrer, stopWords):
+            for word in getWordNodes_splitCamelAndStem(referrer, stopWords):
                 graph.add_edge(target, word)
                 if VERBOSE_BUILD: print "\tAdding edge from", target, "to", word[1]
     c.close()
@@ -590,7 +590,7 @@ def __getWordNodes_splitNoStem(s, stopWords):
                 for word in re.split(r'\W+|\s+', s) \
                 if word != '' and word.lower() not in stopWords]
 
-def __getWordNodes_splitCamelAndStem(s, stopWords):
+def getWordNodes_splitCamelAndStem(s, stopWords):
     # Returns a list of word nodes from the given string after stripping all
     # non-alphanumeric characters, splitting camel case and stemming each word.
     # A word node is a tuple that contains 'word' and a String containing the

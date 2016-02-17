@@ -65,8 +65,29 @@ class PfisGraph(object):
     
         conn.close()
         
-    def makePrediction(self, predictiveAlgorithm):
-        predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)
+    def makeAllPredictions(self, algorithms):
+        if len(self.navPath.navigations) < 2:
+            raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
+        
+        # Build the output data structure
+        results = {}
+        for algorithm in algorithms:
+            results[algorithm.name] = []
+            
+        totalPredictions = len(self.navPath.navigations) - 1
+        
+        for _ in range(1, totalPredictions + 1):
+            self.updateGraphByOneNavigation()
+            print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
+            for algorithm in algorithms:
+                results[algorithm.name].append(self.__makePrediction(algorithm))
+        
+        print 'Done making predictions.'
+        return results 
+        
+    def __makePrediction(self, predictiveAlgorithm):
+        print '\tMaking predictions for ' + predictiveAlgorithm.name + '...'
+        return predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)
         
     def __addScentNodesUpTo(self, conn, newEndTimestamp):
         # Inserts nodes into the graph up to a given timestamp in the database
@@ -114,7 +135,7 @@ class PfisGraph(object):
                 for word in self.__getWordNodes_splitNoStem(referrer, self.stopWords):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
                     
-                for word in self.__getWordNodes_splitCamelAndStem(referrer, self.stopWords):
+                for word in self.getWordNodes_splitCamelAndStem(referrer, self.stopWords):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         c.close()
         
@@ -270,7 +291,11 @@ class PfisGraph(object):
     #==============================================================================#
     
     def __addEdge(self, node1, node2, node1Type, node2Type, edgeType):
-        self.graph.add_edge(node1, node2, type=edgeType)
+        if self.graph.has_edge(node1, node2):
+            self.graph.edge[node1][node2]['types'].append(edgeType)
+        else:
+            self.graph.add_edge(node1, node2, attr_dict={'types': [edgeType]})
+            
         self.graph.node[node1]['type'] = node1Type
         self.graph.node[node2]['type'] = node2Type
         # if self.VERBOSE_BUILD: 
@@ -285,7 +310,7 @@ class PfisGraph(object):
                     for word in re.split(r'\W+|\s+', s) \
                     if word != '' and word.lower() not in stopWords]
     
-    def __getWordNodes_splitCamelAndStem(self, s, stopWords):
+    def getWordNodes_splitCamelAndStem(self, s, stopWords):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters, splitting camel case and stemming each word.
         # A word node is a tuple that contains 'word' and a String containing the

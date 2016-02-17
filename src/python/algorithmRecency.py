@@ -3,8 +3,8 @@ from predictions import PredictionEntry
 
 class Recency(PredictiveAlgorithm):
         
-    def __init__(self, langHelper):
-        PredictiveAlgorithm.__init__(self, langHelper)
+    def __init__(self, langHelper, name):
+        PredictiveAlgorithm.__init__(self, langHelper, name)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
