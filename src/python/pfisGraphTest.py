@@ -21,8 +21,8 @@ def main():
     pfisWithoutHistoryWithGoal = PFIS(langHelper, 'PFIS without history, with goal', goal = ['textarea', 'fold', 'delete', 'line'], stopWords=stopWords)
     adjacency = Adjacency(langHelper, 'Adjacency')
     recency = Recency(langHelper, 'Recency')
-    algorithms = [pfisWithHistory, pfisWithoutHistory, pfisWithoutHistoryWithGoal, adjacency, recency]
-#     algorithms = [adjacency]
+#     algorithms = [pfisWithHistory, pfisWithoutHistory, pfisWithoutHistoryWithGoal, adjacency, recency]
+    algorithms = [adjacency]
     
     graph = PfisGraph(db_copy, langHelper, projSrc, stopWords = stopWords)
     results = graph.makeAllPredictions(algorithms)
