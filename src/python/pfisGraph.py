@@ -229,7 +229,7 @@ class PfisGraph(object):
                                targetNodeType,
                                referrerNodeType,
                                EdgeType.CALLS)
-                # Link the called method it its class
+                # Link the called method to its class
                 fqn = self.__getClassFQN(referrer)
                 self.__addEdge(fqn, referrer, 
                                NodeType.CLASS, 

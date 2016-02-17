@@ -21,17 +21,14 @@ class CodeStructure(PredictiveAlgorithm):
         if not navToPredict.isToUnknown() and methodToPredict in pfisGraph.graph.node:
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
-                return PredictionEntry(navNumber, result, len(self.nodeDistances.keys()),
+                return PredictionEntry(navNumber, result, len(self.nodeDistances.keys()), 0,
                            fromMethodFqn,
                            methodToPredict,
-                           self.langHelper.between_class(fromMethodFqn, methodToPredict),
-                           self.langHelper.between_package(fromMethodFqn, methodToPredict),
                            navToPredict.toFileNav.timestamp)
         
-        return PredictionEntry(navNumber, 999999, len(self.nodeDistances.keys()),
+        return PredictionEntry(navNumber, 999999, len(self.nodeDistances.keys()), 0,
                            str(navToPredict.fromFileNav),
                            str(navToPredict.toFileNav),
-                           False, False,
                            navToPredict.toFileNav.timestamp)
     
     def __breadthFirstSearch(self, pfisGraph, fromNode, methodToPredict):

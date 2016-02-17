@@ -9,7 +9,7 @@ from algorithmSourceTopology import SourceTopology
 
 
 def main():    
-    db = '/Users/Dave/Desktop/code/fse16/p3.db'
+    db = '/Users/Dave/Desktop/code/fse16/p4.db'
     db_copy = '/Users/Dave/Desktop/code/PFIG_temp.db'
     copyDatabase(db, db_copy)
     
