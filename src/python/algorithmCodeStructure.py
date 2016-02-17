@@ -57,7 +57,6 @@ class CodeStructure(PredictiveAlgorithm):
         for neighbor in validNeighbors:
             if neighbor in self.visitedNodes: continue
             else:
-                print currentNode + ' --> ' + neighbor
                 return 1 + self.__searchFor(pfisGraph, currentNode, neighbor, methodToFind)
         return -1
         
