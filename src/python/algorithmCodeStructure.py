@@ -17,22 +17,27 @@ class CodeStructure(PredictiveAlgorithm):
         fromMethodFqn = navToPredict.fromFileNav.methodFqn
         methodToPredict = navToPredict.toFileNav.methodFqn
         self.nodeDistances = {}
+        sortedRanksMethodsOnly = []
         
         if not navToPredict.isToUnknown() and methodToPredict in pfisGraph.graph.node:
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
                 sortedRanks = sorted(self.nodeDistances, key = lambda node: self.nodeDistances[node])
-                firstIndex = self.getFirstIndex(sortedRanks, self.nodeDistances, result)
-                lastIndex = self.getLastIndex(sortedRanks, self.nodeDistances, result)
+                sortedRanksMethodsOnly = self.getRanksForMethodsOnly(sortedRanks, pfisGraph)
+                
+                firstIndex = self.getFirstIndex(sortedRanksMethodsOnly, self.nodeDistances, result)
+                lastIndex = self.getLastIndex(sortedRanksMethodsOnly, self.nodeDistances, result)
                 numTies = lastIndex - firstIndex + 1
                 rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
+                topPredictions = self.getTopPredictions(sortedRanksMethodsOnly, self.nodeDistances)
                 
-                return Prediction(navNumber, rankWithTies, len(self.nodeDistances.keys()), numTies,
+                return Prediction(navNumber, rankWithTies, len(sortedRanksMethodsOnly), numTies,
                            fromMethodFqn,
                            methodToPredict,
-                           navToPredict.toFileNav.timestamp)
+                           navToPredict.toFileNav.timestamp,
+                           topPredictions)
         
-        return Prediction(navNumber, 999999, len(self.nodeDistances.keys()), 0,
+        return Prediction(navNumber, 999999, len(sortedRanksMethodsOnly), 0,
                            str(navToPredict.fromFileNav),
                            str(navToPredict.toFileNav),
                            navToPredict.toFileNav.timestamp)
@@ -53,6 +58,8 @@ class CodeStructure(PredictiveAlgorithm):
                 if neighbor not in self.nodeDistances:
                     self.nodeDistances[neighbor] = self.nodeDistances[currentNode] + 1
                     queue.append(neighbor)
+                    
+        del self.nodeDistances[fromNode]
                     
         if methodToPredict in self.nodeDistances:
             return self.nodeDistances[methodToPredict] 

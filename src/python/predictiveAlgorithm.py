@@ -1,3 +1,4 @@
+from pfisGraph import NodeType
 class PredictiveAlgorithm(object):
     
     def __init__(self, langHelper, name, fileName):
@@ -22,3 +23,17 @@ class PredictiveAlgorithm(object):
         for i in range(len(sortedRankList) - 1, -1, -1):
             if mapNodeToRank[sortedRankList[i]] == value: return i
         return -1
+    
+    def getRanksForMethodsOnly(self, sortedRankList, pfisGraph):
+        methods = []
+        for node in sortedRankList:
+            if pfisGraph.graph.node[node]['type'] == NodeType.METHOD:
+                methods.append(node)
+                
+        return methods
+    
+    def getTopPredictions(self, sortedRankList, mapNodeToRank):
+        value = mapNodeToRank[sortedRankList[0]]
+        for i in range(1, len(sortedRankList)):
+            if mapNodeToRank[sortedRankList[i]] != value:
+                return sortedRankList[0:i]

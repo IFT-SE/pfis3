@@ -4,13 +4,13 @@ import getopt
 
 from languageHelperFactory import LanguageHelperFactory
 from algorithmPFIS import PFIS
+from algorithmPFISTouchOnce import PFISTouchOnce
 from algorithmAdjacency import Adjacency
 from algorithmFrequency import Frequency
 from algorithmRecency import Recency
 from algorithmCallDepth import CallDepth
 from algorithmSourceTopology import SourceTopology
 from pfisGraph import PfisGraph
-from algorithmPFISTouchOnce import PFISTouchOnce
 
 def print_usage():
     print "python pfis3.py -d <path to PFIG database> -s <path to stop words file>"
@@ -81,11 +81,8 @@ def main():
     frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')    
     callDepth = CallDepth(langHelper, 'Undirected Call Depth', 'undirected_call_depth.txt')
     sourceTopology = SourceTopology(langHelper, 'Source Topology', 'source_topology.txt')
-    #algorithms = [pfisWithHistory, pfisWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
-    algorithms = [pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory]
-    
-    # Commented out frequency until Taylor finishes updating it
-    # frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')
+    algorithms = [pfisWithHistory, pfisWithoutHistory, pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
+#     algorithms = [pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory]
 
     stopWords = loadStopWords(args['stopWordsPath'])
 

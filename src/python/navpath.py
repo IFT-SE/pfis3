@@ -18,8 +18,6 @@ class NavigationPath(object):
         self.VERBOSE_PATH = verbose
 
         conn = sqlite3.connect(self.dbFilePath)
-        print conn
-
         conn.row_factory = sqlite3.Row
         
         if self.VERBOSE_PATH:

@@ -34,6 +34,9 @@ class KnownPatches(object):
         return None
                     
     def findMethodByOffset(self, filePath, offset):
+        # TODO: If there is an inner method, make sure that the innermost gets
+        # returned
+        
         # Query the known patches by an offset. If a method corresponds to this
         # offset in the given file, then its corresponding MethodData object is
         # returned, otherwise, None is returned.
