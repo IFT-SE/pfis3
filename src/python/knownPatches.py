@@ -34,8 +34,6 @@ class KnownPatches(object):
         return None
                     
     def findMethodByOffset(self, filePath, offset):
-        # TODO: If there is an inner method, make sure that the innermost gets
-        # returned
         
         # Query the known patches by an offset. If a method corresponds to this
         # offset in the given file, then its corresponding MethodData object is
@@ -46,9 +44,13 @@ class KnownPatches(object):
             return None
         
         methods = self.files[norm]
-        for method in methods:
-            if method.isOffsetInMethod(offset):
-                return method
+
+        surroundingMethods = [method for method in methods if method.isOffsetInMethod(offset)]
+
+        if surroundingMethods is not None and len(surroundingMethods) > 0:
+            sortedSurroundingMethods = sorted(surroundingMethods, key=lambda method:method.startOffset, reverse=True)
+            return sortedSurroundingMethods[0]
+
         return None
     
     def isOffsetInGap(self, filePath, offset):
