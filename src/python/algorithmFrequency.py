@@ -6,7 +6,8 @@ class Frequency(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
-        
+   	self.__methodFrequencies = {}
+     
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
@@ -24,20 +25,20 @@ class Frequency(PredictiveAlgorithm):
                     result = self.__methodFrequencies[methodFqn]
                     
                     sortedRanks = sorted(self.__methodFrequencies, key = lambda freq: self.__methodFrequencies[freq])
-                    firstIndex = self.__getFirstIndex(sortedRanks, result)
-                    lastIndex = self.__getLastIndex(sortedRanks, result)
+                    firstIndex = self.getFirstIndex(sortedRanks, self.__methodFrequencies, result)
+                    lastIndex = self.getLastIndex(sortedRanks, self.__methodFrequencies, result)
                     numTies = lastIndex - firstIndex + 1
                     rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
                 
-                    return PredictionEntry(navNumber, rankWithTies, len(self.__methodFrequencies), 0,
+                    return Prediction(navNumber, rankWithTies, len(self.__methodFrequencies), 0,
                                            fromMethodFqn,
                                            methodToPredict,
                                            navToPredict.toFileNav.timestamp)
         
-            return PredictionEntry(navNumber, 999999, len(self.__methodFrequencies), 0,
-                               str(navToPredict.fromFileNav), 
-                               str(navToPredict.toFileNav),
-                               navToPredict.toFileNav.timestamp)
+        return Prediction(navNumber, 999999, len(self.__methodFrequencies), 0,
+                          str(navToPredict.fromFileNav), 
+                          str(navToPredict.toFileNav),
+                          navToPredict.toFileNav.timestamp)
         
     
     def __getOrderedFrequentMethods(self, navPath, navNum):
@@ -50,13 +51,3 @@ class Frequency(PredictiveAlgorithm):
                     self.__methodFrequencies[visitedMethod] += 1
                 else:
                     self.__methodFrequencies[visitedMethod] = 1
-
-    def __getFirstIndex(self, sortedRankList, value):
-        for i in range(0, len(sortedRankList)):
-            if self.__methodFrequencies[sortedRankList[i]] == value: return i
-        return -1
-    
-    def __getLastIndex(self, sortedRankList, value):
-        for i in range(len(sortedRankList) - 1, -1, -1):
-            if self.__methodFrequencies[sortedRankList[i]] == value: return i
-        return -1

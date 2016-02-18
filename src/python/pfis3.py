@@ -5,7 +5,7 @@ import getopt
 from languageHelperFactory import LanguageHelperFactory
 from algorithmPFIS import PFIS
 from algorithmAdjacency import Adjacency
-# from algorithmFrequency import Frequency
+from algorithmFrequency import Frequency
 from algorithmRecency import Recency
 from algorithmCallDepth import CallDepth
 from algorithmSourceTopology import SourceTopology
@@ -75,9 +75,10 @@ def main():
     pfisWithoutHistory = PFIS(langHelper, 'PFIS without history', 'pfis_no_history.txt')
     adjacency = Adjacency(langHelper, 'Adjacency', 'adjacency.txt')
     recency = Recency(langHelper, 'Recency', 'recency.txt')
+    frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')    
     callDepth = CallDepth(langHelper, 'Undirected Call Depth', 'undirected_call_depth.txt')
     sourceTopology = SourceTopology(langHelper, 'Source Topology', 'source_topology.txt')
-    algorithms = [pfisWithHistory, pfisWithoutHistory, adjacency, recency, callDepth, sourceTopology]
+    algorithms = [pfisWithHistory, pfisWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
     
     # Commented out frequency until Taylor finishes updating it
     # frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')
