@@ -4,6 +4,8 @@ import sqlite3
 from navpath import NavigationPath
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
+from predictions import Predictions
+import os
 
 class PfisGraph(object):
     
@@ -33,7 +35,7 @@ class PfisGraph(object):
         self.graph = None
         self.endTimestamp = '0'
         self.navNumber = -1
-        self.navPath = NavigationPath(dbFilePath, langHelper, projSrc, verbose=True)
+        self.navPath = NavigationPath(dbFilePath, langHelper, projSrc, verbose=False)
         self.__initGraph()
     
     def __initGraph(self):
@@ -65,14 +67,15 @@ class PfisGraph(object):
     
         conn.close()
         
-    def makeAllPredictions(self, algorithms):
+    def makeAllPredictions(self, algorithms, outputFolder):
         if len(self.navPath.navigations) < 2:
             raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
         
         # Build the output data structure
         results = {}
         for algorithm in algorithms:
-            results[algorithm.name] = []
+            filePath = os.path.join(outputFolder, algorithm.fileName)
+            results[algorithm.name] = Predictions(filePath)
             
         totalPredictions = len(self.navPath.navigations) - 1
         
@@ -80,7 +83,7 @@ class PfisGraph(object):
             self.updateGraphByOneNavigation()
             print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
             for algorithm in algorithms:
-                results[algorithm.name].append(self.__makePrediction(algorithm))
+                results[algorithm.name].addPrediction(self.__makePrediction(algorithm))
         
         print 'Done making predictions.'
         return results 

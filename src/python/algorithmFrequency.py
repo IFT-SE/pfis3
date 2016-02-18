@@ -1,7 +1,8 @@
 from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import Prediction
+import operator
 
-class Recency(PredictiveAlgorithm):
+class Frequency(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
@@ -10,7 +11,7 @@ class Recency(PredictiveAlgorithm):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
-        methods = self.__getOrderedRecentMethods(navPath, navNumber)
+        methods = self.__getOrderedFrequentMethods(navPath, navNumber)
         navToPredict = navPath.navigations[navNumber]
         
         if not navToPredict.isToUnknown():
@@ -33,17 +34,26 @@ class Recency(PredictiveAlgorithm):
                                navToPredict.toFileNav.timestamp)
         
     
-    def __getOrderedRecentMethods(self, navPath, navNum):
-        visitedMethods = []
+    def __getOrderedFrequentMethods(self, navPath, navNum):
+        visitedMethods = {}
         
         for i in range(navNum + 1):
             nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
                 if visitedMethod in visitedMethods:
-                    visitedMethods.remove(visitedMethod)
-                
-                visitedMethods.append(visitedMethod)
+                    visitedMethods[visitedMethod] += 1
+                else:
+                    visitedMethods[visitedMethod] = 1
         
-        visitedMethods.reverse()
-        return visitedMethods
+        # Sort methods in visitedMethods (keys) by frequency (values)
+        # sortedMethodsAndFrequencies equals a list of tupes (visitedMethod, frequency) sorted by frequency
+        sortedMethodsAndFrequencies = sorted(visitedMethods.items(), key=operator.itemgetter(1))
+        # Descending order
+        sortedMethodsAndFrequencies.reverse()
+        
+        # Get the first element of each tuple (visitedMethod)
+        # sortedMethods equals a list of methods sorted by frequency
+        sortedMethods = [pair[0] for pair in sortedMethodsAndFrequencies] 
+        
+        return sortedMethods
