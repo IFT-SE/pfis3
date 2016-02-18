@@ -4,6 +4,7 @@ import getopt
 
 from languageHelperFactory import LanguageHelperFactory
 from algorithmPFIS import PFIS
+from algorithmPFISTouchOnce import PFISTouchOnce
 from algorithmAdjacency import Adjacency
 from algorithmFrequency import Frequency
 from algorithmRecency import Recency
@@ -73,15 +74,15 @@ def main():
     # on the command line
     pfisWithHistory = PFIS(langHelper, 'PFIS with history', 'pfis_history.txt', history=True)
     pfisWithoutHistory = PFIS(langHelper, 'PFIS without history', 'pfis_no_history.txt')
+    pfisTouchOnceWithHistory = PFISTouchOnce(langHelper, 'PFIS touch once with history', 'pfis_touch_once_with_history.txt')
+    pfisTouchOnceWithoutHistory = PFISTouchOnce(langHelper, 'PFIS touch once no history', 'pfis_touch_once_no_history.txt')
     adjacency = Adjacency(langHelper, 'Adjacency', 'adjacency.txt')
     recency = Recency(langHelper, 'Recency', 'recency.txt')
     frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')    
     callDepth = CallDepth(langHelper, 'Undirected Call Depth', 'undirected_call_depth.txt')
     sourceTopology = SourceTopology(langHelper, 'Source Topology', 'source_topology.txt')
-    algorithms = [pfisWithHistory, pfisWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
-    
-    # Commented out frequency until Taylor finishes updating it
-    # frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')
+    algorithms = [pfisWithHistory, pfisWithoutHistory, pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
+#     algorithms = [sourceTopology]
 
     stopWords = loadStopWords(args['stopWordsPath'])
 

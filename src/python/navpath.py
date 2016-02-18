@@ -18,8 +18,6 @@ class NavigationPath(object):
         self.VERBOSE_PATH = verbose
 
         conn = sqlite3.connect(self.dbFilePath)
-        print conn
-
         conn.row_factory = sqlite3.Row
         
         if self.VERBOSE_PATH:
@@ -47,9 +45,9 @@ class NavigationPath(object):
             timestamp, filePath, offset = \
                 str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
 
-            if prevFilePath != filePath or prevOffset != offset:
-                if self.langHelper.hasCorrectExtension(filePath):
-                    self.fileNavigations.append(FileNavigation(timestamp, filePath, offset))
+            if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in  Java DB
+                    if self.langHelper.hasCorrectExtension(filePath):
+                        self.fileNavigations.append(FileNavigation(timestamp, filePath, offset))
                 
             prevFilePath = filePath
             prevOffset = offset
@@ -95,7 +93,7 @@ class NavigationPath(object):
                 elif action == 'Method declaration offset':
                     method = self.knownPatches.findMethodByFqn(target)
                     if method is not None:
-                        method.startOffset = int(referrer);
+                        method.startOffset = int(referrer)
                 elif action == 'Method declaration length':
                     method = self.knownPatches.findMethodByFqn(target)
                     if method is not None:

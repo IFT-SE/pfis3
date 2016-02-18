@@ -1,5 +1,5 @@
 class Prediction:
-    def __init__(self, navNum, rank, length, numTies, fromLoc, toLoc, timestamp):
+    def __init__(self, navNum, rank, length, numTies, fromLoc, toLoc, timestamp, topPredictions=[]):
 
         self.navNum = str(navNum)
         self.rank = str(rank)
@@ -8,11 +8,12 @@ class Prediction:
         self.fromLoc = fromLoc
         self.toLoc = toLoc
         self.timestamp = str(timestamp)
+        self.topPredictions = topPredictions
 
     def __str__(self):
         return self.navNum + '\t' + self.timestamp + '\t' + self.rank + '\t' \
             + self.length + '\t' + self.numTies + '\t' \
-            + self.fromLoc + '\t' + self.toLoc
+            + self.fromLoc + '\t' + self.toLoc + '\t' + str(self.topPredictions)
 
 class Predictions:
     def __init__(self, filePath):
@@ -22,7 +23,7 @@ class Predictions:
     def getHeaderString(self):
         return "Prediction"+ '\t' + "Timestamp" + '\t' + "Rank" + '\t' \
             + "Out of" + '\t' + "No. of Ties" + '\t' \
-            + "From loc" + '\t' + "To loc" + '\n'
+            + "From loc" + '\t' + "To loc" + '\t' + "Top predictions" + '\n'
 
     def addPrediction(self, logEntry):
         self.entries.append(logEntry);
