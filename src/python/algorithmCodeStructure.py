@@ -1,11 +1,11 @@
 from predictiveAlgorithm import PredictiveAlgorithm
-from predictions import PredictionEntry
+from predictions import Prediction
 from collections import deque
 
 class CodeStructure(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, edgeTypes):
-        PredictiveAlgorithm.__init__(self, langHelper, name)
+    def __init__(self, langHelper, name, fileName, edgeTypes):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
         self.edgeTypes = edgeTypes
         self.nodeDistances = None
         
@@ -27,12 +27,12 @@ class CodeStructure(PredictiveAlgorithm):
                 numTies = lastIndex - firstIndex + 1
                 rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
                 
-                return PredictionEntry(navNumber, rankWithTies, len(self.nodeDistances.keys()), numTies,
+                return Prediction(navNumber, rankWithTies, len(self.nodeDistances.keys()), numTies,
                            fromMethodFqn,
                            methodToPredict,
                            navToPredict.toFileNav.timestamp)
         
-        return PredictionEntry(navNumber, 999999, len(self.nodeDistances.keys()), 0,
+        return Prediction(navNumber, 999999, len(self.nodeDistances.keys()), 0,
                            str(navToPredict.fromFileNav),
                            str(navToPredict.toFileNav),
                            navToPredict.toFileNav.timestamp)

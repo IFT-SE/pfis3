@@ -1,11 +1,11 @@
 from predictiveAlgorithm import PredictiveAlgorithm
-from predictions import PredictionEntry
+from predictions import Prediction
 import operator
 
 class Frequency(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name):
-        PredictiveAlgorithm.__init__(self, langHelper, name)
+    def __init__(self, langHelper, name, fileName):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
@@ -22,13 +22,13 @@ class Frequency(PredictiveAlgorithm):
             rank = 0
             for methodFqn in methods:
                 if methodFqn == methodToPredict:
-                    return PredictionEntry(navNumber, rank, len(methods), 0,
+                    return Prediction(navNumber, rank, len(methods), 0,
                                            fromMethodFqn,
                                            methodToPredict,
                                            navToPredict.toFileNav.timestamp)
                 rank += 1
         
-        return PredictionEntry(navNumber, 999999, len(methods), 0,
+        return Prediction(navNumber, 999999, len(methods), 0,
                                str(navToPredict.fromFileNav), 
                                str(navToPredict.toFileNav),
                                navToPredict.toFileNav.timestamp)

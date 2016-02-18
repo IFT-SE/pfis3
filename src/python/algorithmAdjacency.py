@@ -3,6 +3,6 @@ from pfisGraph import EdgeType
 
 class Adjacency(CodeStructure):
     
-    def __init__(self, langHelper, name):
-        CodeStructure.__init__(self, langHelper, name, [EdgeType.ADJACENT])
+    def __init__(self, langHelper, name, fileName):
+        CodeStructure.__init__(self, langHelper, name, fileName, [EdgeType.ADJACENT])
         

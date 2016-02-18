@@ -1,13 +1,13 @@
 from predictiveAlgorithm import PredictiveAlgorithm
-from predictions import PredictionEntry
+from predictions import Prediction
 from pfisGraph import NodeType
 
 class PFIS(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, history=False, goal = [], \
+    def __init__(self, langHelper, name, fileName, history=False, goal = [], \
                  stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
                  numSpread = 20):
-        PredictiveAlgorithm.__init__(self, langHelper, name)
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
         self.history = history
         self.goal = goal
         self.stopWords = stopWords
@@ -54,12 +54,12 @@ class PFIS(PredictiveAlgorithm):
                 numTies = lastIndex - firstIndex + 1
                 rankWithTies =  self.getRankConsideringTies(firstIndex + 1, numTies)
                 
-                return PredictionEntry(navNumber, rankWithTies, len(sortedMethods), numTies,
+                return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
                        navToPredict.toFileNav.timestamp)
                 
-        return PredictionEntry(navNumber, 999999, len(sortedMethods), 0,
+        return Prediction(navNumber, 999999, len(sortedMethods), 0,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
                        navToPredict.toFileNav.timestamp) 

@@ -1,8 +1,9 @@
 class PredictiveAlgorithm(object):
     
-    def __init__(self, langHelper, name):
+    def __init__(self, langHelper, name, fileName):
         self.langHelper = langHelper
         self.name = name
+        self.fileName = fileName
     
     def makePrediction(self, graph, navPath, navNumber):
         raise NotImplementedError('makePrediction: Not Implemented')

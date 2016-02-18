@@ -1,5 +1,5 @@
-class PredictionEntry:
-    def __init__(self, navNum, rank, numTies, length, fromLoc, toLoc, timestamp):
+class Prediction:
+    def __init__(self, navNum, rank, length, numTies, fromLoc, toLoc, timestamp):
 
         self.navNum = str(navNum)
         self.rank = str(rank)
@@ -24,13 +24,15 @@ class Predictions:
             + "Out of" + '\t' + "No. of Ties" + '\t' \
             + "From loc" + '\t' + "To loc"
 
-    def addEntry(self, logEntry):
+    def addPrediction(self, logEntry):
         self.entries.append(logEntry);
 
-    def saveLog(self):
+    def saveToFile(self):
+        print 'Saving results to ' + self.filePath + '...'
         logFile = open(self.filePath, 'w');
         logFile.write(self.getHeaderString())
         for entry in self.entries:
             logFile.write(str(entry) + '\n');
         logFile.close();
+        print 'Done.'
 
