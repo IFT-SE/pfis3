@@ -28,7 +28,7 @@ def main():
     callDepth = CallDepth(langHelper, 'Undirected Call Depth')
     sourceTopology = SourceTopology(langHelper, 'Source Topology')
 #     algorithms = [pfisWithHistory, pfisWithoutHistory, adjacency, recency, callDepth, sourceTopology]
-    algorithms = [adjacency]
+    algorithms = [pfisWithHistory]
     
     graph = PfisGraph(db_copy, langHelper, projSrc, stopWords = stopWords)
     results = graph.makeAllPredictions(algorithms)
