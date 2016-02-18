@@ -22,8 +22,8 @@ class CodeStructure(PredictiveAlgorithm):
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
                 sortedRanks = sorted(self.nodeDistances, key = lambda node: self.nodeDistances[node])
-                firstIndex = self.__getFirstIndex(sortedRanks, result)
-                lastIndex = self.__getLastIndex(sortedRanks, result)
+                firstIndex = self.getFirstIndex(sortedRanks, self.nodeDistances, result)
+                lastIndex = self.getLastIndex(sortedRanks, self.nodeDistances, result)
                 numTies = lastIndex - firstIndex + 1
                 rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
                 
@@ -68,13 +68,3 @@ class CodeStructure(PredictiveAlgorithm):
                     validNeighbors.append(neighbor)
                 
         return validNeighbors
-    
-    def __getFirstIndex(self, sortedRankList, value):
-        for i in range(0, len(sortedRankList)):
-            if self.nodeDistances[sortedRankList[i]] == value: return i
-        return -1
-    
-    def __getLastIndex(self, sortedRankList, value):
-        for i in range(len(sortedRankList) - 1, -1, -1):
-            if self.nodeDistances[sortedRankList[i]] == value: return i
-        return -1
