@@ -1,6 +1,6 @@
 from algorithmPFISBase import PFISBase
 
-class PFIS(PFISBase):
+class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
                  stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
@@ -26,6 +26,4 @@ class PFIS(PFISBase):
                 edgeWeight = 1.0 / len(neighbors)
                 for neighbor in neighbors:
                     if neighbor not in self.mapNodesToActivation:
-                        self.mapNodesToActivation[neighbor] = 0.0
-                    
-                    self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+                        self.mapNodesToActivation[neighbor] = (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
