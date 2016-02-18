@@ -22,7 +22,7 @@ class Predictions:
     def getHeaderString(self):
         return "Prediction"+ '\t' + "Timestamp" + '\t' + "Rank" + '\t' \
             + "Out of" + '\t' + "No. of Ties" + '\t' \
-            + "From loc" + '\t' + "To loc"
+            + "From loc" + '\t' + "To loc" + '\n'
 
     def addPrediction(self, logEntry):
         self.entries.append(logEntry);
