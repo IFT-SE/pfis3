@@ -20,10 +20,10 @@ class KnownPatches(object):
                 self.files[norm] = []
                 
             # Add the method if it doesn't already exist in the file
-            if self.__isMethodFqn(filePathOrFqn):
+            if self.langHelper.isMethodFqn(filePathOrFqn):
                 if self.__getMethodInMethodList(filePathOrFqn, self.files[norm]) is None:
                     self.files[norm].append(MethodPatch(filePathOrFqn))
-                    
+
     def findMethodByFqn(self, fqn):
         # Query the known patches by a method's FQN. Returns the MethodData
         # object if it was found, or None if it wasn't. The MethodData object
@@ -87,15 +87,6 @@ class KnownPatches(object):
         return adjacentMethodLists
             
 
-    def __isMethodFqn(self, filePathOrFqn):
-        # Check if this FQN is a method.
-        # TODO: Move this to the langHelper?
-        if filePathOrFqn.startswith('L') \
-            and ';' in filePathOrFqn \
-            and '.' in filePathOrFqn:
-            return True
-        return False
-    
     def __getMethodInMethodList(self, methodFqn, methodList):
         # Return the method data object in the list that matches the desired FQN
         for method in methodList:

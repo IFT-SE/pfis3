@@ -16,8 +16,10 @@ class NavigationPath(object):
         self.langHelper = langHelper
         self.projectFolderPath = projectFolderPath
         self.VERBOSE_PATH = verbose
-        
+
         conn = sqlite3.connect(self.dbFilePath)
+        print conn
+
         conn.row_factory = sqlite3.Row
         
         if self.VERBOSE_PATH:
@@ -26,7 +28,7 @@ class NavigationPath(object):
         self.__findMethodsForFileNavigations(conn)
         if self.VERBOSE_PATH:
             print 'Done building path.'
-            self.__printNavigations()
+        self.__printNavigations()
         conn.close()
         
     def __findFileNavigationsInDb(self, conn):
@@ -44,7 +46,7 @@ class NavigationPath(object):
         for row in c:
             timestamp, filePath, offset = \
                 str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
-            
+
             if prevFilePath != filePath or prevOffset != offset:
                 if self.langHelper.hasCorrectExtension(filePath):
                     self.fileNavigations.append(FileNavigation(timestamp, filePath, offset))
@@ -67,7 +69,7 @@ class NavigationPath(object):
         # what maps Text selection offsets to methods.
         prevNavigation = None
         postProcessing = False
-        
+
         # Iterate over the data gathered from the Text selection offsets
         for i in range(len(self.fileNavigations)):
             toNavigation = self.fileNavigations[i]
@@ -82,7 +84,7 @@ class NavigationPath(object):
             # Note that the queries here are by a method's FQN. This allows us
             # to update the method's declaration info if it gets updated at some
             # point in the future.
-            
+
             c = conn.execute(self.METHOD_DECLARATIONS_QUERY, [toNavigation.timestamp])
             for row in c:
                 action, target, referrer = row['action'], \

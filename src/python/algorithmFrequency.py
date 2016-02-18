@@ -6,12 +6,13 @@ class Frequency(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
-        
+   	self.__methodFrequencies = {}
+     
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
-        methods = self.__getOrderedFrequentMethods(navPath, navNumber)
+        self.__getOrderedFrequentMethods(navPath, navNumber)
         navToPredict = navPath.navigations[navNumber]
         
         if not navToPredict.isToUnknown():
@@ -19,41 +20,34 @@ class Frequency(PredictiveAlgorithm):
             methodToPredict = navToPredict.toFileNav.methodFqn
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             
-            rank = 0
-            for methodFqn in methods:
+            for methodFqn in self.__methodFrequencies:
                 if methodFqn == methodToPredict:
-                    return Prediction(navNumber, rank, len(methods), 0,
+                    result = self.__methodFrequencies[methodFqn]
+                    
+                    sortedRanks = sorted(self.__methodFrequencies, key = lambda freq: self.__methodFrequencies[freq])
+                    firstIndex = self.getFirstIndex(sortedRanks, self.__methodFrequencies, result)
+                    lastIndex = self.getLastIndex(sortedRanks, self.__methodFrequencies, result)
+                    numTies = lastIndex - firstIndex + 1
+                    rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
+                
+                    return Prediction(navNumber, rankWithTies, len(self.__methodFrequencies), 0,
                                            fromMethodFqn,
                                            methodToPredict,
                                            navToPredict.toFileNav.timestamp)
-                rank += 1
         
-        return Prediction(navNumber, 999999, len(methods), 0,
-                               str(navToPredict.fromFileNav), 
-                               str(navToPredict.toFileNav),
-                               navToPredict.toFileNav.timestamp)
+        return Prediction(navNumber, 999999, len(self.__methodFrequencies), 0,
+                          str(navToPredict.fromFileNav), 
+                          str(navToPredict.toFileNav),
+                          navToPredict.toFileNav.timestamp)
         
     
     def __getOrderedFrequentMethods(self, navPath, navNum):
-        visitedMethods = {}
         
         for i in range(navNum + 1):
             nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
-                if visitedMethod in visitedMethods:
-                    visitedMethods[visitedMethod] += 1
+                if visitedMethod in self.__methodFrequencies:
+                    self.__methodFrequencies[visitedMethod] += 1
                 else:
-                    visitedMethods[visitedMethod] = 1
-        
-        # Sort methods in visitedMethods (keys) by frequency (values)
-        # sortedMethodsAndFrequencies equals a list of tupes (visitedMethod, frequency) sorted by frequency
-        sortedMethodsAndFrequencies = sorted(visitedMethods.items(), key=operator.itemgetter(1))
-        # Descending order
-        sortedMethodsAndFrequencies.reverse()
-        
-        # Get the first element of each tuple (visitedMethod)
-        # sortedMethods equals a list of methods sorted by frequency
-        sortedMethods = [pair[0] for pair in sortedMethodsAndFrequencies] 
-        
-        return sortedMethods
+                    self.__methodFrequencies[visitedMethod] = 1
