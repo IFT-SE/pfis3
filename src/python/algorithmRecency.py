@@ -18,7 +18,7 @@ class Recency(PredictiveAlgorithm):
             methodToPredict = navToPredict.toFileNav.methodFqn
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             
-            rank = 0
+            rank = 1
             for methodFqn in methods:
                 if methodFqn == methodToPredict:
                     return Prediction(navNumber, rank, len(methods), 0,
