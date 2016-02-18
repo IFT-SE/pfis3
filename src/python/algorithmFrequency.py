@@ -1,13 +1,12 @@
 from predictiveAlgorithm import PredictiveAlgorithm
-from predictions import PredictionEntry
+from predictions import Prediction
 import operator
 
 class Frequency(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name):
-        PredictiveAlgorithm.__init__(self, langHelper, name)
-        self.__methodFrequencies = {}
-
+    def __init__(self, langHelper, name, fileName):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
+        
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 

@@ -1,13 +1,13 @@
 from predictiveAlgorithm import PredictiveAlgorithm
-from predictions import PredictionEntry
+from predictions import Prediction
 from pfisGraph import NodeType
 
 class PFIS(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, history=False, goal = [], \
+    def __init__(self, langHelper, name, fileName, history=False, goal = [], \
                  stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
                  numSpread = 20):
-        PredictiveAlgorithm.__init__(self, langHelper, name)
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
         self.history = history
         self.goal = goal
         self.stopWords = stopWords
@@ -48,13 +48,18 @@ class PFIS(PredictiveAlgorithm):
             sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromMethodFqn)
                 
             if methodToPredict in sortedMethods:
-                rank = sortedMethods.index(methodToPredict) + 1
-                return PredictionEntry(navNumber, rank, len(sortedMethods), 0,
+                value = self.mapNodesToActivation[methodToPredict]
+                firstIndex = self.getFirstIndex(sortedMethods, self.mapNodesToActivation, value)
+                lastIndex = self.getLastIndex(sortedMethods, self.mapNodesToActivation, value)
+                numTies = lastIndex - firstIndex + 1
+                rankWithTies =  self.getRankConsideringTies(firstIndex + 1, numTies)
+                
+                return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
                        navToPredict.toFileNav.timestamp)
                 
-        return PredictionEntry(navNumber, 999999, len(sortedMethods), 0,
+        return Prediction(navNumber, 999999, len(sortedMethods), 0,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
                        navToPredict.toFileNav.timestamp) 
@@ -111,5 +116,3 @@ class PFIS(PredictiveAlgorithm):
             sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method])
             sortedNodes.reverse()
         return sortedNodes
-                
-        
