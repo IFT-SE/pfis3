@@ -4,8 +4,8 @@ from collections import deque
 
 class CodeStructure(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, fileName, edgeTypes):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
+    def __init__(self, langHelper, name, fileName, edgeTypes, includeTop = False):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
         self.edgeTypes = edgeTypes
         self.nodeDistances = None
         
@@ -29,7 +29,10 @@ class CodeStructure(PredictiveAlgorithm):
                 lastIndex = self.getLastIndex(sortedRanksMethodsOnly, self.nodeDistances, result)
                 numTies = lastIndex - firstIndex + 1
                 rankWithTies = self.getRankConsideringTies(firstIndex + 1, numTies)
-                topPredictions = self.getTopPredictions(sortedRanksMethodsOnly, self.nodeDistances)
+                topPredictions = []
+                
+                if self.includeTop:
+                    topPredictions = self.getTopPredictions(sortedRanksMethodsOnly, self.nodeDistances)
                 
                 return Prediction(navNumber, rankWithTies, len(sortedRanksMethodsOnly), numTies,
                            fromMethodFqn,

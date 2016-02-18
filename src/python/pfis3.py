@@ -82,7 +82,7 @@ def main():
     callDepth = CallDepth(langHelper, 'Undirected Call Depth', 'undirected_call_depth.txt')
     sourceTopology = SourceTopology(langHelper, 'Source Topology', 'source_topology.txt')
     algorithms = [pfisWithHistory, pfisWithoutHistory, pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
-#     algorithms = [pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory]
+#     algorithms = [sourceTopology]
 
     stopWords = loadStopWords(args['stopWordsPath'])
 

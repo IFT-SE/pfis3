@@ -5,8 +5,9 @@ from pfisGraph import NodeType
 class PFISBase(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 stopWords = [], decayFactor = 0.85, decayHistory = 0.9):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
+                 stopWords = [], decayFactor = 0.85, decayHistory = 0.9, 
+                 includeTop = False):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
         self.history = history
         self.goal = goal
         self.stopWords = stopWords
@@ -44,6 +45,11 @@ class PFISBase(PredictiveAlgorithm):
             self.spreadActivation(pfisGraph)
             
             sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromMethodFqn)
+            topPredictions = []
+            
+            if self.includeTop:
+                topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
+            
                 
             if methodToPredict in sortedMethods:
                 value = self.mapNodesToActivation[methodToPredict]
@@ -55,7 +61,8 @@ class PFISBase(PredictiveAlgorithm):
                 return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
-                       navToPredict.toFileNav.timestamp)
+                       navToPredict.toFileNav.timestamp,
+                       topPredictions)
                 
         return Prediction(navNumber, 999999, len(sortedMethods), 0,
                        str(navToPredict.fromFileNav), 

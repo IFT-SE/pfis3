@@ -1,10 +1,11 @@
 from pfisGraph import NodeType
 class PredictiveAlgorithm(object):
     
-    def __init__(self, langHelper, name, fileName):
+    def __init__(self, langHelper, name, fileName, includeTop=False):
         self.langHelper = langHelper
         self.name = name
         self.fileName = fileName
+        self.includeTop = includeTop
     
     def makePrediction(self, graph, navPath, navNumber):
         raise NotImplementedError('makePrediction: Not Implemented')

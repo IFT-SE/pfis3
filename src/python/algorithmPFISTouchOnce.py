@@ -4,9 +4,9 @@ class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
                  stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
-                 numSpread = 20):
+                 numSpread = 20, includeTop = False):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          stopWords, decayFactor, decayHistory)
+                          stopWords, decayFactor, decayHistory, includeTop)
         self.history = history
         self.goal = goal
         self.stopWords = stopWords
