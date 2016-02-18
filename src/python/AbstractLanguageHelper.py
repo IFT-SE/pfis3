@@ -69,3 +69,9 @@ class AbstractLanguageHelper:
 
     def getFileName(self, projectFolderPath, className, extn):
         return os.path.join(projectFolderPath, className + extn)
+
+    def isMethodFqn(self, filePathOrFqn):
+        if ';' in filePathOrFqn \
+            and '.' in filePathOrFqn:
+            return True
+        return False

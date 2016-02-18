@@ -28,3 +28,12 @@ class JavaHelper(AbstractLanguageHelper):
         # class to the outer class instead of the inner one.
         loc2 = loc.split('$')[0]
         return loc2
+
+    def isMethodFqn(self, filePathOrFqn):
+        # Check if this FQN is a method.
+        # TODO: Move this to the langHelper?
+        if filePathOrFqn.startswith('L') \
+            and ';' in filePathOrFqn \
+            and '.' in filePathOrFqn:
+            return True
+        return False
