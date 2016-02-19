@@ -4,7 +4,7 @@ from predictions import Prediction
 class WorkingSet(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName, workingSetSize=10):
-	self.__workingSetSize = workingSetSize
+        self.__workingSetSize = workingSetSize
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
@@ -20,7 +20,7 @@ class WorkingSet(PredictiveAlgorithm):
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             
             rank = 1    
-	    for methodFqn in methods:
+            for methodFqn in methods:
                 if methodFqn == methodToPredict:
                     return Prediction(navNumber, rank, len(methods), 0,
                                            fromMethodFqn,

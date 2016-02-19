@@ -37,7 +37,7 @@ class Predictions:
         print 'Appending results to ' + self.outputFolder + '/all.txt...'
         
         logFile = open(self.filePath, 'w');
-        allLogs = open(self.outputFolder + '/all.txt', 'a')
+        allLogs = open(os.path.join(self.outputFolder, 'all.txt'), 'a')
         logFile.write(self.getHeaderString())
         allLogs.write('\n' + self.algName + '\n')
         allLogs.write(self.getHeaderString())
