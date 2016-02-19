@@ -47,7 +47,7 @@ class CodeStructure(PredictiveAlgorithm):
     
     def __breadthFirstSearch(self, pfisGraph, fromNode, methodToPredict):
         if fromNode not in pfisGraph.graph.node:
-            raise RuntimeError('isConnected: Node not found in PFIS Graph: ' + fromNode)
+            raise RuntimeError('breadthFirstSearch: Node not found in PFIS Graph: ' + fromNode)
         
         queue = deque()
         self.nodeDistances[fromNode] = 0

@@ -1,10 +1,11 @@
 from algorithmPFISBase import PFISBase
+from collections import deque
 
 class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
                  stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
-                 numSpread = 20, includeTop = False):
+                 numSpread = 1, includeTop = False):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
                           stopWords, decayFactor, decayHistory, includeTop)
         self.history = history
@@ -17,13 +18,18 @@ class PFISTouchOnce(PFISBase):
         self.NUM_SPREAD = numSpread
                      
     def spreadActivation(self, pfisGraph):
-        for _ in range(0, self.NUM_SPREAD):
-            for node in self.mapNodesToActivation.keys():
-                if node not in pfisGraph.graph.node:
-                    continue
-                
-                neighbors = pfisGraph.graph.neighbors(node)
-                edgeWeight = 1.0 / len(neighbors)
-                for neighbor in neighbors:
-                    if neighbor not in self.mapNodesToActivation:
-                        self.mapNodesToActivation[neighbor] = (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+        queue = deque()
+        
+        for node in self.mapNodesToActivation:
+            queue.append(node)
+        
+        while len(queue) > 0:
+            currentNode = queue.popleft()
+            neighbors = pfisGraph.graph.neighbors(currentNode)
+            edgeWeight = 1.0 / len(neighbors)
+            
+            for neighbor in neighbors:
+                if neighbor not in self.mapNodesToActivation:
+                    self.mapNodesToActivation[neighbor] = (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+                    queue.append(neighbor)
+                    

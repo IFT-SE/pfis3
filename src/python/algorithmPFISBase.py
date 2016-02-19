@@ -15,6 +15,7 @@ class PFISBase(PredictiveAlgorithm):
         self.DECAY_HISTORY = decayHistory
         self.mapNodesToActivation = None
         
+        
     def spreadActivation(self, pfisGraph):
             raise NotImplementedError('spreadActivation is not implemented in PFISBase')
         
