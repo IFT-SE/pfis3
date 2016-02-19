@@ -1,4 +1,5 @@
 import sys
+import os
 import shutil
 import getopt
 
@@ -68,7 +69,11 @@ def main():
 
     # Start by making a working copy of the database
     copyDatabase(args['dbPath'], args['tempDbPath'])
-    
+   
+    #TODO: Specify this filename in a config file
+    if (os.path.exists(args['outputPath'] + '/all.txt')):
+        os.remove(args['outputPath'] + '/all.txt')
+   
     # Initialize the predictive algorithms.
     # TODO: Replace these with a config file whose path is given as an argument
     # on the command line
@@ -96,7 +101,7 @@ def main():
     sys.exit(0)
     
 def savePredictionsToFiles(results):
-    for algorithm in results:
+     for algorithm in results:
         results[algorithm].saveToFile()
         
 def __saveAlgorithmRanksToOneFile(results, filePath):

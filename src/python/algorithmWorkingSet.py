@@ -1,10 +1,11 @@
 from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import Prediction
 
-class Recency(PredictiveAlgorithm):
+class WorkingSet(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, fileName, includeTop = False):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+    def __init__(self, langHelper, name, fileName, workingSetSize=10):
+	self.__workingSetSize = workingSetSize
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
@@ -18,8 +19,8 @@ class Recency(PredictiveAlgorithm):
             methodToPredict = navToPredict.toFileNav.methodFqn
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             
-            rank = 1
-            for methodFqn in methods:
+            rank = 1    
+	    for methodFqn in methods:
                 if methodFqn == methodToPredict:
                     return Prediction(navNumber, rank, len(methods), 0,
                                            fromMethodFqn,
@@ -35,8 +36,12 @@ class Recency(PredictiveAlgorithm):
     
     def __getOrderedRecentMethods(self, navPath, navNum):
         visitedMethods = []
-        
-        for i in range(navNum + 1):
+        if (navNum <= self.__workingSetSize):
+            workingSetRange = navNum + 1
+        else:
+            workingSetRange = self.__workingSetSize + 1
+
+        for i in range(workingSetRange):
             nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
