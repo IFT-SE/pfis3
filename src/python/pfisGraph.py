@@ -5,7 +5,6 @@ from navpath import NavigationPath
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
 from predictions import Predictions
-import os
 
 class PfisGraph(object):
     
@@ -74,8 +73,7 @@ class PfisGraph(object):
         # Build the output data structure
         results = {}
         for algorithm in algorithms:
-            filePath = os.path.join(outputFolder, algorithm.fileName)
-            results[algorithm.name] = Predictions(filePath)
+            results[algorithm.name] = Predictions(algorithm.name, outputFolder, algorithm.fileName)
             
         totalPredictions = len(self.navPath.navigations) - 1
         

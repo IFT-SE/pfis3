@@ -92,7 +92,7 @@ def main():
     sys.exit(0)
     
 def savePredictionsToFiles(results):
-    for algorithm in results:
+     for algorithm in results:
         results[algorithm].saveToFile()
 
 def loadStopWords(path):
