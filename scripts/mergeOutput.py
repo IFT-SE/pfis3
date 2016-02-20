@@ -20,7 +20,10 @@ def main():
                               and f.endswith('.txt') \
                               and not f.endswith('all.txt') \
                               and not f.endswith(outputFileName)]
-            mergeResults(outputFiles, participantFolder, outputFileName)
+            if len(outputFiles) > 0:
+                mergeResults(outputFiles, participantFolder, outputFileName)
+            else:
+                print "Warning: No model results found in " + participantFolder
         
 def mergeResults(outputFiles, participantFolder, outputFileName):
     combinedOutputFile = open(os.path.join(participantFolder, outputFileName), 'w')
