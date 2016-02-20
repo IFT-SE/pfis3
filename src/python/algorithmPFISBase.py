@@ -5,12 +5,11 @@ from pfisGraph import NodeType
 class PFISBase(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 stopWords = [], decayFactor = 0.85, decayHistory = 0.9, 
+                 decayFactor = 0.85, decayHistory = 0.9, 
                  includeTop = False):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
         self.history = history
         self.goal = goal
-        self.stopWords = stopWords
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
         self.mapNodesToActivation = None
@@ -90,7 +89,7 @@ class PFISBase(PredictiveAlgorithm):
             
     def __initializeGoalWords(self, pfisGraph):
         for word in self.goal:
-            for stemmedWord in pfisGraph.getWordNodes_splitCamelAndStem(word, self.stopWords):
+            for stemmedWord in pfisGraph.getWordNodes_splitCamelAndStem(word):
                 if stemmedWord in pfisGraph.graph.node:
                     if pfisGraph.graph.node[stemmedWord]['type'] == NodeType.WORD:
                         self.mapNodesToActivation[stemmedWord] = 1.0
@@ -106,6 +105,5 @@ class PFISBase(PredictiveAlgorithm):
                 if pfisGraph.graph.node[node]['type'] == NodeType.METHOD:
                     activatedMethodNodes.append(node)
                     
-            sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method])
-            sortedNodes.reverse()
+            sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method], reverse = True)
         return sortedNodes

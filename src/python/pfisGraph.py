@@ -117,10 +117,10 @@ class PfisGraph(object):
                           'Method declaration', 'Constructor invocation',
                           'Method invocation', 'Variable declaration',
                           'Variable type'):
-                for word in self.__getWordNodes_splitNoStem(target, self.stopWords):
+                for word in self.__getWordNodes_splitNoStem(target):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         
-                for word in self.__getWordNodes_splitNoStem(referrer, self.stopWords):
+                for word in self.__getWordNodes_splitNoStem(referrer):
                     self.__addEdge(referrer, word, referrerNodeType, NodeType.WORD, EdgeType.CONTAINS)
         
             # Case 2: These actions have code content within them. In this case we
@@ -133,10 +133,10 @@ class PfisGraph(object):
             elif action in ('Constructor invocation scent',
                             'Method declaration scent',
                             'Method invocation scent'):
-                for word in self.__getWordNodes_splitNoStem(referrer, self.stopWords):
+                for word in self.__getWordNodes_splitNoStem(referrer):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
                     
-                for word in self.getWordNodes_splitCamelAndStem(referrer, self.stopWords):
+                for word in self.getWordNodes_splitCamelAndStem(referrer):
                     self.__addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         c.close()
         
@@ -302,25 +302,27 @@ class PfisGraph(object):
         # if self.VERBOSE_BUILD: 
         # print "\tAdding edge from", node1, "to", node2, "of type", edgeType
     
-    def __getWordNodes_splitNoStem(self, s, stopWords):
+    def __getWordNodes_splitNoStem(self, s):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters. A word node is a tuple containing 'word' and
         # a String containing the word. Words are always lower case. No stemming is
         # done in this case.
+        
         return [word.lower() \
                     for word in re.split(r'\W+|\s+', s) \
-                    if word != '' and word.lower() not in stopWords]
+                    if word != '' and word.lower() not in self.stopWords]
     
-    def getWordNodes_splitCamelAndStem(self, s, stopWords):
+    def getWordNodes_splitCamelAndStem(self, s):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters, splitting camel case and stemming each word.
         # A word node is a tuple that contains 'word' and a String containing the
         # word. Words are always lower case.
+        
         return [PorterStemmer().stem(word).lower() \
-                    for word in self.__splitCamelWords(s, stopWords) \
-                    if word.lower() not in stopWords]
+                    for word in self.__splitCamelWords(s) \
+                    if word.lower() not in self.stopWords]
     
-    def __splitCamelWords(self, s, stopWords):
+    def __splitCamelWords(self, s):
         # Split camel case words. E.g.,
         # camelSplit("HelloWorld.java {{RSSOwl_AtomFeedLoader}}")
         # --> ['Hello', 'World', 'java', 'RSS', 'Owl', 'Atom', 'Feed', 'Loader']

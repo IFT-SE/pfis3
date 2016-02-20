@@ -2,11 +2,11 @@ from algorithmPFISBase import PFISBase
 
 class PFIS(PFISBase):
         
-    def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 stopWords = [], decayFactor = 0.85, decayHistory = 0.9, \
-                 numSpread = 2, includeTop = False):
+    def __init__(self, langHelper, name, fileName, history=False, goal = [], 
+                 decayFactor = 0.85, decayHistory = 0.9, numSpread = 2, 
+                 includeTop = False):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          stopWords, decayFactor, decayHistory, includeTop)
+                          decayFactor, decayHistory, includeTop)
         self.NUM_SPREAD = numSpread
                      
     def spreadActivation(self, pfisGraph):

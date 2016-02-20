@@ -13,6 +13,7 @@ from algorithmWorkingSet import WorkingSet
 from algorithmCallDepth import CallDepth
 from algorithmSourceTopology import SourceTopology
 from pfisGraph import PfisGraph
+from algorithmTFIDF import TFIDF
 
 def print_usage():
     print "python pfis3.py -d <path to PFIG database> -s <path to stop words file>"
@@ -90,16 +91,17 @@ def main():
     frequency = Frequency(langHelper, 'Frequency', 'frequency.txt')    
     callDepth = CallDepth(langHelper, 'Undirected Call Depth', 'undirected_call_depth.txt')
     sourceTopology = SourceTopology(langHelper, 'Source Topology', 'source_topology.txt')
+    tfidf = TFIDF(langHelper, 'TF-IDF', 'tfidf.txt', args['tempDbPath'])
 #     algorithms = [pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory, frequency, adjacency, recency, callDepth, sourceTopology]
 #     algorithms = [pfisWithHistory, pfisWithoutHistory, pfisConvergenceWithHistory, pfisConvergenceWithoutHistory]
-    algorithms = [workingSet, pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory, pfisWithHistory, pfisWithoutHistory]
-
+#     algorithms = [workingSet, pfisTouchOnceWithHistory, pfisTouchOnceWithoutHistory, pfisWithHistory, pfisWithoutHistory]
+    algorithms = [tfidf]
+        
     stopWords = loadStopWords(args['stopWordsPath'])
-
     graph = PfisGraph(args['tempDbPath'], langHelper, args['projectSrcFolderPath'], stopWords = stopWords)
     results = graph.makeAllPredictions(algorithms, args['outputPath'])
     savePredictionsToFiles(results)
-    __saveAlgorithmRanksToOneFile(results, '/Users/Dave/Desktop/p5_combined.txt')
+#     __saveAlgorithmRanksToOneFile(results, '/Users/Dave/Desktop/combined.txt')
     sys.exit(0)
     
 def savePredictionsToFiles(results):
@@ -134,7 +136,7 @@ def loadStopWords(path):
     words = []
     f = open(path)
     for word in f:
-        words.append(word.lower())
+        words.append(word.lower().strip())
     return words
 
 def copyDatabase(dbpath, newdbpath):
