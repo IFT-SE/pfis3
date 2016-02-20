@@ -1,10 +1,9 @@
 import sqlite3
 
 from predictiveAlgorithm import PredictiveAlgorithm
-from gensim.corpora.dictionary import Dictionary
 from gensim import models, similarities
+from gensim.corpora.dictionary import Dictionary
 from gensim.corpora.textcorpus import TextCorpus
-from __builtin__ import True
 from predictions import Prediction
 
 class TFIDF(PredictiveAlgorithm):
