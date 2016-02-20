@@ -18,13 +18,18 @@ class Recency(PredictiveAlgorithm):
             methodToPredict = navToPredict.toFileNav.methodFqn
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             
+            topPrediction = []
+            if self.includeTop:
+                topPrediction = [methods[0]]
+            
             rank = 1
             for methodFqn in methods:
                 if methodFqn == methodToPredict:
                     return Prediction(navNumber, rank, len(methods), 0,
                                            fromMethodFqn,
                                            methodToPredict,
-                                           navToPredict.toFileNav.timestamp)
+                                           navToPredict.toFileNav.timestamp,
+                                           topPrediction)
                 rank += 1
         
         return Prediction(navNumber, 999999, len(methods), 0,
