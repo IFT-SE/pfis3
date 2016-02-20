@@ -4,17 +4,14 @@ from collections import deque
 class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 decayFactor = 0.85, decayHistory = 0.9, numSpread = 1, \
-                 includeTop = False):
+                 decayFactor = 0.85, decayHistory = 0.9, includeTop = False):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
                           decayFactor, decayHistory, includeTop)
         self.history = history
         self.goal = goal
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
-        self.NUM_SPREAD = numSpread
         self.mapNodesToActivation = None
-        self.NUM_SPREAD = numSpread
                      
     def spreadActivation(self, pfisGraph):
         queue = deque()
