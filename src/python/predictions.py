@@ -34,19 +34,13 @@ class Predictions:
 
     def saveToFile(self):
         print 'Saving results to ' + self.filePath + '...'
-        print 'Appending results to ' + self.outputFolder + '/all.txt...'
         
         logFile = open(self.filePath, 'w');
-        allLogs = open(os.path.join(self.outputFolder, 'all.txt'), 'a')
         logFile.write(self.getHeaderString())
-        allLogs.write('\n' + self.algName + '\n')
-        allLogs.write(self.getHeaderString())
         
         for entry in self.entries:
-            allLogs.write(str(entry) + '\n')
             logFile.write(str(entry) + '\n')
         
         logFile.close()
-        allLogs.close()
         
         print 'Done.'
