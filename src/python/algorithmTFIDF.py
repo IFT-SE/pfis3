@@ -32,8 +32,8 @@ class TFIDF(PredictiveAlgorithm):
             
             # The reason we do the query from one extra backwards is because of
             # the duplication nonsense in PFIG
-            if navPath.navigations[navNumber - 1].fromFileNav is not None:
-                startTimestamp = navPath.navigations[navNumber - 1].fromFileNav.timestamp
+#             if navPath.navigations[navNumber - 1].fromFileNav is not None:
+#                 startTimestamp = navPath.navigations[navNumber - 1].fromFileNav.timestamp
             
             conn = sqlite3.connect(self.dbFilePath)
             conn.row_factory = sqlite3.Row

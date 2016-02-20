@@ -41,16 +41,13 @@ class PFISBase(PredictiveAlgorithm):
                 self.__initializeHistory(pfisGraph, navPath, navNumber)
             
             self.__initializeGoalWords(pfisGraph)
-            
             self.spreadActivation(pfisGraph)
-            
             sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromMethodFqn)
             topPredictions = []
             
             if self.includeTop:
                 topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
             
-                
             if methodToPredict in sortedMethods:
                 value = self.mapNodesToActivation[methodToPredict]
                 firstIndex = self.getFirstIndex(sortedMethods, self.mapNodesToActivation, value)
@@ -71,11 +68,12 @@ class PFISBase(PredictiveAlgorithm):
 
     def __initializeHistory(self, pfisGraph, navPath, navNumber):
         activation = 1.0
-        for i in range(navNumber, -1, -1):
+        # Stop before the first navigation
+        for i in range(navNumber, 0, -1):
             nav = navPath.navigations[i]
             
             if not nav.isToUnknown():
-                method = nav.toFileNav.methodFqn
+                method = nav.fromFileNav.methodFqn
                 if method in pfisGraph.graph.node:
                     if pfisGraph.graph.node[method]['type'] == NodeType.METHOD:
                         if method not in self.mapNodesToActivation:

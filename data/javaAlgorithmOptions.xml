@@ -3,23 +3,23 @@
 	<algorithms>
 		<algorithm class="Adjacency" name="Adjacency" fileName="adjacency.txt" enabled="true"></algorithm>
 		<algorithm class="CallDepth" name="Undirected Call Graph"
-			fileName="undirected_call_graph.txt" enabled="true">
+			fileName="undirected_call_graph.txt" enabled="false">
 		</algorithm>
 		<algorithm class="Frequency" name="Frequency"
-			fileName="frequency.txt" enabled="true">
+			fileName="frequency.txt" enabled="false">
 		</algorithm>
 		<algorithm class="PFIS" name="PFIS with history, spread 2"
 			enabled="true" fileName="pfis_history_spread2.txt" history="true">
 		</algorithm>
 		<algorithm class="PFIS" name="PFIS without history, spread 2"
-			enabled="true" fileName="pfis_no_history_spread2.txt">
+			enabled="false" fileName="pfis_no_history_spread2.txt">
 		</algorithm>
 		<algorithm class="PFIS" name="PFIS with history, spread 100"
 			enabled="true" fileName="pfis_history_spread100.txt" history="true"
 			numSpread="100">
 		</algorithm>
 		<algorithm class="PFIS" name="PFIS without history, spread 100" 
-			enabled="true" fileName="pfis_no_history_spread100.txt" numSpread="100">
+			enabled="false" fileName="pfis_no_history_spread100.txt" numSpread="100">
 		</algorithm>
 		<algorithm class="PFISTouchOnce" name="PFIS 1 Touch with history"
 			enabled="true" fileName="pfis_touch_once_with_history.txt" history="true">
@@ -28,16 +28,16 @@
 			enabled="true" fileName="pfis_touch_once_no_history.txt">
 		</algorithm>
 		<algorithm class="Recency" name="Recency"
-			enabled="true" fileName="recency.txt">
+			enabled="false" fileName="recency.txt">
 		</algorithm>
 		<algorithm class="SourceTopology" name="Source Topology"
-			enabled="true" fileName="source_topology.txt">
+			enabled="false" fileName="source_topology.txt">
 		</algorithm>
 		<algorithm class="TFIDF" name="TF-IDF (method)"
-			enabled="true" fileName="tfidf.txt">
+			enabled="false" fileName="tfidf.txt">
 		</algorithm>
 		<algorithm class="WorkingSet" name="Working Set, delta 10"
-			enabled="true" fileName="working_set.txt">
+			enabled="false" fileName="working_set.txt">
 		</algorithm>
 	</algorithms>
 </options>
