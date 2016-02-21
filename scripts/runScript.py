@@ -9,7 +9,7 @@ def main():
         print 'Missing mode. Include -R(un) or -C(ombine) or -M(ulit-factor) -A(ll) in args.'
         sys.exit(2)
         
-    elif args['mode'] == '-R':
+    if args['mode'] == '-R':
         if args["executable"] is None or args["dbDirPath"] is None \
             or args["stopWordsPath"] is None or args["language"] is None \
             or args["projectSrcFolderPath"] is None \
@@ -17,26 +17,33 @@ def main():
             print 'Missing parameters for run mode.'
             sys.exit(2)
         runMode(args)
-    elif args['mode'] == '-C':
+    if args['mode'] == '-C':
         if args["outputPath"] is None or args["combinedFileName"] is None \
             or args["hitRateThreshold"] is None or args['multiModelFileName'] is None:
             print 'Missing parameters for combine mode.'
             sys.exit(2)
         combineMode(args)
-    elif args['mode'] == '-M':
+    if args['mode'] == '-M':
         if args["outputPath"] is None or args["combinedFileName"] is None \
             or args["hitRateThreshold"] is None or args['multiModelFileName'] is None:
             print 'Missing parameters for multi-factor model mode.'
             sys.exit(2)
         multiFactorModelMode(args)
-    elif args['mode'] == '-A':
+    if args['mode'] == '-F':
+        if args["outputPath"] is None or args["finalResultsFileName"] is None \
+            or args['multiModelFileName'] is None:
+            print 'Missing parameters for final results mode.'
+            sys.exit(2)
+        finalResultsMode(args)
+    if args['mode'] == '-A':
         for key in args:
             if args[key] is None: 
                 print 'Missing parameters for all mode.'
                 sys.exit(2)
         runMode(args)
         combineMode(args)
-        multiFactorModelMode(args)            
+        multiFactorModelMode(args)
+        finalResultsMode(args)          
     sys.exit(0)
 
 def runMode(args):
@@ -116,7 +123,7 @@ def combineMode(args):
                 index +=1
             combinedOutputFile.write('\n')
             
-        combinedOutputFile.write('\t\t\tHit Rates:')
+        combinedOutputFile.write('\t\t\tHit rates')
         for n in numHits:
             combinedOutputFile.write('\t' + str(float(n) / (numLines - 1)))
             
@@ -160,7 +167,7 @@ def multiFactorModelMode(args):
         f = open(outputFilePath, 'w')
         numRows = len(mapData[headers[0]])
         numCols = len(headers)
-        hitRates = ['','','','Hit rates =']
+        hitRates = ['','','','Hit rates']
         
         for col in range(0, numCols):
             f.write(headers[col])
@@ -193,15 +200,15 @@ def multiFactorModelMode(args):
         
         f.close()
             
-    def combineModels(mergedFilePath):
-        headers, mapData = getData(mergedFilePath)
+    def combineModels(combinedFilePath):
+        headers, mapData = getData(combinedFilePath)
         
         # headers[4] onwards contains the models and their results
         
         if len(headers) < 2:
             raise RuntimeError("Error: Combined file has fewer than two models' results")
         
-        singleModelHeaders = headers[5:]
+        singleModelHeaders = sorted(headers[5:])
         newModelHeaders = singleModelHeaders
         allHeaders = []
         
@@ -223,12 +230,20 @@ def multiFactorModelMode(args):
                 m1Name = singleModelHeaders[m1]
                 m2Name = multiModelHeaders[m2]
                 
-                if 'pfis' in m1Name or 'pfis' in m2Name: continue
+                if 'pfis' in m1Name or 'pfis' in m2Name or m1Name in m2Name: 
+                    continue
                 
-                modelName = m1Name + '&' + m2Name
+                modelName = ''
                 nameTokens = m2Name.split('&')
+                nameTokens.append(m1Name)
+                sortedTokens = sorted(nameTokens)
                 
-                if m1Name in nameTokens: continue
+                for token in sortedTokens:
+                    modelName += token + '&'
+                modelName = modelName[0:-1]
+                
+                if modelName in newModelHeaders:
+                    continue
                 
                 newModelHeaders.append(modelName)
                 m1Ranks = mapData[m1Name]
@@ -243,9 +258,9 @@ def multiFactorModelMode(args):
         return newModelHeaders
                 
         
-    def getData(mergedFilePath):
+    def getData(combinedFilePath):
         mapData = {}
-        f = open(mergedFilePath, 'r')
+        f = open(combinedFilePath, 'r')
         makeHeader = True
         headers = []
         
@@ -266,7 +281,7 @@ def multiFactorModelMode(args):
     print "runScript.py is creating multi-factor models' results..."
     
     outputDir = args['outputPath']
-    outputFileName = args['multiModelFileName']
+    multiModelFileName = args['multiModelFileName']
     combinedFileName = args['combinedFileName']
     hitThreshold = float(args['hitRateThreshold'])
     
@@ -281,28 +296,125 @@ def multiFactorModelMode(args):
                               if os.path.isdir(os.path.join(subFolder, f))]
         for dbResultsFolder in dbResultsFolders:
             print "Creating multi-factor model results in " + dbResultsFolder
-            mergedFilePath = os.path.join(dbResultsFolder, combinedFileName)
+            combinedFilePath = os.path.join(dbResultsFolder, combinedFileName)
             
-            if os.path.exists(mergedFilePath):
-                outputFilePath = os.path.join(dbResultsFolder, outputFileName)
-                headers, mapData = combineModels(mergedFilePath)
+            if os.path.exists(combinedFilePath):
+                outputFilePath = os.path.join(dbResultsFolder, multiModelFileName)
+                headers, mapData = combineModels(combinedFilePath)
                 writeOutputFile(headers, mapData, outputFilePath, hitThreshold)
             else:
-                print "Warning: Could not find: " + mergedFilePath
+                print "Warning: Could not find: " + combinedFilePath
                 
     print "runScript.py finished creating multi-factor models' results..."
+    
+def finalResultsMode(args):
+    def getHeader(filePath):
+        f = open(filePath, 'r')
+        line = f.readline()
+        
+        # Models start in tokens[4]
+        tokens = line.strip().split('\t')
+        f.close()
+        
+        return tokens[4:]
+    
+    def getHitRates(filePath):
+        hitRates = None
+        f = open(filePath, 'r')
+        
+        for line in f:
+            tokens = line.split('\t')
+            if len(tokens) > 3 and tokens[3] == 'Hit rates':
+                hitRates = tokens[4:]
+                break
+        
+        f.close()
+        
+        return hitRates
+    
+    def writeResults(header, mapPathToHitRates, outputPath):
+        f = open(outputPath, 'w')
+        f.write('path')
+        for item in header:
+            f.write('\t' + item)    
+        f.write('\n')
+        
+        for path in mapPathToHitRates:
+            f.write(path)
+            for hitRate in mapPathToHitRates[path]:
+                f.write('\t' + hitRate)
+            f.write('\n')
+        
+        f.close()
+    
+    print "runScript.py is creating final results..."
+    
+    outputDir = args['outputPath']
+    finalResultsFileName = args['finalResultsFileName']
+    multiModelFileName = args['multiModelFileName']
+    outputFilePath = os.path.join(outputDir, finalResultsFileName)
+    mapPathToHitRates = {}
+    
+    header = None
+    subFolders = [os.path.join(outputDir, d) \
+                   for d in os.listdir(outputDir) \
+                   if os.path.isdir(os.path.join(outputDir, d))]
+
+    for subFolder in subFolders:
+        dbResultsFolders = [os.path.join(subFolder, f) \
+                              for f in os.listdir(subFolder) \
+                              if os.path.isdir(os.path.join(subFolder, f))]
+        for dbResultsFolder in dbResultsFolders:
+            print "Gathering hit rates from " + dbResultsFolder
+            multiModelFilePath = os.path.join(dbResultsFolder, multiModelFileName)
+            
+            if os.path.exists(multiModelFilePath):
+                if header is None:
+                    header = getHeader(multiModelFilePath)
+                    
+                hitRates = getHitRates(multiModelFilePath)
+                if hitRates is None:
+                    print "Couldn't find hit rates in " + multiModelFilePath
+                    sys.exit(2)
+                    
+                mapPathToHitRates[dbResultsFolder] = hitRates
+            else:
+                print "Warning: Could not find: " + multiModelFileName
+    
+    writeResults(header, mapPathToHitRates, outputFilePath)
+    print "runScript.py finished creating final results..."
    
 def print_usage():
-    print "runScript allows a user to execute PFIS3 over a directory containing"
+    print "runScript has four modes:"
+    print "-R allows a user to execute PFIS3 over a directory containing"
     print "SQLite3 PFIG databases. For each database, the pfis3.py script is run"
     print "and a folder containing the model results for each database is is"
-    print "created in the output dir. After results have been created, this script"
-    print "also allows the user to combine those results in a single file in each"
-    print "of the database results' directories and also create optimal multi-"
-    print "factor model results."
+    print "created in the output dir."
     print ""
+    print "-C allows a user to combine the results generated after Run mode. It"
+    print "will create a new file in each results folder that combines the ranks"
+    print "of all the results text files in that folder. It will also calculate"
+    print "hit rates for the given threshold. Results are saved in the results"
+    print "directory."
+    print ""
+    print "-M allows a user to create optimal multi-factor models after Combine"
+    print "mode. It will look for the combined results file in each results"
+    print "folder and use it to find the ranks and hits rates of optimal model"
+    print "combinations. Results are then saved in the same directory as each"
+    print "combined results file found."
+    print ""
+    print "-F allows a user to create a final results file for each multi-factor"
+    print "model results file. It must be run after Multi-factor mode. This takes"
+    print "the hit rate data from each multi-factor model results file and places"
+    print "it in the output directory."
+    print ""
+    print "-A is the same as:"
+    print "    python runscript.py -R -C -M -F <required arguments>"
+    print ""
+    print "All results file names should end in '.txt'. PFIG databases are"
+    print "assumed to end in '.db'"
     print "Usage:"
-    print "python runScript.py -R(un) or -C(ombine) or -M(ulit-factor) or -A(ll):"
+    print "python runScript.py -R(un), -C(ombine), -M(ulit-factor), -(F)inal or -A(ll):"
     print ""
     print "    if -R:"
     print "                    -e <path to pfis3.py>"
@@ -312,18 +424,23 @@ def print_usage():
     print "                    -p <path to project source folder>"
     print "                    -o <path to output folder> "
     print "                    -x <xml options file>"
+    print "    (Note: language must be 'JAVA' or 'JS')"
     print "    if -C:"
     print "                    -o <path to output folder> "
-    print "                    -c <name of combined results file>"
-    print "                    -m <name of multi-factor model results file>"
+    print "                    -c <name of combined results file (xxx.txt)>"
+    print "                    -m <name of multi-factor model results file (yyy.txt)>"
     print "                    -h <hit rate threshold>"
     print "    if -M:"
     print "                    -o <path to output folder> "
-    print "                    -c <name of combined results file>"
-    print "                    -m <name of multi-factor model results file>"
+    print "                    -m <name of multi-factor model results file (yyy.txt)>"
+    print "                    -c <name of combined results file (xxx.txt)>"
     print "                    -h <hit rate threshold>"
-    print "    if -A:          all parameters required"
-    print "for language : say JAVA or JS"
+    print "    if -F:"
+    print "                    -o <path to output folder> "
+    print "                    -f <name of the final results file (zzz.final)>"
+    print "                    -m <name of multi-factor model results file (yyy.txt)>"
+    print "    if -A:"
+    print "                    all parameters required"
 
 def parseArgs():
 
@@ -338,11 +455,12 @@ def parseArgs():
         "combinedFileName" : None,
         "hitRateThreshold" : None,
         "multiModelFileName" : None,
+        "finalResultsFileName" : None,
         "mode" : None
     }
 
     def assign_argument_value(argsMap, option, value):
-        if option == '-R' or option == '-C' or option == '-M' or option =='-A':
+        if option == '-R' or option == '-C' or option == '-M' or option == '-F' or option =='-A':
             arguments['mode'] = option
             return
         
@@ -356,14 +474,15 @@ def parseArgs():
             "-x" : "xml",
             "-c" : "combinedFileName",
             "-h" : "hitRateThreshold",
-            "-m" : "multiModelFileName"
+            "-m" : "multiModelFileName",
+            "-f" : "finalResultsFileName"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMe:d:s:l:p:o:x:c:h:m:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
