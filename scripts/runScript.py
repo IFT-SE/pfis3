@@ -208,7 +208,7 @@ def multiFactorModelMode(args):
         if len(headers) < 2:
             raise RuntimeError("Error: Combined file has fewer than two models' results")
         
-        singleModelHeaders = sorted(headers[5:])
+        singleModelHeaders = sorted(headers[4:])
         newModelHeaders = singleModelHeaders
         allHeaders = []
         
