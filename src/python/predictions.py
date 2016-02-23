@@ -25,8 +25,8 @@ class Predictions:
         self.entries = []
 
     def getHeaderString(self):
-        return "Prediction"+ '\t' + "Timestamp" + '\t' + "Rank" + '\t' \
-            + "Out of" + '\t' + "No. of Ties" + '\t' \
+        return "Prediction"+ '\t' + "Timestamp" + '\t' + self.algName + " Rank" \
+            + '\t' + "Out of" + '\t' + "No. of Ties" + '\t' \
             + "From loc" + '\t' + "To loc" + '\t' + "Top predictions" + '\n'
 
     def addPrediction(self, logEntry):
