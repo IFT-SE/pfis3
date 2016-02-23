@@ -19,13 +19,17 @@ def main():
         runMode(args)
     if args['mode'] == '-C':
         if args["outputPath"] is None or args["combinedFileName"] is None \
-            or args["hitRateThreshold"] is None or args['multiModelFileName'] is None:
+            or args["hitRateThreshold"] is None \
+            or args['multiModelFileName'] is None \
+            or args['ignoreFirstXPredictions'] is None:
             print 'Missing parameters for combine mode.'
             sys.exit(2)
         combineMode(args)
     if args['mode'] == '-M':
         if args["outputPath"] is None or args["combinedFileName"] is None \
-            or args["hitRateThreshold"] is None or args['multiModelFileName'] is None:
+            or args["hitRateThreshold"] is None \
+            or args['multiModelFileName'] is None \
+            or args['ignoreFirstXPredictions'] is None:
             print 'Missing parameters for multi-factor model mode.'
             sys.exit(2)
         multiFactorModelMode(args)
@@ -85,7 +89,7 @@ def runMode(args):
     print "runScript.py finished running models."
         
 def combineMode(args):
-    def combineResultsFiles(outputFiles, participantFolder, outputFileName, hitRateThreshold):
+    def combineResultsFiles(outputFiles, participantFolder, outputFileName, hitRateThreshold, numToIgnore):
         combinedOutputFile = open(os.path.join(participantFolder, outputFileName), 'w')
         combinedOutputFile.write('Prediction\tTimestamp\tFrom loc\tTo loc')
     
@@ -103,10 +107,14 @@ def combineMode(args):
         numHits = []
         for outputFile in outputFiles:
             f = open(outputFile, 'r')
-            f.readline()
+            line = f.readline()
             fileHandlers.append(f)
+            
+            tokens = line.split('\t')
+            algName = tokens[2][0:(tokens[2].rfind(' Rank'))]
             numHits.append(0)
-            combinedOutputFile.write('\t' + outputFile[(outputFile.rfind(os.sep) + 1):outputFile.rfind('.')])
+            combinedOutputFile.write('\t' + algName)
+#             combinedOutputFile.write('\t' + outputFile[(outputFile.rfind(os.sep) + 1):outputFile.rfind('.')])
             
         combinedOutputFile.write('\n')
         
@@ -119,13 +127,14 @@ def combineMode(args):
                 if len(tokens) > 2:
                     combinedOutputFile.write('\t' + tokens[2])
                     if float(tokens[2]) <= hitRateThreshold:
-                        numHits[index] += 1
+                        if i > numToIgnore:
+                            numHits[index] += 1
                 index +=1
             combinedOutputFile.write('\n')
             
         combinedOutputFile.write('\t\t\tHit rates')
         for n in numHits:
-            combinedOutputFile.write('\t' + str(float(n) / (numLines - 1)))
+            combinedOutputFile.write('\t' + str(float(n) / (numLines - 1 - numToIgnore)))
             
         combinedOutputFile.write('\n')
         
@@ -138,6 +147,7 @@ def combineMode(args):
     outputFileName = args['combinedFileName']
     hitRateThreshold = float(args['hitRateThreshold'])
     multiModelFileName = args['multiModelFileName']
+    numToIgnore = int(args['ignoreFirstXPredictions'])
     
     subFolders = [os.path.join(outputDir, d) \
                    for d in os.listdir(outputDir) \
@@ -157,13 +167,13 @@ def combineMode(args):
                               and not f.endswith(outputFileName)]
             if len(outputFiles) > 0:
                 print "Combining results in " + dbResultsFolder
-                combineResultsFiles(outputFiles, dbResultsFolder, outputFileName, hitRateThreshold)
+                combineResultsFiles(outputFiles, dbResultsFolder, outputFileName, hitRateThreshold, numToIgnore)
             else:
                 print "Warning: No model results found in " + dbResultsFolder
     print "runScript.py finished combining models' results."
         
 def multiFactorModelMode(args):
-    def writeOutputFile(headers, mapData, outputFilePath, hitThreshold):
+    def writeOutputFile(headers, mapData, outputFilePath, hitThreshold, numToIgnore):
         f = open(outputFilePath, 'w')
         numRows = len(mapData[headers[0]])
         numCols = len(headers)
@@ -182,7 +192,8 @@ def multiFactorModelMode(args):
                 value = mapData[headers[col]][row]
                 
                 if col > 3 and float(value) <= hitThreshold:
-                    hitRates[col] += 1
+                    if row >= numToIgnore:
+                        hitRates[col] += 1
                 
                 f.write(value)
                 if col < numCols - 1:
@@ -191,7 +202,7 @@ def multiFactorModelMode(args):
                     f.write('\n')
         
         for i in range(4, len(headers)):
-            hitRates[i] = hitRates[i] / numRows
+            hitRates[i] = hitRates[i] / (numRows - numToIgnore)
             
         for col in range(0, numCols):
             f.write(str(hitRates[col]))
@@ -205,8 +216,8 @@ def multiFactorModelMode(args):
         
         # headers[4] onwards contains the models and their results
         
-        if len(headers) < 2:
-            raise RuntimeError("Error: Combined file has fewer than two models' results")
+        if len(headers) < 6:
+            print "Warning: Combined file has fewer than two models' results"
         
         singleModelHeaders = sorted(headers[4:])
         newModelHeaders = singleModelHeaders
@@ -230,17 +241,17 @@ def multiFactorModelMode(args):
                 m1Name = singleModelHeaders[m1]
                 m2Name = multiModelHeaders[m2]
                 
-                if 'pfis' in m1Name or 'pfis' in m2Name or m1Name in m2Name: 
+                if 'pfis' in m1Name.lower() or 'pfis' in m2Name.lower() or m1Name in m2Name: 
                     continue
                 
                 modelName = ''
-                nameTokens = m2Name.split('&')
+                nameTokens = m2Name.split(' & ')
                 nameTokens.append(m1Name)
                 sortedTokens = sorted(nameTokens)
                 
                 for token in sortedTokens:
-                    modelName += token + '&'
-                modelName = modelName[0:-1]
+                    modelName += token + ' & '
+                modelName = modelName[0:-3]
                 
                 if modelName in newModelHeaders:
                     continue
@@ -284,6 +295,7 @@ def multiFactorModelMode(args):
     multiModelFileName = args['multiModelFileName']
     combinedFileName = args['combinedFileName']
     hitThreshold = float(args['hitRateThreshold'])
+    numToIgnore = int(args['ignoreFirstXPredictions'])
     
     subFolders = [os.path.join(outputDir, d) \
                    for d in os.listdir(outputDir) \
@@ -301,7 +313,7 @@ def multiFactorModelMode(args):
             if os.path.exists(combinedFilePath):
                 outputFilePath = os.path.join(dbResultsFolder, multiModelFileName)
                 headers, mapData = combineModels(combinedFilePath)
-                writeOutputFile(headers, mapData, outputFilePath, hitThreshold)
+                writeOutputFile(headers, mapData, outputFilePath, hitThreshold, numToIgnore)
             else:
                 print "Warning: Could not find: " + combinedFilePath
                 
@@ -430,11 +442,13 @@ def print_usage():
     print "                    -c <name of combined results file (xxx.txt)>"
     print "                    -m <name of multi-factor model results file (yyy.txt)>"
     print "                    -h <hit rate threshold>"
+    print "                    -i <number of earliest predictions to ignore>"
     print "    if -M:"
     print "                    -o <path to output folder> "
     print "                    -m <name of multi-factor model results file (yyy.txt)>"
     print "                    -c <name of combined results file (xxx.txt)>"
     print "                    -h <hit rate threshold>"
+    print "                    -i <number of earliest predictions to ignore>"
     print "    if -F:"
     print "                    -o <path to output folder> "
     print "                    -f <name of the final results file (zzz.final)>"
@@ -456,6 +470,7 @@ def parseArgs():
         "hitRateThreshold" : None,
         "multiModelFileName" : None,
         "finalResultsFileName" : None,
+        "ignoreFirstXPredictions": None,
         "mode" : None
     }
 
@@ -475,14 +490,15 @@ def parseArgs():
             "-c" : "combinedFileName",
             "-h" : "hitRateThreshold",
             "-m" : "multiModelFileName",
-            "-f" : "finalResultsFileName"
+            "-f" : "finalResultsFileName",
+            "-i" : "ignoreFirstXPredictions"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
