@@ -100,7 +100,7 @@ class PFISBase(PredictiveAlgorithm):
                 continue
             
             if node in pfisGraph.graph.node:
-                if pfisGraph.graph.node[node]['type'] == NodeType.METHOD:
+                if pfisGraph.graph.node[node]['type'] == NodeType.METHOD and not self.langHelper.excludeMethod(node):
                     activatedMethodNodes.append(node)
                     
             sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method], reverse = True)

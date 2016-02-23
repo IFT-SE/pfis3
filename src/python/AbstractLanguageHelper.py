@@ -75,3 +75,6 @@ class AbstractLanguageHelper:
             and '.' in filePathOrFqn:
             return True
         return False
+
+    def excludeMethod(self, node):
+        return False

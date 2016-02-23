@@ -1,7 +1,10 @@
 from AbstractLanguageHelper import AbstractLanguageHelper
 import os
 
+
 class JavaScriptHelper (AbstractLanguageHelper):
+
+    JS_STD_LIB = 'LJS_Std_lib;.'
 
     def __init__(self):
         fileExtension = ".js"
@@ -19,11 +22,16 @@ class JavaScriptHelper (AbstractLanguageHelper):
         m = self.REGEX_NORM_ECLIPSE.match(string)
         if m:
             return m.group(1)
-        n = self.REGEX_NORM_PATH.match(self.fixSlashes(string))
-        pos = string.rfind(".js")
-        if pos:
-            return string[:pos]
-        return ''
+
+        filepath = self.fixSlashes(string)
+        n = self.REGEX_NORM_PATH.match(filepath)
+        if n:
+            return filepath
 
     def getFileName(self, projectFolderPath, className, extn):
-        return os.path.join(projectFolderPath, className[1:] + extn)
+        return os.path.join(projectFolderPath, className[1:])
+
+    def excludeMethod(self, node):
+        if node.startswith(self.JS_STD_LIB):
+            return True
+        return False
