@@ -1,4 +1,4 @@
-from algorithmsLexicalBase import LexicalBase
+from algorithmLexicalBase import LexicalBase
 from gensim import models
 
 class TFIDF(LexicalBase):
