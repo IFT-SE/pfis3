@@ -69,7 +69,7 @@ class LexicalBase(PredictiveAlgorithm):
 class LexicalHelper(object):    
     METHOD_DECLARATION_SCENT_QUERY = "SELECT action, target, referrer " \
         "FROM logger_log WHERE action = 'Method declaration scent' " \
-        "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp DESC"
+        "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp"
     
     def __init__(self, dbFilePath, langHelper):
         self.corpus = CorpusOfMethodContents()

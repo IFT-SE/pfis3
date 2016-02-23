@@ -7,5 +7,5 @@ class TFIDF(LexicalBase):
             
     def getModel(self):
         # Initialize the model using the corpus
-        return models.TfidfModel(self.corpus)
+        return models.TfidfModel(self.lexicalHelper.corpus)
         
