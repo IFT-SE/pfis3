@@ -41,12 +41,13 @@ class WorkingSet(PredictiveAlgorithm):
     
     def __getOrderedRecentMethods(self, navPath, navNum):
         visitedMethods = []
-        if (navNum <= self.__workingSetSize):
-            workingSetRange = navNum + 1
-        else:
-            workingSetRange = self.__workingSetSize + 1
+        workingSetEndNav = navNum + 1
+        workingSetStartNav = 1
+        
+        if navNum > self.__workingSetSize:
+            workingSetStartNav = navNum - self.__workingSetSize + 1
 
-        for i in range(workingSetRange):
+        for i in range(workingSetStartNav, workingSetEndNav):
             nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn

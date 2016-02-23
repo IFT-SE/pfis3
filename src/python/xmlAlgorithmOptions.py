@@ -7,6 +7,7 @@ from algorithmPFISTouchOnce import PFISTouchOnce
 from algorithmRecency import Recency
 from algorithmSourceTopology import SourceTopology
 from algorithmTFIDF import TFIDF
+from algorithmLSI import LSI
 from algorithmWorkingSet import WorkingSet
 
 class XMLOptionsParser(object):
@@ -52,6 +53,7 @@ class XMLOptionsParser(object):
             elif algClass == 'Recency' : self.__parseRecency(node)
             elif algClass == 'SourceTopology' : self.__parseSourceTopology(node)
             elif algClass == 'TFIDF' : self.__parseTFIDF(node)
+            elif algClass == 'LSI' : self.__parseLSI(node)
             elif algClass == 'WorkingSet' : self.__parseWorkingSet(node)
             else:
                 raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
@@ -142,6 +144,16 @@ class XMLOptionsParser(object):
         
         self.algorithms.append(TFIDF(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], dbFilePath=self.tempDbPath, includeTop=includeTop))
+        
+    def __parseLSI(self, node):
+        includeTop = False
+        numTopics = 200
+        
+        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
+        if 'numTopics' in node.attrib: numTopics = float(node.attrib['numTopics'])
+        
+        self.algorithms.append(LSI(self.langHelper, node.attrib['name'],
+            node.attrib['fileName'], dbFilePath=self.tempDbPath, numTopics=numTopics, includeTop=includeTop))
         
     def __parseWorkingSet(self, node):
         workingSetSize = 10
