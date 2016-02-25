@@ -19,7 +19,7 @@ class AbstractLanguageHelper:
 
 
     def normalize(self, string):
-        raise Exception("Normalize: Not implemented Exception")
+        raise NotImplementedError("Normalize: Not implemented")
 
     def getOuterClass(self, loc):
         return loc
@@ -41,6 +41,9 @@ class AbstractLanguageHelper:
         if m:
             return m.group(1)
         return ''
+    
+    def hasCorrectExtension(self, filePath):
+        return filePath.lower().endswith(self.FileExtension)
 
     #==============================================================================#
     # Helper methods for initial weights on the graph                              #
@@ -67,5 +70,11 @@ class AbstractLanguageHelper:
     def getFileName(self, projectFolderPath, className, extn):
         return os.path.join(projectFolderPath, className + extn)
 
-    def ignore_rank(self, string):
+    def isMethodFqn(self, filePathOrFqn):
+        if ';' in filePathOrFqn \
+            and '.' in filePathOrFqn:
+            return True
+        return False
+
+    def excludeMethod(self, node):
         return False

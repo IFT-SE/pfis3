@@ -1,7 +1,0 @@
-#!/bin/bash
-
-DB='sqlite.db'
-FIXEDDB='sqlite_fixed.db'
-
-echo "Filling database with new navigations..."
-python src/python/buildCorrectDb.py data/$DB data/scrolls-manualCorrection.txt data/navs-manualCorrection.txt data/$FIXEDDB
