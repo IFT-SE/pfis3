@@ -7,6 +7,7 @@ def main():
     args = parseArgs()
     if args['mode'] == None:
         print 'Missing mode. Include -R(un) or -C(ombine) or -M(ulit-factor) -A(ll) in args.'
+        print_usage()
         sys.exit(2)
         
     if args['mode'] == '-R':
@@ -15,6 +16,7 @@ def main():
             or args["projectSrcFolderPath"] is None \
             or args["outputPath"] is None or args["xml"] is None:
             print 'Missing parameters for run mode.'
+            print_usage()
             sys.exit(2)
         runMode(args)
     if args['mode'] == '-C':
@@ -23,6 +25,7 @@ def main():
             or args['multiModelFileName'] is None \
             or args['ignoreFirstXPredictions'] is None:
             print 'Missing parameters for combine mode.'
+            print_usage()
             sys.exit(2)
         combineMode(args)
     if args['mode'] == '-M':
@@ -31,18 +34,21 @@ def main():
             or args['multiModelFileName'] is None \
             or args['ignoreFirstXPredictions'] is None:
             print 'Missing parameters for multi-factor model mode.'
+            print_usage()
             sys.exit(2)
         multiFactorModelMode(args)
     if args['mode'] == '-F':
         if args["outputPath"] is None or args["finalResultsFileName"] is None \
             or args['multiModelFileName'] is None:
             print 'Missing parameters for final results mode.'
+            print_usage()
             sys.exit(2)
         finalResultsMode(args)
     if args['mode'] == '-A':
         for key in args:
             if args[key] is None: 
                 print 'Missing parameters for all mode.'
+                print_usage()
                 sys.exit(2)
         runMode(args)
         combineMode(args)
@@ -53,6 +59,7 @@ def main():
 def runMode(args):
     print "runScript.py is running models..."
 
+    e = args['executable']
     d = args['dbDirPath']
     p = args['projectSrcFolderPath']
     l = args['language']
@@ -78,7 +85,7 @@ def runMode(args):
         print "Running data for " + dbPath + '...'
         
         subprocess.call(['python',
-                        '/Users/Dave/Desktop/code/pfis3/src/python/pfis3.py', \
+                        e, \
                         '-d', dbPath, \
                         '-p', p, \
                         '-l', l, \
