@@ -63,17 +63,20 @@ def main():
     langHelper = LanguageHelperFactory.getLanguageHelper(args['language'])
 
     # Start by making a working copy of the database
-    copyDatabase(args['dbPath'], args['tempDbPath'])
-    
+    workingDbCopy = args['tempDbPath']
+    copyDatabase(args['dbPath'], workingDbCopy)
+
+    langHelper.performDBPostProcessing(workingDbCopy)
+
     # Determine the algorithms to use
-    xmlParser = XMLOptionsParser(args['xml'], langHelper, args['tempDbPath'])
+    xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy)
     algorithms = xmlParser.getAlgorithms()
     
     # Load the stop words file
     stopWords = loadStopWords(args['stopWordsPath'])
     
     # Create the PFIS graph (which also determines the navigations)
-    graph = PfisGraph(args['tempDbPath'], langHelper, args['projectSrcFolderPath'], stopWords = stopWords)
+    graph = PfisGraph(workingDbCopy, langHelper, args['projectSrcFolderPath'], stopWords = stopWords)
    
     # Make predictions for the algorithms specified
     results = graph.makeAllPredictions(algorithms, args['outputPath'])

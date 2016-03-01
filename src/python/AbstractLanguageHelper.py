@@ -78,3 +78,6 @@ class AbstractLanguageHelper:
 
     def excludeMethod(self, node):
         return False
+
+    def performDBPostProcessing(self, db):
+        raise NotImplementedError()

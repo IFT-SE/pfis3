@@ -1,5 +1,6 @@
 from AbstractLanguageHelper import AbstractLanguageHelper
 import os
+from jsAdditionalDbProcessor import JSAdditionalDbProcessor
 
 
 class JavaScriptHelper (AbstractLanguageHelper):
@@ -35,3 +36,6 @@ class JavaScriptHelper (AbstractLanguageHelper):
         if node.startswith(self.JS_STD_LIB):
             return True
         return False
+
+    def performDBPostProcessing(self, db):
+        JSAdditionalDbProcessor(db).process()

@@ -37,3 +37,6 @@ class JavaHelper(AbstractLanguageHelper):
             and '.' in filePathOrFqn:
             return True
         return False
+
+    def performDBPostProcessing(self, db):
+        return
