@@ -6,8 +6,10 @@ agent = '8ea5d9be-d1b5-4319-9def-495bdccb7f51'
 tso_string = "Text selection offset"
 
 INSERT_QUERY = "insert into logger_log values(?,?,?,?,?,?,?,?);"
-FIX_OFFSETS_TO_START_FROM_0_QUERY = "UPDATE logger_log SET referrer = referrer - 1 WHERE action like '%offset' AND referrer > 0"
-GET_ALL_EVENTS_QUERY = "SELECT * FROM logger_log ORDER BY timestamp"
+FIX_OFFSETS_TO_START_FROM_0_QUERY = "UPDATE logger_log SET referrer = referrer - 1 WHERE action like '%offset' AND referrer > 0;"
+GET_ALL_EVENTS_QUERY = "SELECT * FROM logger_log ORDER BY timestamp;"
+GET_TAB_TSO_EVENTS_QUERY = "SELECT * FROM logger_log WHERE action LIKE 'Part%' or action = 'Text selection offset' ORDER BY timestamp;"
+UPDATE_TSO_QUERY = "UPDATE logger_log SET referrer = ? WHERE `index` = ?;"
 
 class DB_FIELDS:
     INDEX = 0
@@ -78,6 +80,44 @@ class JSAdditionalDbProcessor:
 
         conn.close()
 
+    def __updateTSOForEvent(self, conn, event_index, offset):
+        conn.execute(UPDATE_TSO_QUERY, [offset, event_index])
+
+    def fixNavPositionsToPreviousLocationOnFile(self, db):
+        text_selection_offsets = {}
+        update_TSO_to_prev_offset_in_file = False
+        opened_file = None
+
+        conn = sqlite3.connect(db)
+        c = conn.cursor()
+
+        events = c.execute(GET_TAB_TSO_EVENTS_QUERY).fetchall();
+        # timestamp, action target, referrer
+        for event in events:
+            if '[B]' in str(event[DB_FIELDS.REFERRER]):
+                continue
+
+            elif event[DB_FIELDS.ACTION] == 'Part activated':
+                opened_file = event[DB_FIELDS.REFERRER]
+                if text_selection_offsets.get(opened_file, None) != None:
+                    update_TSO_to_prev_offset_in_file = True
+                else:
+                    update_TSO_to_prev_offset_in_file = False
+
+            elif event[DB_FIELDS.ACTION] == 'Text selection offset':
+                logged_offset = event[DB_FIELDS.REFERRER]
+                file = event[DB_FIELDS.TARGET]
+
+                if file == opened_file and logged_offset == '0' and update_TSO_to_prev_offset_in_file == True:
+                    self.__updateTSOForEvent(conn, event[DB_FIELDS.INDEX], text_selection_offsets[file])
+                    update_TSO_to_prev_offset_in_file = False
+                else:
+                    text_selection_offsets[file] = logged_offset
+
+
+        conn.commit()
+        conn.close()
+
     def process(self):
 
         print "Fixing offsets"
@@ -85,3 +125,6 @@ class JSAdditionalDbProcessor:
 
         print "Inserting manual TSO"
         self.addMissingTextSelectionOffsetEvents(self.db)
+
+        print "Fix TSO on closing tabs"
+        self.fixNavPositionsToPreviousLocationOnFile(self.db)
