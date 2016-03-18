@@ -10,15 +10,15 @@ class PFIGFileHeader:
 
 
     @staticmethod
-    def addPFIGJavaFileHeader(conn, navigation, projectFolderPath, langHelper):
+    def addPFIGJavaFileHeader(conn, prevNav, fileNavigation, projectFolderPath, langHelper):
         # This function replaces the fromNav in the navigation with a pfisHeader
         # and also adds that header to the database precisely after it was first
         # visited.
-        className = langHelper.normalize(navigation.fromFileNav.filePath)
+        className = langHelper.normalize(prevNav.toFileNav.filePath)
         classFilePath = langHelper.getFileName(projectFolderPath, className, langHelper.FileExtension)
         
         c = conn.cursor()
-        c.execute(PFIGFileHeader.__METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY, [navigation.toFileNav.timestamp])
+        c.execute(PFIGFileHeader.__METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY, [fileNavigation.timestamp])
         lowestOffset = -1
         fqn = None
         pfigHeader = None
@@ -44,7 +44,7 @@ class PFIGFileHeader:
         # navigation to it. That way, the first navigation to the file will be
         # to an unknown location, but any navigation that follows will be seen
         # as a navigation to the header.
-        if lowestOffset > -1 and navigation.fromFileNav.offset < lowestOffset:
+        if lowestOffset > -1 and prevNav.toFileNav.offset < lowestOffset:
             fqn = fqn + '.pfigheader()V'
             makeHeader = True
         
@@ -57,7 +57,7 @@ class PFIGFileHeader:
             makeHeader = True
             
         if makeHeader:
-            dt = iso8601.parse_date(navigation.fromFileNav.timestamp)
+            dt = iso8601.parse_date(prevNav.toFileNav.timestamp)
             dt += datetime.timedelta(milliseconds=1)
             
             pfigHeader = HeaderData(fqn, lowestOffset, dt)
@@ -73,7 +73,10 @@ class PFIGFileHeader:
         f = open(classFilePath, 'r')
         # This will ready the entire file when given negative number
         contents = f.read(pfigHeader.length)
-        
+
+        if pfigHeader.length == -1:
+            pfigHeader.length = len(contents)
+
         dummy = "auto-generated"
         timestamp = pfigHeader.timestamp
         
