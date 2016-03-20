@@ -5,7 +5,7 @@ class WorkingSet(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName, workingSetSize=10, includeTop = False):
         self.__workingSetSize = workingSetSize
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName)
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
@@ -23,7 +23,7 @@ class WorkingSet(PredictiveAlgorithm):
             if self.includeTop:
                 topPrediction = [methods[0]]
             
-            rank = 1    
+            rank = 1
             for methodFqn in methods:
                 if methodFqn == methodToPredict:
                     return Prediction(navNumber, rank, len(methods), 0,

@@ -134,7 +134,7 @@ class XMLOptionsParser(object):
     def __parseSourceTopology(self, node):
         includeTop = False
         if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
+
         self.algorithms.append(SourceTopology(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], includeTop=includeTop))
         
@@ -160,8 +160,6 @@ class XMLOptionsParser(object):
         includeTop = False
         
         if 'workingSetSize' in node.attrib: workingSetSize = int(node.attrib['workingSetSize'])
-        if 'includeTop' in node and node.attrib['includeTop'] == 'true': includeTop = True
-        
+        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
         self.algorithms.append(WorkingSet(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], workingSetSize=workingSetSize, includeTop=includeTop))
-        

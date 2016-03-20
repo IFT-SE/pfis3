@@ -29,7 +29,8 @@ class PredictiveAlgorithm(object):
         methods = []
         for node in sortedRankList:
             if pfisGraph.graph.node[node]['type'] == NodeType.METHOD:
-                methods.append(node)
+                if not self.langHelper.excludeMethod(node):
+                    methods.append(node)
                 
         return methods
     
@@ -38,3 +39,5 @@ class PredictiveAlgorithm(object):
         for i in range(1, len(sortedRankList)):
             if mapNodeToRank[sortedRankList[i]] != value:
                 return sortedRankList[0:i]
+
+        return sortedRankList[0:len(sortedRankList)]
