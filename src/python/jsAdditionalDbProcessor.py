@@ -8,8 +8,8 @@ tso_string = "Text selection offset"
 INSERT_QUERY = "insert into logger_log values(?,?,?,?,?,?,?,?);"
 FIX_OFFSETS_TO_START_FROM_0_QUERY = "UPDATE logger_log SET referrer = referrer - 1 WHERE action like '%offset' AND referrer > 0;"
 GET_ALL_EVENTS_QUERY = "SELECT * FROM logger_log ORDER BY timestamp;"
-GET_TAB_TSO_EVENTS_QUERY = "SELECT * FROM logger_log WHERE action LIKE 'Part%' or action = 'Text selection offset' ORDER BY timestamp;"
-UPDATE_TSO_QUERY = "UPDATE logger_log SET referrer = ? WHERE `index` = ?;"
+GET_TAB_TSO_EVENTS_QUERY = "SELECT * FROM logger_log WHERE action ='Part activated' or action = 'Text selection offset' ORDER BY timestamp;"
+UPDATE_TSO_QUERY = "UPDATE logger_log SET referrer = ? WHERE `index` = ? AND action = ? and timestamp = ?"
 
 class DB_FIELDS:
     INDEX = 0
@@ -80,8 +80,8 @@ class JSAdditionalDbProcessor:
 
         conn.close()
 
-    def __updateTSOForEvent(self, conn, event_index, offset):
-        conn.execute(UPDATE_TSO_QUERY, [offset, event_index])
+    def __updateTSOForEvent(self, conn, event, offset):
+        conn.execute(UPDATE_TSO_QUERY, [offset, event[DB_FIELDS.INDEX], tso_string, event[DB_FIELDS.TIMESTAMP]])
 
     def fixNavPositionsToPreviousLocationOnFile(self, db):
         text_selection_offsets = {}
@@ -109,11 +109,10 @@ class JSAdditionalDbProcessor:
                 file = event[DB_FIELDS.TARGET]
 
                 if file == opened_file and logged_offset == '0' and update_TSO_to_prev_offset_in_file == True:
-                    self.__updateTSOForEvent(conn, event[DB_FIELDS.INDEX], text_selection_offsets[file])
+                    self.__updateTSOForEvent(conn, event, text_selection_offsets[file])
                     update_TSO_to_prev_offset_in_file = False
                 else:
                     text_selection_offsets[file] = logged_offset
-
 
         conn.commit()
         conn.close()
