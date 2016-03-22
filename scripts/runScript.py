@@ -2,19 +2,24 @@ import getopt
 import os
 import subprocess
 import sys
+import time
+from collections import deque
 
 def main():
     args = parseArgs()
     if args['mode'] == None:
         print 'Missing mode. Include -R(un) or -C(ombine) or -M(ulit-factor) -A(ll) in args.'
+        print_usage()
         sys.exit(2)
         
     if args['mode'] == '-R':
         if args["executable"] is None or args["dbDirPath"] is None \
             or args["stopWordsPath"] is None or args["language"] is None \
             or args["projectSrcFolderPath"] is None \
-            or args["outputPath"] is None or args["xml"] is None:
+            or args["outputPath"] is None or args["xml"] is None \
+            or args["numThreads"] is None:
             print 'Missing parameters for run mode.'
+            print_usage()
             sys.exit(2)
         runMode(args)
     if args['mode'] == '-C':
@@ -23,6 +28,7 @@ def main():
             or args['multiModelFileName'] is None \
             or args['ignoreFirstXPredictions'] is None:
             print 'Missing parameters for combine mode.'
+            print_usage()
             sys.exit(2)
         combineMode(args)
     if args['mode'] == '-M':
@@ -31,18 +37,21 @@ def main():
             or args['multiModelFileName'] is None \
             or args['ignoreFirstXPredictions'] is None:
             print 'Missing parameters for multi-factor model mode.'
+            print_usage()
             sys.exit(2)
         multiFactorModelMode(args)
     if args['mode'] == '-F':
         if args["outputPath"] is None or args["finalResultsFileName"] is None \
             or args['multiModelFileName'] is None:
             print 'Missing parameters for final results mode.'
+            print_usage()
             sys.exit(2)
         finalResultsMode(args)
     if args['mode'] == '-A':
         for key in args:
             if args[key] is None: 
                 print 'Missing parameters for all mode.'
+                print_usage()
                 sys.exit(2)
         runMode(args)
         combineMode(args)
@@ -50,41 +59,69 @@ def main():
         finalResultsMode(args)          
     sys.exit(0)
 
-def runMode(args):
-    print "runScript.py is running models..."
-
+def runMode(args):  
+    NUM_CHILD_PROCESSES = int(args['numThreads'])
     d = args['dbDirPath']
+    o = args['outputPath']
+    e = args['executable']
     p = args['projectSrcFolderPath']
     l = args['language']
     s = args['stopWordsPath']
-    o = args['outputPath']
     x = args['xml']
-    
+
+    # Gather all the database files in the directory
     db_fileNames = [f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)) and f.endswith('.db')]
+    
     # Make the output subdirectory
     dbDirName = os.path.basename(os.path.normpath(d))
     subDir = os.path.join(o, d)
     if not os.path.exists(subDir):
         os.makedirs(subDir)
-    
-    for db in db_fileNames:
         
+    # Create the PFIS jobs
+    print "runScript.py is building the job queue..."
+    
+    jobs = deque()
+    for db in db_fileNames:
         name = db[0:db.index('.')]
         dbPath = os.path.join(d, db)
         dbOutputPath = os.path.join(o, dbDirName, name)
         if not os.path.exists(dbOutputPath):
             os.makedirs(dbOutputPath)
+            
+        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x))
+    
+    print "runScript.py is running models..."
+    print "\tNumber of simultaneous jobs = " + str(NUM_CHILD_PROCESSES)
+    
+    numLeftToRun = len(jobs)
+    runningJobs = deque()
+    
+    while numLeftToRun > 0:
         
-        print "Running data for " + dbPath + '...'
-        
-        subprocess.call(['python',
-                        '/Users/Dave/Desktop/code/pfis3/src/python/pfis3.py', \
-                        '-d', dbPath, \
-                        '-p', p, \
-                        '-l', l, \
-                        '-s', s, \
-                        '-o', dbOutputPath, \
-                        '-x', x])
+        # If the running job slots are full or equal to the number of jobs left 
+        # to run, then poll the jobs until a job finishes
+        if len(runningJobs) == NUM_CHILD_PROCESSES \
+            or len(runningJobs) == numLeftToRun:
+            for i in range(len(runningJobs) - 1, -1, -1):
+                job = runningJobs[i]
+                
+                # If the job finished, remove it from the running slots
+                if job.process.poll() is not None:
+                    print "\tPFIS job finished. Removed PFIS job '" + job.d + "' from active jobs."
+                    numLeftToRun -= 1
+                    del runningJobs[i]
+                    
+            # Wait before polling the job slots again
+            time.sleep(0.5)
+                
+                    
+        # If there is an empty job slot, then add a job and start it
+        else:
+            pfisJob = jobs.popleft()
+            print "\tAdding PFIS job for file '" + pfisJob.d + "' to the active jobs..."
+            pfisJob.startJob()
+            runningJobs.append(pfisJob)
         
     print "runScript.py finished running models."
         
@@ -436,6 +473,7 @@ def print_usage():
     print "                    -p <path to project source folder>"
     print "                    -o <path to output folder> "
     print "                    -x <xml options file>"
+    print "                    -t <number of PFIS processes to run simultaneously> "
     print "    (Note: language must be 'JAVA' or 'JS')"
     print "    if -C:"
     print "                    -o <path to output folder> "
@@ -470,7 +508,8 @@ def parseArgs():
         "hitRateThreshold" : None,
         "multiModelFileName" : None,
         "finalResultsFileName" : None,
-        "ignoreFirstXPredictions": None,
+        "ignoreFirstXPredictions" : None,
+        "numThreads" : None,
         "mode" : None
     }
 
@@ -491,14 +530,15 @@ def parseArgs():
             "-h" : "hitRateThreshold",
             "-m" : "multiModelFileName",
             "-f" : "finalResultsFileName",
-            "-i" : "ignoreFirstXPredictions"
+            "-i" : "ignoreFirstXPredictions",
+            "-t" : "numThreads"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
@@ -509,6 +549,34 @@ def parseArgs():
 
     return arguments
 
+
+class PFISJob(object):
+    
+    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath, xmlPath):
+        self.e = executablePath
+        self.d = dbPath
+        self.p = projectSrcPath
+        self.l = language
+        self.s = stopWordsPath
+        self.o = dbOutputPath
+        self.x = xmlPath
+        self.process = None
+    
+    def startJob(self):
+        stdoutPath = os.path.join(self.o, '_stdout.log')
+        stderrPath = os.path.join(self.o, '_stderr.log')
+        stdoutLog = open(stdoutPath, 'w')
+        stderrLog = open(stderrPath, 'w')
+        
+        self.process = subprocess.Popen(['python', self.e, \
+                                         '-d', self.d, \
+                                         '-p', self.p, \
+                                         '-l', self.l, \
+                                         '-s', self.s, \
+                                         '-o', self.o, \
+                                         '-x', self.x], \
+                                         stdout = stdoutLog, \
+                                         stderr = stderrLog)
 
 if __name__ == '__main__':
     main()
