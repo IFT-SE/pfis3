@@ -14,6 +14,9 @@ class KnownPatches(object):
         # match a normalized path if both are representing the same class.
         norm = self.langHelper.normalize(filePathOrFqn)
         if norm != '':
+            # Get the outer class because the data structure is by file name
+            norm = self.langHelper.getOuterClass(norm)
+            
             # Set up the initial empty list if this is the first instance of the
             # file
             if norm not in self.files:
@@ -29,6 +32,9 @@ class KnownPatches(object):
         # object if it was found, or None if it wasn't. The MethodData object
         # can then be updated as necessary.
         norm = self.langHelper.normalize(fqn)
+        
+        # Get the outer class because the data structure is by file name
+        norm = self.langHelper.getOuterClass(norm)
         if norm in self.files:
             return self.__getMethodInMethodList(fqn, self.files[norm])
         return None
@@ -38,6 +44,7 @@ class KnownPatches(object):
         # Query the known patches by an offset. If a method corresponds to this
         # offset in the given file, then its corresponding MethodData object is
         # returned, otherwise, None is returned.
+            
         norm = self.langHelper.normalize(filePath)
         
         if norm == '' or norm not in self.files:
