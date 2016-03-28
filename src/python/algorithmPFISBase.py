@@ -6,8 +6,8 @@ class PFISBase(PredictiveAlgorithm):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
                  decayFactor = 0.85, decayHistory = 0.9, 
-                 includeTop = False):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+                 includeTop = False, numTopPredictions=0):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.history = history
         self.goal = goal
         self.DECAY_FACTOR = decayFactor
@@ -49,13 +49,9 @@ class PFISBase(PredictiveAlgorithm):
                 topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
             
             if methodToPredict in sortedMethods:
-                value = self.mapNodesToActivation[methodToPredict]
-                firstIndex = self.getFirstIndex(sortedMethods, self.mapNodesToActivation, value)
-                lastIndex = self.getLastIndex(sortedMethods, self.mapNodesToActivation, value)
-                numTies = lastIndex - firstIndex + 1
-                rankWithTies =  self.getRankConsideringTies(firstIndex + 1, numTies)
-                
-                return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
+                ranking = self.getRankForMethod(methodToPredict, sortedMethods, self.mapNodesToActivation)
+
+                return Prediction(navNumber, ranking["rankWithTies"], len(sortedMethods), ranking["numTies"],
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
                        navToPredict.toFileNav.timestamp,

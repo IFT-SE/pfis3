@@ -59,25 +59,19 @@ class XMLOptionsParser(object):
                 raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
             
     def __parseAdjacency(self, node):
-        includeTop = False
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
         self.algorithms.append(Adjacency(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], includeTop=includeTop))
+            node.attrib['fileName'], includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseCallDepth(self, node):
-        includeTop = False
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
         self.algorithms.append(CallDepth(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], includeTop=includeTop))
+            node.attrib['fileName'], includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseFrequency(self, node):
-        includeTop = False
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
         self.algorithms.append(Frequency(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], includeTop=includeTop))
+            node.attrib['fileName'], includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parsePFIS(self, node):
         # TODO: Implement goal words array, maybe as a child tag labeled 'goal' 
@@ -91,18 +85,18 @@ class XMLOptionsParser(object):
         decayFactor = 0.85
         decayHistory = 0.9
         numSpread = 2
-        includeTop = False
-        
+
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
         if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
         if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
         if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
         if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
+
         self.algorithms.append(PFIS(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], history=history, goal=goal, 
             decayFactor=decayFactor, decayHistory=decayHistory, 
-            numSpread=numSpread, includeTop=includeTop))
+            numSpread=numSpread,
+            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parsePFISTouchOnce(self, node):
         # TODO: Implement goal words array, maybe as a child tag labeled 'goal' 
@@ -112,54 +106,63 @@ class XMLOptionsParser(object):
         goal = []
         decayFactor = 0.85
         decayHistory = 0.9
-        includeTop = False
+
         
         if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
         if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
         if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
+
         
         self.algorithms.append(PFISTouchOnce(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], history=history, goal=goal, 
             decayFactor=decayFactor, decayHistory=decayHistory, 
-            includeTop=includeTop))
+            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseRecency(self, node):
-        includeTop = False
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
-        self.algorithms.append(Recency(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], includeTop=includeTop))
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
+
+        self.algorithms.append(Recency(self.langHelper, node.attrib['name'], node.attrib['fileName'],
+            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseSourceTopology(self, node):
-        includeTop = False
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
 
         self.algorithms.append(SourceTopology(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], includeTop=includeTop))
+            node.attrib['fileName'], includeTop=topPredictionsOptions[0],
+            numTopPredictions=topPredictionsOptions[1]))
         
     def __parseTFIDF(self, node):
-        includeTop = False
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
-        
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
         self.algorithms.append(TFIDF(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], dbFilePath=self.tempDbPath, includeTop=includeTop))
+            node.attrib['fileName'], dbFilePath=self.tempDbPath,
+            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseLSI(self, node):
-        includeTop = False
         numTopics = 200
         
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
         if 'numTopics' in node.attrib: numTopics = float(node.attrib['numTopics'])
         
         self.algorithms.append(LSI(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], dbFilePath=self.tempDbPath, numTopics=numTopics, includeTop=includeTop))
+            node.attrib['fileName'], dbFilePath=self.tempDbPath, numTopics=numTopics,
+            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseWorkingSet(self, node):
         workingSetSize = 10
-        includeTop = False
-        
+
         if 'workingSetSize' in node.attrib: workingSetSize = int(node.attrib['workingSetSize'])
-        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
+        topPredictionsOptions = self.getTopPredictionsAttributes(node)
+
         self.algorithms.append(WorkingSet(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], workingSetSize=workingSetSize, includeTop=includeTop))
+            node.attrib['fileName'], workingSetSize=workingSetSize,
+            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
+
+    def getTopPredictionsAttributes(self, node):
+        includeTop = False
+        numTopPredictions = 0
+
+        if 'includeTop' in node.attrib and node.attrib['includeTop'] == 'true': includeTop = True
+        if includeTop and 'numTopPredictions' in node.attrib: numTopPredictions=int(node.attrib['numTopPredictions'])
+
+        return (includeTop, numTopPredictions)

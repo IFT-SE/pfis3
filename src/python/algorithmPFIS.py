@@ -4,9 +4,9 @@ class PFIS(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], 
                  decayFactor = 0.85, decayHistory = 0.9, numSpread = 2, 
-                 includeTop = False):
+                 includeTop = False, numTopPredictions=0):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayHistory, includeTop)
+                          decayFactor, decayHistory, includeTop, numTopPredictions)
         self.NUM_SPREAD = numSpread
                      
     def spreadActivation(self, pfisGraph):

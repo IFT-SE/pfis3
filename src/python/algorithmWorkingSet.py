@@ -3,9 +3,9 @@ from predictions import Prediction
 
 class WorkingSet(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, fileName, workingSetSize=10, includeTop = False):
+    def __init__(self, langHelper, name, fileName, workingSetSize=10, includeTop = False, numTopPredictions=0):
         self.__workingSetSize = workingSetSize
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():

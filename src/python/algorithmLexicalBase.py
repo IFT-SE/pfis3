@@ -7,8 +7,8 @@ from gensim.corpora.textcorpus import TextCorpus
 from predictions import Prediction
 
 class LexicalBase(PredictiveAlgorithm):
-    def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+    def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False, numTopPredictions=0):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.lexicalHelper = LexicalHelper(dbFilePath, langHelper)
         
     def makePrediction(self, pfisGraph, navPath, navNumber):

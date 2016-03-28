@@ -21,7 +21,8 @@ def parseArgs():
         "dbPath" : None,
         "projectSrcFolderPath": None,
         "language": None,
-        "xml" : None
+        "xml" : None,
+        "topPredictionsFolderPath": None
     }
 
     def assign_argument_value(argsMap, option, value):
@@ -31,7 +32,8 @@ def parseArgs():
             "-l" : "language",
             "-p" : "projectSrcFolderPath",
             "-o" : "outputPath",
-            "-x" : "xml"
+            "-x" : "xml",
+            "-n" : "topPredictionsFolderPath"
         }
 
         key = optionKeyMap[option]
@@ -41,7 +43,7 @@ def parseArgs():
         argsMap["tempDbPath"] = argsMap["dbPath"] + "_temp"
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:")
+        opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:n:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to PFIS")
@@ -79,7 +81,7 @@ def main():
     graph = PfisGraph(workingDbCopy, langHelper, args['projectSrcFolderPath'], stopWords = stopWords)
    
     # Make predictions for the algorithms specified
-    results = graph.makeAllPredictions(algorithms, args['outputPath'])
+    results = graph.makeAllPredictions(algorithms, args['outputPath'], args['topPredictionsFolderPath'])
     
     # Save each algorithms predictions to the a separate file in the output folder
     savePredictionsToFiles(results)

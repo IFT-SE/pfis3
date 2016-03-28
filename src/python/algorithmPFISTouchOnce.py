@@ -4,9 +4,9 @@ from collections import deque
 class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 decayFactor = 0.85, decayHistory = 0.9, includeTop = False):
+                 decayFactor = 0.85, decayHistory = 0.9, includeTop = False, numTopPredictions=0):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayHistory, includeTop)
+                          decayFactor, decayHistory, includeTop, numTopPredictions)
         self.history = history
         self.goal = goal
         self.DECAY_FACTOR = decayFactor

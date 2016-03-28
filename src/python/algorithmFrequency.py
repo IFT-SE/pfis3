@@ -3,8 +3,8 @@ from predictions import Prediction
 
 class Frequency(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, fileName, includeTop = False):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+    def __init__(self, langHelper, name, fileName, includeTop = False, numTopPredictions=0):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.__methodFrequencies = {}
      
     def makePrediction(self, pfisGraph, navPath, navNumber):

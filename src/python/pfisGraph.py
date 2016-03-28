@@ -66,14 +66,14 @@ class PfisGraph(object):
     
         conn.close()
         
-    def makeAllPredictions(self, algorithms, outputFolder):
+    def makeAllPredictions(self, algorithms, outputFolder, topPredictionsFolder):
         if len(self.navPath.navigations) < 2:
             raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
         
         # Build the output data structure
         results = {}
         for algorithm in algorithms:
-            results[algorithm.name] = Predictions(algorithm.name, outputFolder, algorithm.fileName)
+            results[algorithm.name] = Predictions(algorithm.name, outputFolder, algorithm.fileName, algorithm.includeTop, topPredictionsFolder)
             
         totalPredictions = len(self.navPath.navigations) - 1
         
@@ -82,10 +82,9 @@ class PfisGraph(object):
             print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
             for algorithm in algorithms:
                 results[algorithm.name].addPrediction(self.__makePrediction(algorithm))
-        
+
         print 'Done making predictions.'
-        return results 
-        
+        return results
     def __makePrediction(self, predictiveAlgorithm):
         print '\tMaking predictions for ' + predictiveAlgorithm.name + '...'
         return predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)

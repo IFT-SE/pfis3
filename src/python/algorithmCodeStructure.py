@@ -4,8 +4,8 @@ from collections import deque
 
 class CodeStructure(PredictiveAlgorithm):
         
-    def __init__(self, langHelper, name, fileName, edgeTypes, includeTop = False):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+    def __init__(self, langHelper, name, fileName, edgeTypes, includeTop = False, numTopPredictions=0):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.edgeTypes = edgeTypes
         self.nodeDistances = None
         

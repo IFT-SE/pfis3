@@ -2,8 +2,9 @@ from algorithmLexicalBase import LexicalBase
 from gensim import models
 
 class TFIDF(LexicalBase):
-    def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False):
-        LexicalBase.__init__(self, langHelper, name, fileName, dbFilePath, includeTop)
+    def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False, numTopPredictions=0):
+        LexicalBase.__init__(self, langHelper, name, fileName, dbFilePath,
+                             includeTop, numTopPredictions=numTopPredictions)
             
     def getModel(self):
         # Initialize the model using the corpus

@@ -12,8 +12,8 @@ class LexicalBase(PredictiveAlgorithm):
         "FROM logger_log WHERE action = 'Method declaration scent' " \
         "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp DESC"
 
-    def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop)
+    def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False, numTopPredictions=0):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.dbFilePath = dbFilePath
         self.corpus = CorpusOfMethodContents()
         

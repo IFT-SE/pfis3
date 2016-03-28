@@ -68,6 +68,7 @@ def runMode(args):
     l = args['language']
     s = args['stopWordsPath']
     x = args['xml']
+    n = args['topPredictionsFolder']
 
     # Gather all the database files in the directory
     db_fileNames = [f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)) and f.endswith('.db')]
@@ -86,10 +87,16 @@ def runMode(args):
         name = db[0:db.index('.')]
         dbPath = os.path.join(d, db)
         dbOutputPath = os.path.join(o, dbDirName, name)
+        topPredictionsFolderPath = None
+
         if not os.path.exists(dbOutputPath):
             os.makedirs(dbOutputPath)
-            
-        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x))
+            if n != None:
+                topPredictionsFolderPath = os.path.join(dbOutputPath, n)
+                if not os.path.exists(topPredictionsFolderPath):
+                    os.makedirs(topPredictionsFolderPath)
+
+        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x, topPredictionsFolderPath))
     
     print "runScript.py is running models..."
     print "\tNumber of simultaneous jobs = " + str(NUM_CHILD_PROCESSES)
@@ -136,6 +143,7 @@ def combineMode(args):
         numLines = 0
         for line in f: 
                 numLines += 1
+                line = line[0:line.index("\n")]
                 tokens = line.split('\t')
                 dataRows.append([tokens[0], tokens[1], tokens[5], tokens[6]])
         f.close()
@@ -201,7 +209,8 @@ def combineMode(args):
                               if os.path.isfile(os.path.join(dbResultsFolder, f))
                               and f.endswith('.txt') \
                               and not f.endswith(multiModelFileName) \
-                              and not f.endswith(outputFileName)]
+                              and not f.endswith(outputFileName)
+                           ]
             if len(outputFiles) > 0:
                 print "Combining results in " + dbResultsFolder
                 combineResultsFiles(outputFiles, dbResultsFolder, outputFileName, hitRateThreshold, numToIgnore)
@@ -343,6 +352,7 @@ def multiFactorModelMode(args):
         dbResultsFolders = [os.path.join(subFolder, f) \
                               for f in os.listdir(subFolder) \
                               if os.path.isdir(os.path.join(subFolder, f))]
+
         for dbResultsFolder in dbResultsFolders:
             print "Creating multi-factor model results in " + dbResultsFolder
             combinedFilePath = os.path.join(dbResultsFolder, combinedFileName)
@@ -474,6 +484,7 @@ def print_usage():
     print "                    -o <path to output folder> "
     print "                    -x <xml options file>"
     print "                    -t <number of PFIS processes to run simultaneously> "
+    print "                    -n <Folder name for top predictions (optional)> "
     print "    (Note: language must be 'JAVA' or 'JS')"
     print "    if -C:"
     print "                    -o <path to output folder> "
@@ -510,7 +521,8 @@ def parseArgs():
         "finalResultsFileName" : None,
         "ignoreFirstXPredictions" : None,
         "numThreads" : None,
-        "mode" : None
+        "mode" : None,
+        "topPredictionsFolder": None
     }
 
     def assign_argument_value(argsMap, option, value):
@@ -531,14 +543,15 @@ def parseArgs():
             "-m" : "multiModelFileName",
             "-f" : "finalResultsFileName",
             "-i" : "ignoreFirstXPredictions",
-            "-t" : "numThreads"
+            "-t" : "numThreads",
+            "-n" : "topPredictionsFolder"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
@@ -552,13 +565,14 @@ def parseArgs():
 
 class PFISJob(object):
     
-    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath, xmlPath):
+    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath, xmlPath, topPredictionsFolder):
         self.e = executablePath
         self.d = dbPath
         self.p = projectSrcPath
         self.l = language
         self.s = stopWordsPath
         self.o = dbOutputPath
+        self.n = topPredictionsFolder
         self.x = xmlPath
         self.process = None
     
@@ -567,14 +581,18 @@ class PFISJob(object):
         stderrPath = os.path.join(self.o, '_stderr.log')
         stdoutLog = open(stdoutPath, 'w')
         stderrLog = open(stderrPath, 'w')
-        
-        self.process = subprocess.Popen(['python', self.e, \
-                                         '-d', self.d, \
-                                         '-p', self.p, \
-                                         '-l', self.l, \
-                                         '-s', self.s, \
-                                         '-o', self.o, \
-                                         '-x', self.x], \
+
+        args = ['python', self.e, \
+                         '-d', self.d, \
+                         '-p', self.p, \
+                         '-l', self.l, \
+                         '-s', self.s, \
+                         '-o', self.o, \
+                         '-x', self.x]
+        if self.n != None:
+            args.extend(['-n', self.n])
+
+        self.process = subprocess.Popen(args, \
                                          stdout = stdoutLog, \
                                          stderr = stderrLog)
 
