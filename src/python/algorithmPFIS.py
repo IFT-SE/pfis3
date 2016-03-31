@@ -8,6 +8,9 @@ class PFIS(PFISBase):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
                           decayFactor, decayHistory, includeTop, numTopPredictions)
         self.NUM_SPREAD = numSpread
+
+    def computeTargetScores(self, mapNodesToActivation):
+        return mapNodesToActivation
                      
     def spreadActivation(self, pfisGraph):
         for _ in range(0, self.NUM_SPREAD):
