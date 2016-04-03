@@ -9,7 +9,7 @@ class PFIS(PFISBase):
                           decayFactor, decayHistory, includeTop, numTopPredictions)
         self.NUM_SPREAD = numSpread
 
-    def computeTargetScores(self, mapNodesToActivation):
+    def computeTargetScores(self, graph, mapNodesToActivation):
         return mapNodesToActivation
                      
     def spreadActivation(self, pfisGraph):

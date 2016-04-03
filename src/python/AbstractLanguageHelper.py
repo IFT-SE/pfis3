@@ -41,7 +41,7 @@ class AbstractLanguageHelper:
         if m:
             return m.group(1)
         return ''
-    
+
     def hasCorrectExtension(self, filePath):
         return filePath.lower().endswith(self.FileExtension)
 
@@ -71,13 +71,13 @@ class AbstractLanguageHelper:
         return os.path.join(projectFolderPath, className + extn)
 
     def isMethodFqn(self, filePathOrFqn):
-        if ';' in filePathOrFqn \
-            and '.' in filePathOrFqn:
-            return True
-        return False
+        raise NotImplementedError()
 
     def excludeMethod(self, node):
         return False
 
     def performDBPostProcessing(self, db):
         raise NotImplementedError()
+
+    def isVariantOf(self, fqn1, fqn2):
+        return False

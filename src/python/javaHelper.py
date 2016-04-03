@@ -31,7 +31,6 @@ class JavaHelper(AbstractLanguageHelper):
 
     def isMethodFqn(self, filePathOrFqn):
         # Check if this FQN is a method.
-        # TODO: Move this to the langHelper?
         if filePathOrFqn.startswith('L') \
             and ';' in filePathOrFqn \
             and '.' in filePathOrFqn:

@@ -5,6 +5,8 @@ from navpath import NavigationPath
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
 from predictions import Predictions
+from graphAttributes import NodeType
+from graphAttributes import EdgeType
 
 class PfisGraph(object):
     
@@ -95,8 +97,8 @@ class PfisGraph(object):
         print '\tProcessing scent. Adding scent-related nodes...'
         
         c = conn.cursor()
-        if self.VERBOSE_BUILD:
-            print "\tExecuting scent query from ", self.endTimestamp, "to", newEndTimestamp
+        # if self.VERBOSE_BUILD:
+        #     print "\tExecuting scent query from ", self.endTimestamp, "to", newEndTimestamp
         c.execute(self.SCENT_QUERY, [self.endTimestamp, newEndTimestamp])
         
         for row in c:
@@ -222,6 +224,10 @@ class PfisGraph(object):
                                targetNodeType,
                                referrerNodeType,
                                EdgeType.CONTAINS)
+
+                self.__addEdgesToOtherVariants(referrer, referrerNodeType)
+                self.__addEdgesToOtherVariants(target, targetNodeType)
+
             elif action == 'Method invocation':
                 # target = METHOD, referrer = METHOD
                 # Link the calling method to the called method
@@ -298,8 +304,16 @@ class PfisGraph(object):
             
         self.graph.node[node1]['type'] = node1Type
         self.graph.node[node2]['type'] = node2Type
-        # if self.VERBOSE_BUILD: 
-        # print "\tAdding edge from", node1, "to", node2, "of type", edgeType
+
+        if self.VERBOSE_BUILD:
+            print "\tAdding edge from", node1, "to", node2, "of type", edgeType
+
+    def __addEdgesToOtherVariants(self, node1, node1Type):
+        nodes = self.graph.nodes()
+        for node2 in nodes:
+            if node1 != node2 and self.graph.node[node2]['type'] == node1Type:
+                if self.langHelper.isVariantOf(node1, node2):
+                    self.__addEdge(node1, node2, node1Type, self.graph.node[node2]['type'], EdgeType.VARIANT_OF)
     
     def __getWordNodes_splitNoStem(self, s):
         # Returns a list of word nodes from the given string after stripping all
@@ -350,74 +364,3 @@ class PfisGraph(object):
         print "\tGraph contains " + str(len(self.graph.edge)) + " edges."
    
 
-class NodeType(object):
-    PACKAGE = 0
-    FILE = 1
-    CLASS = 2
-    METHOD = 3
-    VARIABLE = 4
-    PRIMITIVE = 5
-    PROJECT = 6
-    WORD = 7
-    SPECIAL = 8
-    
-    __targetNodes = {}
-    __targetNodes["Extends"] = CLASS
-    __targetNodes["Implements"] = CLASS
-    __targetNodes["Imports"] = FILE
-    __targetNodes["Method declaration"] = CLASS
-    __targetNodes["Method declaration scent"] = METHOD
-    __targetNodes["Method invocation"] = METHOD
-    __targetNodes["Method invocation scent"] = METHOD
-    __targetNodes["New file header"] = METHOD
-    __targetNodes["Package"] = FILE
-    __targetNodes["Variable type"] = VARIABLE
-                
-    __referrerNodes = {}
-    __referrerNodes["Extends"] = CLASS
-    __referrerNodes["Implements"] = CLASS
-    __referrerNodes["Imports"] = CLASS
-    __referrerNodes["Method declaration"] = METHOD
-    __referrerNodes["Method invocation"] = METHOD
-    __referrerNodes["Package"] = PACKAGE
-    __referrerNodes["Variable declaration"] = VARIABLE
-                    
-    @staticmethod
-    def getTargetNodeType(action, target):
-        if action == 'Variable declaration':
-            if target.find('.') == -1:
-                return NodeType.CLASS
-            else:
-                return NodeType.METHOD
-        
-        if action in NodeType.__targetNodes:
-            return NodeType.__targetNodes[action]
-        
-        return None
-                
-    @staticmethod
-    def getReferrerNodeType(action, referrer, langHelper):
-        if action == 'Variable type':
-            if len(referrer) == 1:
-                return NodeType.PRIMITIVE
-            return NodeType.CLASS
-            
-        if action == 'Package Explorer tree':
-            if langHelper.hasCorrectExtension(referrer):
-                return NodeType.FILE
-            return NodeType.PACKAGE
-            
-        if action in NodeType.__referrerNodes:
-            return NodeType.__referrerNodes[action]
-        
-        return None
-        
-    
-class EdgeType(object):
-    CONTAINS = 0
-    IMPORTS = 1
-    EXTENDS = 2
-    IMPLEMENTS = 3
-    CALLS = 4
-    ADJACENT = 5
-    TYPE = 6

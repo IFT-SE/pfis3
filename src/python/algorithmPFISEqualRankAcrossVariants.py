@@ -5,7 +5,7 @@ class PFISEqualRankAcrossVariants(PFIS):
                  decayFactor = 0.85, decayHistory = 0.9, numSpread = 2, includeTop= False, numTopPredictions=0):
         PFIS.__init__(langHelper, name, fileName, history, goal, decayFactor, decayHistory, includeTop, numTopPredictions)
 
-    def computeTargetScores(self, mapNodesToActivation):
+    def computeTargetScores(self, graph, mapNodesToActivation):
         mapNodesToFinalScores = {}
         targets = mapNodesToActivation.keys()
 
