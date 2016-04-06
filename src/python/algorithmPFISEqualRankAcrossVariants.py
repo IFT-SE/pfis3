@@ -11,8 +11,10 @@ class PFISEqualRankAcrossVariants(PFIS):
 
         for target in targets:
             if target not in mapNodesToFinalScores:
-                equivalentTargets = self.__getEquivalentTargets(targets, target, lambda a,b: a == b)
-                maxScore = -1
+                equivalentTargets = graph.getVariantNodes(target)
+                equivalentTargets.append(target)
+
+                maxScore = mapNodesToActivation[target]
                 for tgt in equivalentTargets:
                     if mapNodesToActivation[tgt] > maxScore:
                         maxScore = mapNodesToActivation[tgt]
@@ -20,8 +22,8 @@ class PFISEqualRankAcrossVariants(PFIS):
                 for item in equivalentTargets:
                     mapNodesToFinalScores[item] = maxScore
 
+                if len(equivalentTargets) > 1:
+                    for item in equivalentTargets:
+                        print item, " ", mapNodesToActivation[item], " ", mapNodesToFinalScores[item]
+
         return mapNodesToFinalScores
-
-
-    def __getEquivalentTargets(self, collection, value, match):
-        return [item for item in collection if match(item, value)]

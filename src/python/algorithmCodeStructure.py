@@ -57,7 +57,7 @@ class CodeStructure(PredictiveAlgorithm):
             
             currentNode = queue.popleft()
             
-            for neighbor in self.__getNeighborsOfDesiredEdgeTypes(pfisGraph, currentNode):
+            for neighbor in pfisGraph.getNeighborsOfDesiredEdgeTypes(currentNode, self.edgeTypes):
                 if neighbor not in self.nodeDistances:
                     self.nodeDistances[neighbor] = self.nodeDistances[currentNode] + 1
                     queue.append(neighbor)
@@ -68,13 +68,3 @@ class CodeStructure(PredictiveAlgorithm):
             return self.nodeDistances[methodToPredict] 
         
         return -1
-    
-    def __getNeighborsOfDesiredEdgeTypes(self, pfisGraph, node):
-        validNeighbors = []
-        
-        for neighbor in pfisGraph.graph.neighbors(node):
-            for edgeType in self.edgeTypes:
-                if edgeType in pfisGraph.graph[node][neighbor]['types'] and neighbor not in validNeighbors:
-                    validNeighbors.append(neighbor)
-                
-        return validNeighbors
