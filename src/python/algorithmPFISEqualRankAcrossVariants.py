@@ -3,7 +3,8 @@ from algorithmPFIS import PFIS;
 class PFISEqualRankAcrossVariants(PFIS):
     def __init(self, langHelper, name, fileName, history=False, goal = [],
                  decayFactor = 0.85, decayHistory = 0.9, numSpread = 2, includeTop= False, numTopPredictions=0):
-        PFIS.__init__(langHelper, name, fileName, history, goal, decayFactor, decayHistory, includeTop, numTopPredictions)
+        PFIS.__init__(langHelper, name, fileName, history, goal, decayFactor, decayHistory, considerVariants=True,
+                      includeTop=includeTop, numTopPredictions=numTopPredictions)
 
     def computeTargetScores(self, graph, mapNodesToActivation):
         mapNodesToFinalScores = {}

@@ -5,7 +5,7 @@ from pfisGraph import NodeType
 class PFISBase(PredictiveAlgorithm):
 
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 decayFactor = 0.85, decayHistory = 0.9,
+                 decayFactor = 0.85, decayHistory = 0.9, considerVariants = False,
                  includeTop = False, numTopPredictions=0):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.history = history
@@ -13,6 +13,7 @@ class PFISBase(PredictiveAlgorithm):
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
         self.mapNodesToActivation = None
+        self.considerVariants = considerVariants
 
 
     def spreadActivation(self, pfisGraph):

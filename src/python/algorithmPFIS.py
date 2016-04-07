@@ -3,10 +3,10 @@ from algorithmPFISBase import PFISBase
 class PFIS(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], 
-                 decayFactor = 0.85, decayHistory = 0.9, numSpread = 2, 
+                 decayFactor = 0.85, decayHistory = 0.9, numSpread = 2, considerVariants=False,
                  includeTop = False, numTopPredictions=0):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayHistory, includeTop, numTopPredictions)
+                          decayFactor, decayHistory, considerVariants, includeTop, numTopPredictions)
         self.NUM_SPREAD = numSpread
 
     def computeTargetScores(self, graph, mapNodesToActivation):
@@ -18,7 +18,7 @@ class PFIS(PFISBase):
                 if node not in pfisGraph.graph.node:
                     continue
                 
-                neighbors = pfisGraph.graph.neighbors(node)
+                neighbors = pfisGraph.getAllNeighbors(node, self.considerVariants)
                 edgeWeight = 1.0 / len(neighbors)
                 for neighbor in neighbors:
                     if neighbor not in self.mapNodesToActivation:

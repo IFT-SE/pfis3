@@ -62,6 +62,7 @@ class NodeType(object):
 
 
 class EdgeType(object):
+    #TODO: Find a smarter way that this duplicate
     CONTAINS = 0
     IMPORTS = 1
     EXTENDS = 2
@@ -70,3 +71,16 @@ class EdgeType(object):
     ADJACENT = 5
     TYPE = 6
     VARIANT_OF = 7
+
+    @staticmethod
+    def getAll():
+        return [
+            EdgeType.CONTAINS,
+            EdgeType.IMPORTS,
+            EdgeType.EXTENDS,
+            EdgeType.IMPLEMENTS,
+            EdgeType.CALLS,
+            EdgeType.ADJACENT,
+            EdgeType.TYPE,
+            EdgeType.VARIANT_OF
+        ]

@@ -4,9 +4,9 @@ from collections import deque
 class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 decayFactor = 0.85, decayHistory = 0.9, includeTop = False, numTopPredictions=0):
+                 decayFactor = 0.85, decayHistory = 0.9, considerVariants= False, includeTop = False, numTopPredictions=0):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayHistory, includeTop, numTopPredictions)
+                          decayFactor, decayHistory, considerVariants, includeTop, numTopPredictions)
         self.history = history
         self.goal = goal
         self.DECAY_FACTOR = decayFactor
@@ -21,11 +21,13 @@ class PFISTouchOnce(PFISBase):
         
         while len(queue) > 0:
             currentNode = queue.popleft()
-            neighbors = pfisGraph.graph.neighbors(currentNode)
+            neighbors = pfisGraph.getAllNeighbors(currentNode, self.considerVariants)
             edgeWeight = 1.0 / len(neighbors)
             
             for neighbor in neighbors:
                 if neighbor not in self.mapNodesToActivation:
                     self.mapNodesToActivation[neighbor] = (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
                     queue.append(neighbor)
-                    
+
+    def computeTargetScores(self, graph, mapNodesToActivation):
+        return mapNodesToActivation
