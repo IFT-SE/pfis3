@@ -23,6 +23,8 @@ class PFISBase(PredictiveAlgorithm):
         raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
     def makePrediction(self, pfisGraph, navPath, navNumber):
+        if self.considerVariants and not pfisGraph.isVariantTopology:
+            raise RuntimeError("Cannot run PFIS algorithm with variant option on non-variant topology")
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 

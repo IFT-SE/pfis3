@@ -28,8 +28,9 @@ class PfisGraph(object):
     REGEX_SPLIT_CAMEL_CASE = re.compile(r'_|\W+|\s+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=[0-9]+)|(?<=[0-9])(?=[a-zA-Z]+)')
     
 
-    def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], verbose=False):
+    def __init__(self, dbFilePath, isVariantTopology, langHelper, projSrc, stopWords=[], verbose=False):
         self.dbFilePath = dbFilePath
+        self.isVariantTopology = isVariantTopology
         self.langHelper = langHelper
         self.stopWords = stopWords
         self.VERBOSE_BUILD = verbose

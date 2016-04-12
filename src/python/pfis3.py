@@ -22,7 +22,8 @@ def parseArgs():
         "projectSrcFolderPath": None,
         "language": None,
         "xml" : None,
-        "topPredictionsFolderPath": None
+        "topPredictionsFolderPath": None,
+        "isVariantTopology": None
     }
 
     def assign_argument_value(argsMap, option, value):
@@ -33,17 +34,24 @@ def parseArgs():
             "-p" : "projectSrcFolderPath",
             "-o" : "outputPath",
             "-x" : "xml",
-            "-n" : "topPredictionsFolderPath"
+            "-n" : "topPredictionsFolderPath",
+            "-v" : "isVariantTopology"
         }
 
         key = optionKeyMap[option]
+        if key == "isVariantTopology":
+            if str(value).lower() == "true":
+                value = True
+            else:
+                value = False
+
         arguments[key] = value
 
     def setConventionBasedArguments(argsMap):
         argsMap["tempDbPath"] = argsMap["dbPath"] + "_temp"
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:n:")
+        opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:n:v:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to PFIS")
@@ -76,9 +84,11 @@ def main():
     
     # Load the stop words file
     stopWords = loadStopWords(args['stopWordsPath'])
+
+    isVariantTopology = str(args['isVariantTopology']).lower() == 'true'
     
     # Create the PFIS graph (which also determines the navigations)
-    graph = PfisGraph(workingDbCopy, langHelper, args['projectSrcFolderPath'], stopWords = stopWords)
+    graph = PfisGraph(workingDbCopy, isVariantTopology, langHelper, args['projectSrcFolderPath'], stopWords = stopWords)
    
     # Make predictions for the algorithms specified
     results = graph.makeAllPredictions(algorithms, args['outputPath'], args['topPredictionsFolderPath'])

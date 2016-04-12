@@ -69,6 +69,7 @@ def runMode(args):
     s = args['stopWordsPath']
     x = args['xml']
     n = args['topPredictionsFolder']
+    v = args['isVariantTopology']
 
     # Gather all the database files in the directory
     db_fileNames = [f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)) and f.endswith('.db')]
@@ -96,7 +97,7 @@ def runMode(args):
                 if not os.path.exists(topPredictionsFolderPath):
                     os.makedirs(topPredictionsFolderPath)
 
-        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x, topPredictionsFolderPath))
+        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x, topPredictionsFolderPath, v))
     
     print "runScript.py is running models..."
     print "\tNumber of simultaneous jobs = " + str(NUM_CHILD_PROCESSES)
@@ -485,6 +486,7 @@ def print_usage():
     print "                    -x <xml options file>"
     print "                    -t <number of PFIS processes to run simultaneously> "
     print "                    -n <Folder name for top predictions (optional)> "
+    print "                    -v <Whether the topology has variants or not (default False, set to True if needed)> "
     print "    (Note: language must be 'JAVA' or 'JS')"
     print "    if -C:"
     print "                    -o <path to output folder> "
@@ -522,7 +524,8 @@ def parseArgs():
         "ignoreFirstXPredictions" : None,
         "numThreads" : None,
         "mode" : None,
-        "topPredictionsFolder": None
+        "topPredictionsFolder": None,
+        "isVariantTopology": False
     }
 
     def assign_argument_value(argsMap, option, value):
@@ -544,14 +547,15 @@ def parseArgs():
             "-f" : "finalResultsFileName",
             "-i" : "ignoreFirstXPredictions",
             "-t" : "numThreads",
-            "-n" : "topPredictionsFolder"
+            "-n" : "topPredictionsFolder",
+            "-v" : "isVariantTopology"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:v:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
@@ -565,7 +569,7 @@ def parseArgs():
 
 class PFISJob(object):
     
-    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath, xmlPath, topPredictionsFolder):
+    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath, xmlPath, topPredictionsFolder, isVariantTopology):
         self.e = executablePath
         self.d = dbPath
         self.p = projectSrcPath
@@ -574,6 +578,7 @@ class PFISJob(object):
         self.o = dbOutputPath
         self.n = topPredictionsFolder
         self.x = xmlPath
+        self.v = isVariantTopology
         self.process = None
     
     def startJob(self):
@@ -588,7 +593,8 @@ class PFISJob(object):
                          '-l', self.l, \
                          '-s', self.s, \
                          '-o', self.o, \
-                         '-x', self.x]
+                         '-x', self.x, \
+                         '-v', str(self.v)]
         if self.n != None:
             args.extend(['-n', self.n])
 
