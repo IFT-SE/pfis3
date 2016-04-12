@@ -226,8 +226,9 @@ class PfisGraph(object):
                                referrerNodeType,
                                EdgeType.CONTAINS)
 
-                self.__addEdgesToOtherVariants(referrer, referrerNodeType)
-                self.__addEdgesToOtherVariants(target, targetNodeType)
+                if self.isVariantTopology:
+                    self.__addEdgesToOtherVariants(referrer, referrerNodeType)
+                    self.__addEdgesToOtherVariants(target, targetNodeType)
 
             elif action == 'Method invocation':
                 # target = METHOD, referrer = METHOD
@@ -249,9 +250,12 @@ class PfisGraph(object):
                                targetNodeType,
                                referrerNodeType,
                                EdgeType.CONTAINS)
+
             elif action == 'Variable type':
                 # target = VARIABLE, referrer = CLASS/PRIMITIVE
                 # Link the variable to its type
+                #TODO: Might have to add variant edges
+
                 self.__addEdge(target, referrer,
                                targetNodeType,
                                referrerNodeType,
