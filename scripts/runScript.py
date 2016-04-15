@@ -174,26 +174,16 @@ def combineMode(args):
                 tokens = line.split('\t')
                 if len(tokens) > 2:
                     rank = float(tokens[2])
-                    
+                    score = rank
                     if useRatios and rank != 999999:
                         out_of = float(tokens[3])
                         ratio = rank/ out_of
                         combinedOutputFile.write('\t' + str(ratio))
+                        score = ratio
                     else:
                         combinedOutputFile.write('\t' + str(rank))
-                    
-                    
-#                     rank = float(tokens[2])
-#                     out_of = float(tokens[3])
-#                     if rank < 999999 and out_of != 0.0:
-#                         ratio = rank / out_of
-#                         combinedOutputFile.write('\t' + str(ratio))
-#                     else:
-#                         combinedOutputFile.write('\t' + "N/A")
-                        
-                        
 
-                    if float(tokens[2]) <= hitRateThreshold:
+                    if score <= hitRateThreshold:
                         if i > numToIgnore:
                             numHits[index] += 1
 
