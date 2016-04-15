@@ -159,7 +159,7 @@ def combineMode(args):
             tokens = line.split('\t')
             algName = tokens[2][0:(tokens[2].rfind(' Rank'))]
             numHits.append(0)
-            combinedOutputFile.write('\t' + algName)
+            combinedOutputFile.write('\t' + algName + '\t' + "Ratio")
 #             combinedOutputFile.write('\t' + outputFile[(outputFile.rfind(os.sep) + 1):outputFile.rfind('.')])
             
         combinedOutputFile.write('\n')
@@ -172,9 +172,18 @@ def combineMode(args):
                 tokens = line.split('\t')
                 if len(tokens) > 2:
                     combinedOutputFile.write('\t' + tokens[2])
+                    rank = float(tokens[2])
+                    out_of = float(tokens[3])
+                    if rank < 999999 and out_of != 0.0:
+                        ratio = rank / out_of
+                        combinedOutputFile.write('\t' + str(ratio))
+                    else:
+                        combinedOutputFile.write('\t' + "N/A")
+
                     if float(tokens[2]) <= hitRateThreshold:
                         if i > numToIgnore:
                             numHits[index] += 1
+
                 index +=1
             combinedOutputFile.write('\n')
             
