@@ -137,6 +137,8 @@ def combineMode(args):
     def combineResultsFiles(outputFiles, participantFolder, outputFileName, hitRateThreshold, numToIgnore):
         combinedOutputFile = open(os.path.join(participantFolder, outputFileName), 'w')
         combinedOutputFile.write('Prediction\tTimestamp\tFrom loc\tTo loc')
+        
+        useRatios = args['useRatios']
     
         # open one file and check the number of lines and get non rank data
         dataRows = []
@@ -159,7 +161,7 @@ def combineMode(args):
             tokens = line.split('\t')
             algName = tokens[2][0:(tokens[2].rfind(' Rank'))]
             numHits.append(0)
-            combinedOutputFile.write('\t' + algName + '\t' + "Ratio")
+            combinedOutputFile.write('\t' + algName)
 #             combinedOutputFile.write('\t' + outputFile[(outputFile.rfind(os.sep) + 1):outputFile.rfind('.')])
             
         combinedOutputFile.write('\n')
@@ -171,14 +173,25 @@ def combineMode(args):
                 line = handler.readline()
                 tokens = line.split('\t')
                 if len(tokens) > 2:
-                    combinedOutputFile.write('\t' + tokens[2])
                     rank = float(tokens[2])
-                    out_of = float(tokens[3])
-                    if rank < 999999 and out_of != 0.0:
-                        ratio = rank / out_of
+                    
+                    if useRatios and rank != 999999:
+                        out_of = float(tokens[3])
+                        ratio = rank/ out_of
                         combinedOutputFile.write('\t' + str(ratio))
                     else:
-                        combinedOutputFile.write('\t' + "N/A")
+                        combinedOutputFile.write('\t' + str(rank))
+                    
+                    
+#                     rank = float(tokens[2])
+#                     out_of = float(tokens[3])
+#                     if rank < 999999 and out_of != 0.0:
+#                         ratio = rank / out_of
+#                         combinedOutputFile.write('\t' + str(ratio))
+#                     else:
+#                         combinedOutputFile.write('\t' + "N/A")
+                        
+                        
 
                     if float(tokens[2]) <= hitRateThreshold:
                         if i > numToIgnore:
@@ -503,6 +516,7 @@ def print_usage():
     print "                    -m <name of multi-factor model results file (yyy.txt)>"
     print "                    -h <hit rate threshold>"
     print "                    -i <number of earliest predictions to ignore>"
+    print "                    -r (use ratios instead of ranks)"
     print "    if -M:"
     print "                    -o <path to output folder> "
     print "                    -m <name of multi-factor model results file (yyy.txt)>"
@@ -534,12 +548,16 @@ def parseArgs():
         "numThreads" : None,
         "mode" : None,
         "topPredictionsFolder": None,
-        "isVariantTopology": False
+        "isVariantTopology": False,
+        "useRatios" : False
     }
 
     def assign_argument_value(argsMap, option, value):
         if option == '-R' or option == '-C' or option == '-M' or option == '-F' or option =='-A':
             arguments['mode'] = option
+            return
+        if option == '-r':
+            arguments['useRatios'] = True
             return
         
         optionKeyMap = {
@@ -557,14 +575,15 @@ def parseArgs():
             "-i" : "ignoreFirstXPredictions",
             "-t" : "numThreads",
             "-n" : "topPredictionsFolder",
-            "-v" : "isVariantTopology"
+            "-v" : "isVariantTopology",
+            "-r" : "useRatios"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:v:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:v:r")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
