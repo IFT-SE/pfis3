@@ -22,7 +22,7 @@ class AbstractLanguageHelper:
         raise NotImplementedError("Normalize: Not implemented")
 
     def getOuterClass(self, loc):
-        return loc
+        raise Exception("Get outer class : Not implemented")
 
     def package(self, s):
         # Return the package. Empty string returned on fail.
