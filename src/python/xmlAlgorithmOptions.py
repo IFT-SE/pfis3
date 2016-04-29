@@ -55,7 +55,6 @@ class XMLOptionsParser(object):
             elif algClass == 'TFIDF' : self.__parseTFIDF(node)
             elif algClass == 'LSI' : self.__parseLSI(node)
             elif algClass == 'WorkingSet' : self.__parseWorkingSet(node)
-            elif algClass == 'PFISEqualRankAcrossVariants': self.__parsePFISEqualRanksAcrossVariants(node)
             else:
                 raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
             
