@@ -4,7 +4,6 @@ from algorithmCallDepth import CallDepth
 from algorithmFrequency import Frequency
 from algorithmPFIS import PFIS
 from algorithmPFISTouchOnce import PFISTouchOnce
-from algorithmPFISEqualRankAcrossVariants import PFISEqualRankAcrossVariants
 from algorithmRecency import Recency
 from algorithmSourceTopology import SourceTopology
 from algorithmTFIDF import TFIDF
@@ -100,25 +99,6 @@ class XMLOptionsParser(object):
             node.attrib['fileName'], history=history, goal=goal, 
             decayFactor=decayFactor, decayHistory=decayHistory, 
             numSpread=numSpread, considerVariants=variant,
-            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
-
-    def __parsePFISEqualRanksAcrossVariants(self, node):
-        history = False
-        goal = []
-        decayFactor = 0.85
-        decayHistory = 0.9
-        numSpread = 2
-
-        topPredictionsOptions = self.getTopPredictionsAttributes(node)
-        if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
-        if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
-        if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
-        if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
-
-        self.algorithms.append(PFISEqualRankAcrossVariants(self.langHelper, node.attrib['name'],
-            node.attrib['fileName'], history=history, goal=goal,
-            decayFactor=decayFactor, decayHistory=decayHistory,
-            numSpread=numSpread,
             includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
 
     def __parsePFISTouchOnce(self, node):

@@ -2,6 +2,7 @@ import sqlite3
 import iso8601
 from pfigFileHeader import PFIGFileHeader
 from knownPatches import KnownPatches
+from patches import MethodPatch
 
 class NavigationPath(object):
     
