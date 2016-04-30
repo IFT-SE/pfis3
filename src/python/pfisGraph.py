@@ -34,65 +34,24 @@ class PfisGraph(object):
         self.langHelper = langHelper
         self.stopWords = stopWords
         self.VERBOSE_BUILD = verbose
-        self.graph = None
-        self.endTimestamp = '0'
-        self.navNumber = -1
-        self.navPath = NavigationPath(dbFilePath, langHelper, projSrc, verbose=False)
-        self.__initGraph()
-    
-    def __initGraph(self):
         self.graph = nx.Graph()
-        self.updateGraphByOneNavigation()
-        
-    def getNavigationPath(self):
-        return self.navPath
-        
-    def updateGraphByOneNavigation(self):
+
+
+    def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row
-        
-        newEndTimestamp = 0
 
-        if self.navNumber < self.navPath.getLength() - 1:
-            self.navNumber += 1
-            newEndTimestamp = self.navPath.navigations[self.navNumber].toFileNav.timestamp
-        
         print 'Updating PFIS Graph...'
-        
-        self.__addScentNodesUpTo(conn, newEndTimestamp)
-        self.__addTopologyNodesUpTo(conn, newEndTimestamp)
-        self.__addAdjacencyNodesUpTo(conn, newEndTimestamp)
-        
-        print 'Done updating PFIS Graph.'
-        
-        self.endTimestamp = newEndTimestamp
-    
-        conn.close()
-        
-    def makeAllPredictions(self, algorithms, outputFolder, topPredictionsFolder):
-        if len(self.navPath.navigations) < 2:
-            raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
-        
-        # Build the output data structure
-        results = {}
-        for algorithm in algorithms:
-            results[algorithm.name] = Predictions(algorithm.name, outputFolder, algorithm.fileName, algorithm.includeTop, topPredictionsFolder)
-            
-        totalPredictions = len(self.navPath.navigations) - 1
-        
-        for _ in range(1, totalPredictions + 1):
-            self.updateGraphByOneNavigation()
-            print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
-            for algorithm in algorithms:
-                results[algorithm.name].addPrediction(self.__makePrediction(algorithm))
 
-        print 'Done making predictions.'
-        return results
-    def __makePrediction(self, predictiveAlgorithm):
-        print '\tMaking predictions for ' + predictiveAlgorithm.name + '...'
-        return predictiveAlgorithm.makePrediction(self, self.navPath, self.navNumber)
-        
-    def __addScentNodesUpTo(self, conn, newEndTimestamp):
+        self.__addScentNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
+        self.__addTopologyNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
+        self.__addAdjacencyNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
+
+        print 'Done updating PFIS Graph.'
+
+        conn.close()
+
+    def __addScentNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         # Inserts nodes into the graph up to a given timestamp in the database
         # provided by the conn.
         print '\tProcessing scent. Adding scent-related nodes...'
@@ -100,7 +59,7 @@ class PfisGraph(object):
         c = conn.cursor()
         # if self.VERBOSE_BUILD:
         #     print "\tExecuting scent query from ", self.endTimestamp, "to", newEndTimestamp
-        c.execute(self.SCENT_QUERY, [self.endTimestamp, newEndTimestamp])
+        c.execute(self.SCENT_QUERY, [prevEndTimestamp, newEndTimestamp])
         
         for row in c:
             action, target, referrer = \
@@ -145,14 +104,14 @@ class PfisGraph(object):
         print '\tDone adding scent-related nodes.'
         self.__printGraphStats()
         
-    def __addTopologyNodesUpTo(self, conn, newEndTimestamp):
+    def __addTopologyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         # Build the graph according to the code structure recorded by PFIG. See
         # each section of the build for details.
     
         print "\tProcessing topology. Adding location nodes to the graph..."
     
         c = conn.cursor()
-        c.execute(self.TOPOLOGY_QUERY, [self.endTimestamp, newEndTimestamp])
+        c.execute(self.TOPOLOGY_QUERY, [prevEndTimestamp, newEndTimestamp])
     
         for row in c:
             action, target, referrer, = \
@@ -265,13 +224,13 @@ class PfisGraph(object):
         print "\tDone processing topology."
         self.__printGraphStats()
         
-    def __addAdjacencyNodesUpTo(self, conn, newEndTimestamp):
+    def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
     
         print "\tProcessing adjacency. Adding adjacency edges to the graph..."
     
         c = conn.cursor()
-        c.execute(self.ADJACENCY_QUERY, [self.endTimestamp, newEndTimestamp])
+        c.execute(self.ADJACENCY_QUERY, [prevEndTimestamp, newEndTimestamp])
         
         for row in c:
             target, referrer = self.langHelper.fixSlashes(row['target']), int(row['referrer'])
