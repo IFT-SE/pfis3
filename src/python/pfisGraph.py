@@ -1,18 +1,15 @@
 import networkx as nx
 import re
 import sqlite3
-from navpath import NavigationPath
+
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
-from predictions import Predictions
 from graphAttributes import NodeType
 from graphAttributes import EdgeType
 
 class PfisGraph(object):
     
-    # NAVIGATION_TIMESTAMPS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
-    
-    
+
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
@@ -115,115 +112,114 @@ class PfisGraph(object):
     
         for row in c:
             action, target, referrer, = \
-                row['action'], self.langHelper.fixSlashes(row['target']), \
-                self.langHelper.fixSlashes(row['referrer'])
-            
+            row['action'], self.langHelper.fixSlashes(row['target']), \
+            self.langHelper.fixSlashes(row['referrer'])
             targetNodeType = NodeType.getTargetNodeType(action, target)
             referrerNodeType = NodeType.getReferrerNodeType(action, referrer, self.langHelper)
-            
-            if action == 'Package':
-                # target = FILE, referrer = PACKAGE
-                # Link the file to the package
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.CONTAINS)
-                # Link the package to the root 'Packages' node
-                self.__addEdge('Packages', referrer,
-                               NodeType.SPECIAL,
-                               referrerNodeType,
-                               EdgeType.CONTAINS)
-                # Link the file to its class FQN
-                fqn = self.__getClassFQN(target)
-                self.__addEdge(target, fqn,
-                               targetNodeType,
-                               NodeType.CLASS,
-                               EdgeType.CONTAINS)
-            elif action == 'Imports':
-                # target = FILE, referrer = CLASS
-                # Link the file to its class FQN
-                fqn = self.__getClassFQN(target)
-                targetPackage = self.langHelper.package(target)
-                self.__addEdge(target, fqn,
-                               targetNodeType,
-                               NodeType.CLASS,
-                               EdgeType.CONTAINS)
-                # Link the class FQN to the imported class
-                self.__addEdge(fqn, referrer,
-                               NodeType.CLASS,
-                               referrerNodeType,
-                               EdgeType.IMPORTS)
-                # Link the file to its package
-                self.__addEdge(targetPackage, target,
-                               NodeType.PACKAGE,
-                               targetNodeType,
-                               EdgeType.CONTAINS)
-                # Link the package to 'Packages'
-                self.__addEdge('Packages', targetPackage,
-                               NodeType.SPECIAL,
-                               NodeType.PACKAGE,
-                               EdgeType.CONTAINS)
-            elif action == 'Extends':
-                # target = CLASS, referrer = CLASS
-                # Link the class to the class it extends
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.EXTENDS)
-            elif action == 'Implements':
-                # target = CLASS, referrer = CLASS
-                # Link the class to the class it implements
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.IMPLEMENTS)
-            elif action == 'Method declaration':
-                # target = CLASS, referrer = METHOD
-                # Link the class to the method it declares
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.CONTAINS)
 
-                if self.isVariantTopology:
-                    self.__addEdgesToOtherVariants(referrer, referrerNodeType)
-                    self.__addEdgesToOtherVariants(target, targetNodeType)
+            self.updateTopology(action, target, referrer, targetNodeType, referrerNodeType)
 
-            elif action == 'Method invocation':
-                # target = METHOD, referrer = METHOD
-                # Link the calling method to the called method
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.CALLS)
-                # Link the called method to its class
-                fqn = self.__getClassFQN(referrer)
-                self.__addEdge(fqn, referrer, 
-                               NodeType.CLASS, 
-                               referrerNodeType, 
-                               EdgeType.CONTAINS)
-            elif action == 'Variable declaration':
-                # target = CLASS/METHOD, referrer = VARIABLE
-                # Link the variable to the method or class it is defined within
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.CONTAINS)
-
-            elif action == 'Variable type':
-                # target = VARIABLE, referrer = CLASS/PRIMITIVE
-                # Link the variable to its type
-                #TODO: Might have to add variant edges
-
-                self.__addEdge(target, referrer,
-                               targetNodeType,
-                               referrerNodeType,
-                               EdgeType.TYPE)
         c.close
     
         print "\tDone processing topology."
         self.__printGraphStats()
-        
+
+    def updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType):
+        if action == 'Package':
+            # target = FILE, referrer = PACKAGE
+            # Link the file to the package
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.CONTAINS)
+            # Link the package to the root 'Packages' node
+            self.__addEdge('Packages', referrer,
+                           NodeType.SPECIAL,
+                           referrerNodeType,
+                           EdgeType.CONTAINS)
+            # Link the file to its class FQN
+            fqn = self.__getClassFQN(target)
+            self.__addEdge(target, fqn,
+                           targetNodeType,
+                           NodeType.CLASS,
+                           EdgeType.CONTAINS)
+        elif action == 'Imports':
+            # target = FILE, referrer = CLASS
+            # Link the file to its class FQN
+            fqn = self.__getClassFQN(target)
+            targetPackage = self.langHelper.package(target)
+            self.__addEdge(target, fqn,
+                           targetNodeType,
+                           NodeType.CLASS,
+                           EdgeType.CONTAINS)
+            # Link the class FQN to the imported class
+            self.__addEdge(fqn, referrer,
+                           NodeType.CLASS,
+                           referrerNodeType,
+                           EdgeType.IMPORTS)
+            # Link the file to its package
+            self.__addEdge(targetPackage, target,
+                           NodeType.PACKAGE,
+                           targetNodeType,
+                           EdgeType.CONTAINS)
+            # Link the package to 'Packages'
+            self.__addEdge('Packages', targetPackage,
+                           NodeType.SPECIAL,
+                           NodeType.PACKAGE,
+                           EdgeType.CONTAINS)
+        elif action == 'Extends':
+            # target = CLASS, referrer = CLASS
+            # Link the class to the class it extends
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.EXTENDS)
+        elif action == 'Implements':
+            # target = CLASS, referrer = CLASS
+            # Link the class to the class it implements
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.IMPLEMENTS)
+        elif action == 'Method declaration':
+            # target = CLASS, referrer = METHOD
+            # Link the class to the method it declares
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.CONTAINS)
+        elif action == 'Method invocation':
+            # target = METHOD, referrer = METHOD
+            # Link the calling method to the called method
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.CALLS)
+            # Link the called method to its class
+            fqn = self.__getClassFQN(referrer)
+            self.__addEdge(fqn, referrer,
+                           NodeType.CLASS,
+                           referrerNodeType,
+                           EdgeType.CONTAINS)
+
+        elif action == 'Variable declaration':
+            # target = CLASS/METHOD, referrer = VARIABLE
+            # Link the variable to the method or class it is defined within
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.CONTAINS)
+
+        elif action == 'Variable type':
+            # target = VARIABLE, referrer = CLASS/PRIMITIVE
+            # Link the variable to its type
+            # TODO: Might have to add variant edges
+
+            self.__addEdge(target, referrer,
+                           targetNodeType,
+                           referrerNodeType,
+                           EdgeType.TYPE)
+
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
     
@@ -272,13 +268,6 @@ class PfisGraph(object):
         if self.VERBOSE_BUILD:
             print "\tAdding edge from", node1, "to", node2, "of type", edgeType
 
-    def __addEdgesToOtherVariants(self, node1, node1Type):
-        nodes = self.graph.nodes()
-        for node2 in nodes:
-            if node1 != node2 and self.graph.node[node2]['type'] == node1Type:
-                if self.langHelper.isVariantOf(node1, node2):
-                    self.__addEdge(node1, node2, node1Type, self.graph.node[node2]['type'], EdgeType.VARIANT_OF)
-    
     def __getWordNodes_splitNoStem(self, s):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters. A word node is a tuple containing 'word' and
