@@ -4,6 +4,7 @@ import getopt
 
 from languageHelperFactory import LanguageHelperFactory
 from pfisGraph import PfisGraph
+from pfisGraphWithVariants import PfisGraphWithVariants
 from xmlAlgorithmOptions import XMLOptionsParser
 from predictor import Predictor
 from navpath import NavigationPath
@@ -94,7 +95,10 @@ def main():
 
 	# Create the PFIS graph (which also determines the navigations)
 
-	graph = PfisGraph(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
+	if isVariantTopology:
+		graph = PfisGraphWithVariants(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
+	else:
+		graph = PfisGraph(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
 
 	predictor = Predictor(graph, navPath)
 
