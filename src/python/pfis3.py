@@ -25,8 +25,7 @@ def parseArgs():
 		"projectSrcFolderPath": None,
 		"language": None,
 		"xml" : None,
-		"topPredictionsFolderPath": None,
-		"isVariantTopology": None
+		"topPredictionsFolderPath": None
 	}
 
 	def assign_argument_value(argsMap, option, value):
@@ -37,17 +36,10 @@ def parseArgs():
 			"-p" : "projectSrcFolderPath",
 			"-o" : "outputPath",
 			"-x" : "xml",
-			"-n" : "topPredictionsFolderPath",
-			"-v" : "isVariantTopology"
+			"-n" : "topPredictionsFolderPath"
 		}
 
 		key = optionKeyMap[option]
-		if key == "isVariantTopology":
-			if str(value).lower() == "true":
-				value = True
-			else:
-				value = False
-
 		arguments[key] = value
 
 	def setConventionBasedArguments(argsMap):
@@ -88,17 +80,14 @@ def main():
 	# Load the stop words file
 	stopWords = loadStopWords(args['stopWordsPath'])
 
-	isVariantTopology = str(args['isVariantTopology']).lower() == 'true'
-
 	projSrc = args['projectSrcFolderPath']
 	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, verbose=False)
 
 	# Create the PFIS graph (which also determines the navigations)
 
-	if isVariantTopology:
-		graph = PfisGraphWithVariants(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
-	else:
-		graph = PfisGraph(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
+	# TODO: Hook up here
+	#graph = PfisGraphWithVariants(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
+	graph = PfisGraph(workingDbCopy, langHelper, projSrc, stopWords = stopWords)
 
 	predictor = Predictor(graph, navPath)
 

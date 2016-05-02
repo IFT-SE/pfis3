@@ -81,7 +81,6 @@ class XMLOptionsParser(object):
         # not in the XML, we shoudln't have to create variables for them
         
         history = False
-        variant = False
         goal = []
         decayFactor = 0.85
         decayHistory = 0.9
@@ -92,12 +91,11 @@ class XMLOptionsParser(object):
         if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
         if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
         if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
-        if 'variant' in node.attrib and node.attrib['variant'] == 'true': variant = True
 
         self.algorithms.append(PFIS(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], history=history, goal=goal, 
             decayFactor=decayFactor, decayHistory=decayHistory, 
-            numSpread=numSpread, considerVariants=variant,
+            numSpread=numSpread,
             includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
 
     def __parsePFISTouchOnce(self, node):
@@ -108,9 +106,7 @@ class XMLOptionsParser(object):
         goal = []
         decayFactor = 0.85
         decayHistory = 0.9
-        variant=False
 
-        if 'variant' in node.attrib and node.attrib['variant'] == 'true': variant = True
         if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
         if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
         if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
@@ -120,7 +116,7 @@ class XMLOptionsParser(object):
         
         self.algorithms.append(PFISTouchOnce(self.langHelper, node.attrib['name'],
             node.attrib['fileName'], history=history, goal=goal, 
-            decayFactor=decayFactor, decayHistory=decayHistory, considerVariants=variant,
+            decayFactor=decayFactor, decayHistory=decayHistory,
             includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1]))
         
     def __parseRecency(self, node):

@@ -5,7 +5,7 @@ from pfisGraph import NodeType
 class PFISBase(PredictiveAlgorithm):
 
     def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 decayFactor = 0.85, decayHistory = 0.9, considerVariants = False,
+                 decayFactor = 0.85, decayHistory = 0.9,
                  includeTop = False, numTopPredictions=0):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.history = history
@@ -13,8 +13,6 @@ class PFISBase(PredictiveAlgorithm):
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
         self.mapNodesToActivation = None
-        self.considerVariants = considerVariants
-
 
     def spreadActivation(self, pfisGraph):
         raise NotImplementedError('spreadActivation is not implemented in PFISBase')
@@ -23,8 +21,6 @@ class PFISBase(PredictiveAlgorithm):
         raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
     def makePrediction(self, pfisGraph, navPath, navNumber):
-        if self.considerVariants and not pfisGraph.isVariantTopology:
-            raise RuntimeError("Cannot run PFIS algorithm with variant option on non-variant topology")
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 
