@@ -3,8 +3,6 @@ import shutil
 import getopt
 
 from languageHelperFactory import LanguageHelperFactory
-from pfisGraph import PfisGraph
-from pfisGraphWithVariants import PfisGraphWithVariants
 from xmlAlgorithmOptions import XMLOptionsParser
 from predictor import Predictor
 from navpath import NavigationPath
@@ -70,32 +68,30 @@ def main():
 	# Start by making a working copy of the database
 	workingDbCopy = args['tempDbPath']
 	copyDatabase(args['dbPath'], workingDbCopy)
+	stopWords = loadStopWords(args['stopWordsPath'])
+	projSrc = args['projectSrcFolderPath']
 
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use
-	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy)
-	algorithms = xmlParser.getAlgorithms()
+	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
+	graphAlgorithmsMap = xmlParser.getAlgorithms()
 
 	# Load the stop words file
-	stopWords = loadStopWords(args['stopWordsPath'])
-
-	projSrc = args['projectSrcFolderPath']
 	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, verbose=False)
 
 	# Create the PFIS graph (which also determines the navigations)
 
-	# TODO: Hook up here
-	#graph = PfisGraphWithVariants(workingDbCopy, isVariantTopology, langHelper, projSrc, stopWords = stopWords)
-	graph = PfisGraph(workingDbCopy, langHelper, projSrc, stopWords = stopWords)
+	for graph in graphAlgorithmsMap:
+		#Create a predictor instance for each graph type
+		predictor = Predictor(graph, navPath)
 
-	predictor = Predictor(graph, navPath)
+		algorithms = graphAlgorithmsMap[graph]
+		#Make all predictions for the graph for all algorithms
+		results = predictor.makeAllPredictions(algorithms, args['outputPath'], args['topPredictionsFolderPath'])
 
-	# Make predictions for the algorithms specified
-	results = predictor.makeAllPredictions(algorithms, args['outputPath'], args['topPredictionsFolderPath'])
-
-	# Save each algorithms predictions to the a separate file in the output folder
-	savePredictionsToFiles(results)
+		# Save each algorithms predictions to the a separate file in the output folder
+		savePredictionsToFiles(results)
 
 	# Exit gracefully
 	sys.exit(0)
