@@ -82,7 +82,7 @@ def main():
 
 	# Create the PFIS graph (which also determines the navigations)
 
-	for graph in graphAlgorithmsMap:
+	for graph in graphAlgorithmsMap.keys():
 		#Create a predictor instance for each graph type
 		predictor = Predictor(graph, navPath)
 

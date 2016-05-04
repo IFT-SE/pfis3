@@ -84,3 +84,9 @@ class EdgeType(object):
             EdgeType.TYPE,
             EdgeType.VARIANT_OF
         ]
+
+    @staticmethod
+    def getStandardEdgeTypes():
+        edges = EdgeType.getAll()
+        edges.remove(EdgeType.VARIANT_OF)
+        return edges

@@ -329,12 +329,7 @@ class PfisGraph(object):
 
         return validNeighbors
 
-    #TODO: move to relevant subclass
-    def getAllNeighbors(self, node, includeVariantEdges=False):
-        edges = EdgeType.getAll()
-
-        if not includeVariantEdges:
-            edges.remove(EdgeType.VARIANT_OF)
-
+    def getAllNeighbors(self, node):
+        edges = EdgeType.getStandardEdgeTypes()
         return self.getNeighborsOfDesiredEdgeTypes(node, edges)
 

@@ -2,7 +2,6 @@ from xml.etree.ElementTree import ElementTree
 from algorithmFactory import AlgorithmFactory
 from graphFactory import GraphFactory
 
-
 class XMLOptionsParser(object):
     
     def __init__(self, optionsFilePath, langHelper, tempDbPath, projSrcPath, stopWords):
@@ -17,9 +16,9 @@ class XMLOptionsParser(object):
 
         for child in root:
             if child.tag == 'algorithms':
-                graphType = self.__getGraph(child)
+                graph = self.__getGraph(child)
                 algorithms = self.__getAlgorithms(child)
-                graphAlgorithmsMap[graphType] = algorithms
+                graphAlgorithmsMap[graph] = algorithms
 
         return graphAlgorithmsMap
                 
