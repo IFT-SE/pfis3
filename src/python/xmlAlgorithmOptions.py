@@ -33,5 +33,8 @@ class XMLOptionsParser(object):
         algorithms = []
         for child in algorithmsNode:
             if child.tag == 'algorithm':
-                algorithms.append(self.algorithmFactory.getAlgorithm(child))
+                algorithm = self.algorithmFactory.getAlgorithm(child)
+                if algorithm != None:
+                    algorithms.append(algorithm)
+
         return algorithms
