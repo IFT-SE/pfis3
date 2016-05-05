@@ -8,10 +8,11 @@ class GraphFactory:
 		self.projSrcPath = projSrcPath
 		self.stopWords = stopWords
 
-	def getGraph(self, graphType = "PfisGraph"):
+	def getGraph(self, graphType):
+		if graphType == None:
+			graphType = "PfisGraph"
+
 		if graphType.lower() == "PfisGraph".lower():
-			print "PfisGraph !!!"
 			return PfisGraph(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords)
 		if graphType.lower() == "PfisGraphWithVariants".lower():
-			print "PfisGraphWithVariants !!!"
 			return PfisGraphWithVariants(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords)
