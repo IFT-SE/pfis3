@@ -24,7 +24,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
         m = self.REGEX_NORM_ECLIPSE.match(string)
         if m:
-            return m.group(1)
+            return m.groups()[0]
 
         filepath = self.fixSlashes(string)
         n = self.REGEX_NORM_PATH.match(filepath)
@@ -34,7 +34,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
     def getOuterClass(self, fqnToContainer):
         m = self.OUTER_CLASS_REGEX.match(fqnToContainer)
         if m:
-            return m.group(0)
+            return m.groups()[0]
         else:
             raise Exception("Incorrect fqn: ", fqnToContainer)
 
