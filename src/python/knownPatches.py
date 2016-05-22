@@ -32,12 +32,11 @@ class KnownPatches(object):
             # Set up the initial empty list if this is the first instance of the
             # file
             if norm not in self.files:
-                self.files[norm] = []
+                self.patchStrategy.addFilePatch(self.files, norm)
                 
             # Add the method if it doesn't already exist in the file
             if self.langHelper.isMethodFqn(filePathOrFqn):
-                if self.patchStrategy.getMethodInMethodList(filePathOrFqn, self.files[norm]) is None:
-                    self.patchStrategy.appendMethodPatch(filePathOrFqn, self.files[norm])
+                self.patchStrategy.addMethodPatchIfNotPresent(filePathOrFqn, self.files, norm)
 
 
 
@@ -51,7 +50,7 @@ class KnownPatches(object):
         norm = self.langHelper.getOuterClass(norm)
 
         if norm in self.files:
-            return self.patchStrategy.getMethodInMethodList(fqn, self.files[norm])
+            return self.patchStrategy.getMethodInMethodList(fqn, self.files, norm)
 
         return None
                     

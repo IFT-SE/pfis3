@@ -1,12 +1,16 @@
 from patches import MethodPatch
 class DefaultPatchStrategy(object):
 
-	def getMethodInMethodList(self, methodFqn, methodList):
+	def addFilePatch(self, files, fileName):
+		files[fileName] = []
+
+	def getMethodInMethodList(self, methodFqn, files, fileName):
 		# Return the method data object in the list that matches the desired FQN
-		for method in methodList:
+		for method in files[fileName]:
 			if method.fqn == methodFqn:
 				return method
 		return None
 
-	def appendMethodPatch(self, filePathOrFqn, methodList):
-		methodList.append(MethodPatch(filePathOrFqn))
+	def addMethodPatchIfNotPresent(self, methodFqn, files, normalizedClass):
+		if self.getMethodInMethodList(methodFqn, files, normalizedClass) is None:
+			files[normalizedClass].append(MethodPatch(methodFqn))
