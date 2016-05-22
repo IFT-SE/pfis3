@@ -7,6 +7,8 @@ from collections import deque
 
 def main():
     args = parseArgs()
+    option_args = ["variantsDbPath", "topPredictionsFolder"]
+
     if args['mode'] == None:
         print 'Missing mode. Include -R(un) or -C(ombine) or -M(ulit-factor) -A(ll) in args.'
         print_usage()
@@ -49,8 +51,8 @@ def main():
         finalResultsMode(args)
     if args['mode'] == '-A':
         for key in args:
-            if args[key] is None: 
-                print 'Missing parameters for all mode.'
+            if args[key] is None and key not in option_args :
+                print 'Missing parameters for all mode.', key
                 print_usage()
                 sys.exit(2)
         runMode(args)
@@ -68,6 +70,7 @@ def runMode(args):
     l = args['language']
     s = args['stopWordsPath']
     x = args['xml']
+    v = args['variantsDbPath']
     n = args['topPredictionsFolder']
 
     # Gather all the database files in the directory
@@ -96,7 +99,7 @@ def runMode(args):
                 if not os.path.exists(topPredictionsFolderPath):
                     os.makedirs(topPredictionsFolderPath)
 
-        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x, topPredictionsFolderPath))
+        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x, v, topPredictionsFolderPath))
     
     print "runScript.py is running models..."
     print "\tNumber of simultaneous jobs = " + str(NUM_CHILD_PROCESSES)
@@ -535,6 +538,7 @@ def parseArgs():
         "ignoreFirstXPredictions" : None,
         "numThreads" : None,
         "mode" : None,
+        "variantsDbPath": None,
         "topPredictionsFolder": None,
         "useRatios" : False
     }
@@ -561,6 +565,7 @@ def parseArgs():
             "-f" : "finalResultsFileName",
             "-i" : "ignoreFirstXPredictions",
             "-t" : "numThreads",
+            "-v" : "variantsDbPath",
             "-n" : "topPredictionsFolder",
             "-r" : "useRatios"
         }
@@ -569,7 +574,7 @@ def parseArgs():
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r:v")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
@@ -583,7 +588,8 @@ def parseArgs():
 
 class PFISJob(object):
     
-    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath, xmlPath, topPredictionsFolder):
+    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath,
+                 xmlPath, variantsDbPath, topPredictionsFolder):
         self.e = executablePath
         self.d = dbPath
         self.p = projectSrcPath
@@ -592,6 +598,7 @@ class PFISJob(object):
         self.o = dbOutputPath
         self.n = topPredictionsFolder
         self.x = xmlPath
+        self.v = variantsDbPath
         self.process = None
     
     def startJob(self):
@@ -607,8 +614,12 @@ class PFISJob(object):
                          '-s', self.s, \
                          '-o', self.o, \
                          '-x', self.x]
+
         if self.n != None:
             args.extend(['-n', self.n])
+
+        if self.v != None:
+            args.extend(['-v', self.v])
 
         self.process = subprocess.Popen(args, \
                                          stdout = stdoutLog, \

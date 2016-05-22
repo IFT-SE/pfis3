@@ -2,21 +2,21 @@ import sqlite3
 import iso8601
 from pfigFileHeader import PFIGFileHeader
 from knownPatches import KnownPatches
-from patches import MethodPatch
 
 class NavigationPath(object):
     
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
     METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length') AND timestamp <= ? ORDER BY timestamp"
     
-    def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
+    def __init__(self, dbFilePath, langHelper, projectFolderPath, variantsDb=None, verbose = False):
         self.navigations = []
         self.fileNavigations = []
         self.dbFilePath = dbFilePath
-        self.knownPatches = KnownPatches(langHelper)
         self.langHelper = langHelper
         self.projectFolderPath = projectFolderPath
         self.VERBOSE_PATH = verbose
+
+        self.knownPatches = KnownPatches(langHelper, variantsDb)
 
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row

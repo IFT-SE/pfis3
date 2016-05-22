@@ -11,6 +11,7 @@ def print_usage():
 	print "python pfis3.py -d <path to PFIG database> -s <path to stop words file>"
 	print "                -l <language> -p <path to project source folder> "
 	print "                -o <path to output folder> -x <xml options file>"
+	print "                -v <variants db for functions: optional>"
 	print "for language : say JAVA or JS"
 
 def parseArgs():
@@ -23,7 +24,8 @@ def parseArgs():
 		"projectSrcFolderPath": None,
 		"language": None,
 		"xml" : None,
-		"topPredictionsFolderPath": None
+		"topPredictionsFolderPath": None,
+		"variantsDbPath":None
 	}
 
 	def assign_argument_value(argsMap, option, value):
@@ -34,7 +36,8 @@ def parseArgs():
 			"-p" : "projectSrcFolderPath",
 			"-o" : "outputPath",
 			"-x" : "xml",
-			"-n" : "topPredictionsFolderPath"
+			"-n" : "topPredictionsFolderPath",
+			"-v" : "variantsDbPath"
 		}
 
 		key = optionKeyMap[option]
@@ -70,6 +73,7 @@ def main():
 	copyDatabase(args['dbPath'], workingDbCopy)
 	stopWords = loadStopWords(args['stopWordsPath'])
 	projSrc = args['projectSrcFolderPath']
+	variantsDb = args['variantsDbPath']
 
 	langHelper.performDBPostProcessing(workingDbCopy)
 
@@ -78,10 +82,9 @@ def main():
 	graphAlgorithmsMap = xmlParser.getAlgorithms()
 
 	# Load the stop words file
-	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, verbose=False)
+	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, variantsDb, verbose=False)
 
 	# Create the PFIS graph (which also determines the navigations)
-
 	for graph in graphAlgorithmsMap.keys():
 		#Create a predictor instance for each graph type
 		predictor = Predictor(graph, navPath)

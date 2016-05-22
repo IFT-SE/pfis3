@@ -1,14 +1,24 @@
-from patches import MethodPatch
+from defaultPatchStrategy import DefaultPatchStrategy
+from variantPatchStrategy import VariantPatchStrategy
+
 
 class KnownPatches(object):
     # This class keeps track of the classes that the programmers "knows about."
     # It is used primarily to map from Text selection offset events to actual
     # methods.
 
-    def __init__(self, languageHelper):
+    @staticmethod
+    def getPatchStrategy(variantsDb):
+        if False: #variantsDb != None:
+            return VariantPatchStrategy(variantsDb)
+        else:
+            return DefaultPatchStrategy()
+
+    def __init__(self, languageHelper, variantsDb=None):
         self.langHelper = languageHelper
         self.files = {}
-        
+        self.patchStrategy = KnownPatches.getPatchStrategy(variantsDb)
+
     def addFilePatch(self, filePathOrFqn):
         # Add a file to the known files. Each file is stored according to its
         # normalized path so that later when we query by FQN, we can quickly
@@ -26,8 +36,10 @@ class KnownPatches(object):
                 
             # Add the method if it doesn't already exist in the file
             if self.langHelper.isMethodFqn(filePathOrFqn):
-                if self.__getMethodInMethodList(filePathOrFqn, self.files[norm]) is None:
-                    self.files[norm].append(MethodPatch(filePathOrFqn))
+                if self.patchStrategy.getMethodInMethodList(filePathOrFqn, self.files[norm]) is None:
+                    self.patchStrategy.appendMethodPatch(filePathOrFqn, self.files[norm])
+
+
 
     def findMethodByFqn(self, fqn):
         # Query the known patches by a method's FQN. Returns the MethodData
@@ -37,8 +49,10 @@ class KnownPatches(object):
         
         # Get the outer class because the data structure is by file name
         norm = self.langHelper.getOuterClass(norm)
+
         if norm in self.files:
-            return self.__getMethodInMethodList(fqn, self.files[norm])
+            return self.patchStrategy.getMethodInMethodList(fqn, self.files[norm])
+
         return None
                     
     def findMethodByOffset(self, filePath, offset):
@@ -101,13 +115,6 @@ class KnownPatches(object):
         return adjacentMethodLists
             
 
-    def __getMethodInMethodList(self, methodFqn, methodList):
-        # Return the method data object in the list that matches the desired FQN
-        for method in methodList:
-            if method.fqn == methodFqn:
-                return method
-        return None
-    
     def __str__(self):
         s = ''
         for norm in self.files:
