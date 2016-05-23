@@ -8,16 +8,16 @@ class KnownPatches(object):
     # methods.
 
     @staticmethod
-    def getPatchStrategy(variantsDb):
+    def getPatchStrategy(langHelper, variantsDb):
         if False: #variantsDb != None:
-            return VariantPatchStrategy(variantsDb)
+            return VariantPatchStrategy(langHelper, variantsDb)
         else:
-            return DefaultPatchStrategy()
+            return DefaultPatchStrategy(langHelper)
 
     def __init__(self, languageHelper, variantsDb=None):
         self.langHelper = languageHelper
         self.files = {}
-        self.patchStrategy = KnownPatches.getPatchStrategy(variantsDb)
+        self.patchStrategy = KnownPatches.getPatchStrategy(languageHelper, variantsDb)
 
     def addFilePatch(self, filePathOrFqn):
         # Add a file to the known files. Each file is stored according to its
@@ -31,6 +31,7 @@ class KnownPatches(object):
             
             # Set up the initial empty list if this is the first instance of the
             # file
+            #TODO: Not inlined to handle edge case : files or classes with no methods
             if norm not in self.files:
                 self.patchStrategy.addFilePatch(self.files, norm)
                 
@@ -39,21 +40,9 @@ class KnownPatches(object):
                 self.patchStrategy.addMethodPatchIfNotPresent(filePathOrFqn, self.files, norm)
 
 
-
     def findMethodByFqn(self, fqn):
-        # Query the known patches by a method's FQN. Returns the MethodData
-        # object if it was found, or None if it wasn't. The MethodData object
-        # can then be updated as necessary.
-        norm = self.langHelper.normalize(fqn)
-        
-        # Get the outer class because the data structure is by file name
-        norm = self.langHelper.getOuterClass(norm)
+        return self.patchStrategy.getMethodPatchByFqn(fqn, self.files)
 
-        if norm in self.files:
-            return self.patchStrategy.getMethodInMethodList(fqn, self.files, norm)
-
-        return None
-                    
     def findMethodByOffset(self, filePath, offset):
         
         # Query the known patches by an offset. If a method corresponds to this

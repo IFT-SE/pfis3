@@ -7,6 +7,7 @@ class MethodPatch(object):
         self.fqn = fqn
         self.startOffset = -1
         self.length = -1
+        self.uuid = None
 
     def isOffsetInMethod(self, offset):
         endOffset = self.startOffset + self.length
