@@ -61,7 +61,7 @@ def main():
         finalResultsMode(args)          
     sys.exit(0)
 
-def runMode(args):  
+def runMode(args):
     NUM_CHILD_PROCESSES = int(args['numThreads'])
     d = args['dbDirPath']
     o = args['outputPath']
@@ -574,7 +574,7 @@ def parseArgs():
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r:v")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r:v:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
