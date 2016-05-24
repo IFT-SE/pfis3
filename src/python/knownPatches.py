@@ -8,11 +8,12 @@ class KnownPatches(object):
     # methods.
 
     @staticmethod
-    def getPatchStrategy(langHelper, variantsDb):
-        if False: #variantsDb != None:
-            return VariantPatchStrategy(langHelper, variantsDb)
-        else:
+    def getPatchStrategy(langHelper, variantsDb=None):
+        if variantsDb is None:
             return DefaultPatchStrategy(langHelper)
+        else:
+            return VariantPatchStrategy(langHelper, variantsDb)
+
 
     def __init__(self, languageHelper, variantsDb=None):
         self.langHelper = languageHelper
