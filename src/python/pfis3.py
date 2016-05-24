@@ -82,7 +82,7 @@ def main():
 	graphAlgorithmsMap = xmlParser.getAlgorithms()
 
 	# Load the stop words file
-	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, variantsDb, verbose=False)
+	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, variantsDb)
 
 	# Create the PFIS graph (which also determines the navigations)
 	for graph in graphAlgorithmsMap.keys():

@@ -21,7 +21,7 @@ class DefaultPatchStrategy(object):
 				if method.fqn == fqn:
 					return method
 			return None
-		
+
 		else:
 			return None
 
