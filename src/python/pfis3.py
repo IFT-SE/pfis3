@@ -78,7 +78,7 @@ def main():
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use
-	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
+	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords, variantsDb)
 	graphAlgorithmsMap = xmlParser.getAlgorithms()
 
 	# Load the stop words file

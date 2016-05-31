@@ -91,7 +91,6 @@ class KnownPatches(object):
         
         return True
             
-    
     def getAdajecentMethods(self):
         # Returns a list of method lists where each inner list is the set of
         # methods in a file ordered by offset.
