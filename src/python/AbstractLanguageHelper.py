@@ -79,8 +79,5 @@ class AbstractLanguageHelper:
     def performDBPostProcessing(self, db):
         raise NotImplementedError()
 
-    def isVariantOf(self, fqn1, fqn2):
-        return False
-
     def isPfigHeaderFqn(self, fqn):
         return '.pfigheader()v' in fqn.lower()

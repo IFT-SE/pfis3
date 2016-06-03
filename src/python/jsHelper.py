@@ -54,25 +54,3 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
     def performDBPostProcessing(self, db):
         JSAdditionalDbProcessor(db).process()
-
-    def isVariantOf(self, fqn1, fqn2):
-        #L/hexcom/2014-05-26-10:18:35/js/view.js;.renderText(x"," y"," fontSize"," color"," text)
-        #L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested methods
-
-        FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
-
-        #They are not FQNs of non-std methods in the topology
-        if FILE_TARGET_REGEX.match(fqn1) == None or FILE_TARGET_REGEX.match(fqn2) == None:
-            return False
-
-        match1 = FILE_TARGET_REGEX.match(fqn1).groups()
-        match2 = FILE_TARGET_REGEX.match(fqn2).groups()
-
-        # Return false if both are in same variant
-        if match1[0] == match2[0]:
-            return False
-
-        else:
-            #Right now it is just FQN
-            #TODO: Queer case of headers!!!
-            return match1[1] == match2[1]
