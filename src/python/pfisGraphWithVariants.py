@@ -9,10 +9,10 @@ class PfisGraphWithVariants(PfisGraph):
 		PfisGraph.updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType)
 
 		if action == 'Method declaration':
-			self.__addEdgesToOtherVariants(referrer, referrerNodeType)
-			self.__addEdgesToOtherVariants(target, targetNodeType)
+			self._addEdgesToOtherVariants(referrer, referrerNodeType)
+			self._addEdgesToOtherVariants(target, targetNodeType)
 
-	def __addEdgesToOtherVariants(self, node1, node1Type):
+	def _addEdgesToOtherVariants(self, node1, node1Type):
 		nodes = self.graph.nodes()
 		for node2 in nodes:
 			if node1 != node2 and self.graph.node[node2]['type'] == node1Type:

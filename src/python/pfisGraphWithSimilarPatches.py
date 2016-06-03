@@ -12,15 +12,24 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 		if node1Type != NodeType.METHOD and node2Type != NodeType.METHOD:
 			PfisGraphWithVariants._addEdge(self, node1, node2, node1Type, node2Type, edgeType)
 
-		node1Equivalent = node1
-		node2Equivalent = node2
-		if node1Type == NodeType.METHOD:
-			node1Equivalent = self.getEquivalentGraphNode(node1)
-		if node2Type == NodeType.METHOD:
-			node2Equivalent =self.getEquivalentGraphNode(node2)
+		node1Equivalent = self._getEquivalentNode(node1, node1Type)
+		node2Equivalent = self._getEquivalentNode(node2, node2Type)
 
 		PfisGraphWithVariants._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
 
+	def _getEquivalentNode(self, node, nodeType):
+		if nodeType != NodeType.METHOD:
+			return node
+
+		elif self.langHelper.excludeMethod(node):
+			return node
+
+		else:
+			nodeEquivalent = self.getEquivalentGraphNode(node)
+			return nodeEquivalent
+
 	def getEquivalentGraphNode(self, node):
-		return node
+		self.knownMethodPatches.addFilePatch(node)
+		method = self.knownMethodPatches.findMethodByFqn(node)
+		return method.fqn

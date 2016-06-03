@@ -19,4 +19,4 @@ class GraphFactory:
 		if graphType.lower() == "PfisGraphWithVariants".lower():
 			return PfisGraphWithVariants(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords)
 		if graphType.lower() == "PfisGraphWithSimilarPatches".lower():
-			return PfisGraphWithSimilarPatches(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords, self.variantsDb)
+			return PfisGraphWithSimilarPatches(self.dbPath, self.langHelper, self.projSrcPath, self.variantsDb, self.stopWords)

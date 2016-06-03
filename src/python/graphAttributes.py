@@ -32,8 +32,8 @@ class NodeType(object):
 
     @staticmethod
     def getTargetNodeType(action, target):
-        if action == 'Variable declaration':
-            if target.find('.') == -1:
+        if action == 'Variable declaration' or action == 'Method invocation':
+            if target.find(';.') == -1:
                 return NodeType.CLASS
             else:
                 return NodeType.METHOD

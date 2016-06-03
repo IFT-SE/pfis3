@@ -5,7 +5,7 @@ from __builtin__ import True
 class PFIGFileHeader:
     __INSERT_QUERY = "INSERT INTO logger_log (user, timestamp, action, target, referrer, agent) VALUES (?, ?, ?, ?, ?, ?)"
     __METHOD_DECLARATION_OFFSETS_DESC_UNTIL_TIME_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log " \
-                                                         "WHERE action = 'Method declaration offset' or action = 'Method invocation offset' " \
+                                                         "WHERE action = 'Method declaration offset' " \
                                                          "and timestamp < ? ORDER BY timestamp DESC"
 
 
