@@ -3,9 +3,6 @@ class DefaultPatchStrategy(object):
 	def __init__(self, langHelper):
 		self.langHelper = langHelper
 
-	def addFilePatch(self, files, fileName):
-		files[fileName] = []
-
 	def getMethodPatchByFqn(self, fqn, files):
 		# Query the known patches by a method's FQN. Returns the MethodData
 		# object if it was found, or None if it wasn't. The MethodData object

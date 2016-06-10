@@ -16,49 +16,45 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 		DefaultPatchStrategy.__init__(self, langHelper)
 		print variantsDb
 		self.variantsDb = variantsDb
-		self.idToPatchMap={}
+		self.idToPatchMap = {}
+		self.fqnToIdMap = {}
 
-
-	def addFilePatch(self, files, fileName):
-		files[fileName] = []
 
 	def addMethodPatchIfNotPresent(self, methodFqn, files, normalizedClass):
-		#TODO:
-		# if self.getMethodInMethodList(methodFqn, files, normalizedClass) is None:
-
+		#See patch for same FQN exists
 		methodPatch = self.getMethodPatchByFqn(methodFqn, files)
 
+		#Is patch for FQN does not exist, do the following
 		if methodPatch is None:
+
+			#Get a method patch, with appropriate ID
 			methodPatch = self.__getNewlyVisitedMethodPatch(methodFqn)
 
-		if methodPatch not in files[normalizedClass]:
-			files[normalizedClass].append(methodPatch)
+			#If ID not exists earlier, ID -> Patch map
+			if methodPatch.uuid not in self.idToPatchMap.keys():
+				self.idToPatchMap[methodPatch.uuid] = methodPatch
+
+			#Add entry for FQN -> UUID
+			self.fqnToIdMap[methodFqn] = methodPatch.uuid
+
+			#Add to known patches for file
+			if methodPatch not in files[normalizedClass]:
+				files[normalizedClass].append(methodPatch)
 
 	def __getNewlyVisitedMethodPatch(self, methodFqn):
+		# If FQN is a file header, create a new header if it is not already available
+		# Otherwise, get the right patch from varinat information db
+
 		if self.langHelper.isPfigHeaderFqn(methodFqn):
 			return MethodPatch(methodFqn)
-
 		else:
 			return self.__fetchMethodPatchFromDb(methodFqn)
 
 	def getMethodPatchByFqn(self, fqn, files):
-		# Query the known patches by a method's FQN. Returns the MethodData
-		# object if it was found, or None if it wasn't. The MethodData object
-		# can then be updated as necessary.
-		norm = self.langHelper.normalize(fqn)
-
-		# Get the outer class because the data structure is by file name
-		norm = self.langHelper.getOuterClass(norm)
-
-		if norm in files:
-			# Return the method data object in the list that matches the desired FQN
-			for method in files[norm]:
-				if method.fqn == fqn:
-					return method
-			return None
-
-		else:
-			return None
+		if fqn in self.fqnToIdMap.keys():
+			uuid = self.fqnToIdMap[fqn]
+			return self.idToPatchMap[uuid]
+		return None
 
 	def _getMethodPatchByFqn_(self, fqn, files):
 		patchRow = self.__getPatchRow(fqn)
@@ -78,13 +74,8 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 
 	def __fetchMethodPatchFromDb(self, fqn):
 		patchRow = self.__getPatchRow(fqn)
-
 		methodPatch = MethodPatch(fqn)
 		methodPatch.uuid = patchRow[4]
-		methodPatch.variantInfo = VariantInfo(patchRow[0], patchRow[1], patchRow[2])
-
-		self.idToPatchMap[methodPatch.uuid] = methodPatch
-
 		return methodPatch
 
 	def __getPatchRow(self, fqn):

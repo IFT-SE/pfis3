@@ -34,7 +34,7 @@ class KnownPatches(object):
             # file
             #TODO: Not inlined to handle edge case : files or classes with no methods
             if norm not in self.files:
-                self.patchStrategy.addFilePatch(self.files, norm)
+                self.files[norm] = []
                 
             # Add the method if it doesn't already exist in the file
             if self.langHelper.isMethodFqn(filePathOrFqn):

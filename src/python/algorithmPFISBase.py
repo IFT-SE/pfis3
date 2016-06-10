@@ -61,8 +61,11 @@ class PFISBase(PredictiveAlgorithm):
             if self.includeTop:
                 topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
 
-            if methodToPredict in sortedMethods:
-                ranking = self.getRankForMethod(methodToPredict, sortedMethods, self.mapNodesToActivation)
+            equivalentMethod = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+            if equivalentMethod != methodToPredict:
+                print "Different: ", equivalentMethod, methodToPredict
+            if equivalentMethod in sortedMethods:
+                ranking = self.getRankForMethod(equivalentMethod, sortedMethods, self.mapNodesToActivation)
 
                 return Prediction(navNumber, ranking["rankWithTies"], len(sortedMethods), ranking["numTies"],
                                   str(navToPredict.fromFileNav),
@@ -103,6 +106,7 @@ class PFISBase(PredictiveAlgorithm):
 
     def __getMethodNodesFromGraph(self, pfisGraph, excludeNode):
         activatedMethodNodes = []
+        sortedNodes = []
 
         for node in self.mapNodesToActivation:
             if node == excludeNode:

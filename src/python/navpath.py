@@ -16,7 +16,8 @@ class NavigationPath(object):
         self.projectFolderPath = projectFolderPath
         self.VERBOSE_PATH = verbose
 
-        self.knownPatches = KnownPatches(langHelper, variantsDb)
+        #Do not account for similar patches across variants
+        self.knownPatches = KnownPatches(langHelper)
 
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row

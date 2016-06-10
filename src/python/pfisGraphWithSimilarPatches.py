@@ -33,3 +33,7 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 		self.knownMethodPatches.addFilePatch(node)
 		method = self.knownMethodPatches.findMethodByFqn(node)
 		return method.fqn
+
+	def getFqnOfEquivalentNode(self, fqn):
+		equivalentPatch = self.knownMethodPatches.findMethodByFqn(fqn)
+		return equivalentPatch.fqn
