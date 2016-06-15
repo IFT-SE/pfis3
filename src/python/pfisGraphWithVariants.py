@@ -24,11 +24,13 @@ class PfisGraphWithVariants(PfisGraph):
 		edges = EdgeType.getAll()
 		return self.getNeighborsOfDesiredEdgeTypes(node, edges)
 
+	#TODO: Move to lang helper
 	def _isVariantOf(self, fqn1, fqn2):
 		#L/hexcom/2014-05-26-10:18:35/js/view.js;.renderText(x"," y"," fontSize"," color"," text)
 		#L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested methods
 
-		FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
+		#FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)') - matches entire path to method
+		FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*);.(.*)\(')
 
 		#They are not FQNs of non-std methods in the topology
 		if FILE_TARGET_REGEX.match(fqn1) == None or FILE_TARGET_REGEX.match(fqn2) == None:
@@ -44,4 +46,5 @@ class PfisGraphWithVariants(PfisGraph):
 		else:
 			#Right now it is just FQN
 			#TODO: Queer case of headers!!!
-			return match1[1] == match2[1]
+			#return match1[1] == match2[1] # Match for entire path
+			return match1[2] == match2[2] #Match just method name
