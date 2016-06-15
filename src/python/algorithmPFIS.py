@@ -24,10 +24,10 @@ class PFIS(PFISBase):
                     if neighbor not in self.mapNodesToActivation:
                         self.mapNodesToActivation[neighbor] = 0.0
                     # Add Verbose flag check.
-                    printNodes(pfisGraph, mapNodesToActivation)
+                    #self.printNodes(pfisGraph, self.mapNodesToActivation)
                     self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
 
-    def printNodes(pfisGraph, mapNodesToActivation):
+    def printNodes(self, pfisGraph, mapNodesToActivation):
         nodeList = pfisGraph.nodes()
         print "Nodes currently present in the graph along with their weights are:"
 
