@@ -28,6 +28,7 @@ class Predictor(object):
 				results[algorithm.name].addPrediction(self.__makePrediction(algorithm))
 
 		print 'Done making predictions.'
+		print self.graph.printEntireGraphStats()
 		return results
 
 	def __makePrediction(self, predictiveAlgorithm):

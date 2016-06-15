@@ -312,8 +312,20 @@ class PfisGraph(object):
             raise Exception("convertFilePathToFQN: invalid path: " + s)
 
     def __printGraphStats(self):
-        print "\tGraph contains " + str(len(self.graph.node)) + " nodes."
-        print "\tGraph contains " + str(len(self.graph.edge)) + " edges."
+        print "\tGraph contains " + str(self.graph.number_of_nodes()) + " nodes."
+        print "\tGraph contains " + str(self.graph.number_of_edges()) + " edges."
+
+    def printEntireGraphStats(self):
+        print "Nodes\t", str(self.graph.number_of_nodes())
+        print "Edges\t", str(self.graph.number_of_edges())
+
+        variantEdges = 0
+        edge_iter = self.graph.edges_iter()
+        for edge in edge_iter:
+            edge_data = self.graph.get_edge_data(edge[0], edge[1])
+            if EdgeType.VARIANT_OF in edge_data["types"]:
+                variantEdges = variantEdges+1
+        print "Variant edges\t", str(variantEdges)
 
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
         validNeighbors = []
