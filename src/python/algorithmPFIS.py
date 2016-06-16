@@ -1,7 +1,10 @@
 from algorithmPFISBase import PFISBase
 
 class PFIS(PFISBase):
-        
+
+    VERBOSE = 1
+    DEBUG_NODE = 'L/hexcom/Current/js_v9/main.js;.init(b)'
+
     def __init__(self, langHelper, name, fileName, history=False, goal = [], 
                  decayFactor = 0.85, decayHistory = 0.9, numSpread = 2,
                  includeTop = False, numTopPredictions=0):
@@ -13,6 +16,7 @@ class PFIS(PFISBase):
         return mapNodesToActivation
                      
     def spreadActivation(self, pfisGraph):
+        #self.printNodes(pfisGraph)
         for _ in range(0, self.NUM_SPREAD):
             for node in self.mapNodesToActivation.keys():
                 if node not in pfisGraph.graph.node:
@@ -23,17 +27,35 @@ class PFIS(PFISBase):
                 for neighbor in neighbors:
                     if neighbor not in self.mapNodesToActivation:
                         self.mapNodesToActivation[neighbor] = 0.0
-                    # Add Verbose flag check.
-                    #self.printNodes(pfisGraph, self.mapNodesToActivation)
-                    self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
 
-    def printNodes(self, pfisGraph, mapNodesToActivation):
-        nodeList = pfisGraph.nodes()
+
+                    if PFIS.VERBOSE and neighbor == PFIS.DEBUG_NODE:
+                        print "------------------------------"
+                        print "Node:", node, self.mapNodesToActivation[node]
+                        print "Neighbor count: ",len(neighbors)
+                        print "Standard decay fator:", self.DECAY_FACTOR
+                        print "Std spread", self.mapNodesToActivation[node] * self.DECAY_FACTOR
+                        print "EdgeWeight due to neighbors decay : 1/ neighbor_count: ", edgeWeight
+                        print "Spread incl edge weight: ", (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+                        print "Neighbor:", neighbor, self.mapNodesToActivation[neighbor]
+
+                    self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
+                                                          (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+
+                    if PFIS.VERBOSE and neighbor == PFIS.DEBUG_NODE:
+                        print "Final neighbor weight", self.mapNodesToActivation[neighbor]
+
+                    # Add Verbose flag check
+                #if PFIS.VERBOSE:
+                    #self.printNodes(pfisGraph)
+
+    def printNodes(self, pfisGraph):
+        nodeList = pfisGraph.graph.nodes()
         print "Nodes currently present in the graph along with their weights are:"
 
         for node in nodeList:
-            if  node in  mapNodesToActivation:
-                print "(",node, " : ", mapNodesToActivation[node],")"
+            if  node in  self.mapNodesToActivation:
+                print "(",node, " : ", self.mapNodesToActivation[node],")"
             else:
                 print "(",node,")"
 
