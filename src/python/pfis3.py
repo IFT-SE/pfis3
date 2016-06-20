@@ -24,8 +24,7 @@ def parseArgs():
 		"projectSrcFolderPath": None,
 		"language": None,
 		"xml" : None,
-		"topPredictionsFolderPath": None,
-		"variantsDbPath":None
+		"topPredictionsFolderPath": None
 	}
 
 	def assign_argument_value(argsMap, option, value):
@@ -36,8 +35,7 @@ def parseArgs():
 			"-p" : "projectSrcFolderPath",
 			"-o" : "outputPath",
 			"-x" : "xml",
-			"-n" : "topPredictionsFolderPath",
-			"-v" : "variantsDbPath"
+			"-n" : "topPredictionsFolderPath"
 		}
 
 		key = optionKeyMap[option]
@@ -47,7 +45,7 @@ def parseArgs():
 		argsMap["tempDbPath"] = argsMap["dbPath"] + "_temp"
 
 	try:
-		opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:n:v:")
+		opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:n:")
 	except getopt.GetoptError as err:
 		print str(err)
 		print("Invalid args passed to PFIS")
@@ -73,16 +71,15 @@ def main():
 	copyDatabase(args['dbPath'], workingDbCopy)
 	stopWords = loadStopWords(args['stopWordsPath'])
 	projSrc = args['projectSrcFolderPath']
-	variantsDb = args['variantsDbPath']
 
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use
-	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords, variantsDb)
+	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
 	graphAlgorithmsMap = xmlParser.getAlgorithms()
 
 	# Load the stop words file
-	navPath = NavigationPath(workingDbCopy, langHelper, projSrc, variantsDb)
+	navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
 
 	# Create the PFIS graph (which also determines the navigations)
 	for graph in graphAlgorithmsMap.keys():

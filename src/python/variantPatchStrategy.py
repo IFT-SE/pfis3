@@ -1,5 +1,6 @@
 import sqlite3
 import re
+import os
 from defaultPatchStrategy import DefaultPatchStrategy
 from patches import *
 
@@ -83,10 +84,13 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 		pathRelativeToVariant = self.__getPathRelativeToVariantFolder(fqn)
 		variantName = self.__getVariantName(fqn)
 
+		if not os.path.exists(self.variantsDb):
+			raise Exception("Db not found: ", self.variantsDb)
+
 		conn = sqlite3.connect(self.variantsDb)
 
 		if conn is None:
-			raise Exception("Db not found: ", self.variantsDb)
+			raise Exception("Connection Error: ", self.variantsDb)
 
 		c = conn.cursor()
 

@@ -4,10 +4,10 @@ from graphFactory import GraphFactory
 
 class XMLOptionsParser(object):
     
-    def __init__(self, optionsFilePath, langHelper, tempDbPath, projSrcPath, stopWords, variantsDb=None):
+    def __init__(self, optionsFilePath, langHelper, tempDbPath, projSrcPath, stopWords):
         self.optionsFilePath = optionsFilePath
         self.algorithmFactory = AlgorithmFactory(langHelper, tempDbPath)
-        self.graphFactory = GraphFactory(langHelper, tempDbPath, projSrcPath, stopWords, variantsDb)
+        self.graphFactory = GraphFactory(langHelper, tempDbPath, projSrcPath, stopWords)
 
     def getAlgorithms(self):
         tree = ElementTree(file=self.optionsFilePath)
@@ -24,10 +24,13 @@ class XMLOptionsParser(object):
                 
     def __getGraph(self, algorithmsNode):
         graphType = None
+        variantsDb = None
         if 'graphType' in algorithmsNode.attrib:
             graphType = algorithmsNode.attrib["graphType"]
+        if 'variantsDb' in algorithmsNode.attrib:
+            variantsDb = algorithmsNode.attrib["variantsDb"]
 
-        return self.graphFactory.getGraph(graphType)
+        return self.graphFactory.getGraph(graphType, variantsDb)
 
     def __getAlgorithms(self, algorithmsNode):
         algorithms = []

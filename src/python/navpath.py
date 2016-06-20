@@ -8,7 +8,7 @@ class NavigationPath(object):
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
     METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length') AND timestamp <= ? ORDER BY timestamp"
     
-    def __init__(self, dbFilePath, langHelper, projectFolderPath, variantsDb=None, verbose = False):
+    def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
         self.navigations = []
         self.fileNavigations = []
         self.dbFilePath = dbFilePath
