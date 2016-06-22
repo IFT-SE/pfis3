@@ -279,31 +279,37 @@ def multiFactorModelMode(args):
         if len(headers) < 6:
             print "Warning: Combined file has fewer than two models' results"
         
-        singleModelHeaders = sorted(headers[4:])
-        newModelHeaders = singleModelHeaders
+        allModelHeaders = sorted(headers[4:])
+        #Names with PFIS are not single factors
+        allSingleModelHeaders = [model for model in allModelHeaders if 'pfis' not in model.lower()]
+
         allHeaders = []
-        
         for header in headers:
             allHeaders.append(header)
-        
-        for _ in range(0, len(singleModelHeaders) - 1):
-            newModelHeaders = doCombinations(singleModelHeaders, newModelHeaders, mapData)
-            for header in newModelHeaders:
-                allHeaders.append(header)
-                
+
+        graphTypes = set([headerName.partition("__")[2] for headerName in allSingleModelHeaders])
+        for graphType in graphTypes:
+            singleModelHeaders = [header for header in allSingleModelHeaders if graphType in header]
+            newModelHeaders = singleModelHeaders
+
+            for _ in range(0, len(singleModelHeaders) - 1):
+                newModelHeaders = doCombinations(singleModelHeaders, newModelHeaders, mapData)
+                for header in newModelHeaders:
+                    allHeaders.append(header)
+
         return allHeaders, mapData
         
     def doCombinations(singleModelHeaders, multiModelHeaders, mapData):
         newModelHeaders = []
-        
+
         for m1 in range(0, len(singleModelHeaders)):
             for m2 in range(0, len(multiModelHeaders)):
                 m1Name = singleModelHeaders[m1]
                 m2Name = multiModelHeaders[m2]
-                
-                if 'pfis' in m1Name.lower() or 'pfis' in m2Name.lower() or m1Name in m2Name: 
+
+                if m1Name in m2Name:
                     continue
-                
+
                 modelName = ''
                 nameTokens = m2Name.split(' & ')
                 nameTokens.append(m1Name)
@@ -325,7 +331,6 @@ def multiFactorModelMode(args):
                     m1Rank = float(m1Ranks[i])
                     m2Rank = float(m2Ranks[i])
                     mapData[modelName].append(str(min(m1Rank, m2Rank)))
-        
         return newModelHeaders
                 
         
