@@ -34,10 +34,12 @@ class XMLOptionsParser(object):
 
     def __getAlgorithms(self, algorithmsNode):
         algorithms = []
+        suffix = None
+        if "suffix" in algorithmsNode.attrib:
+            suffix = algorithmsNode.attrib["suffix"]
         for child in algorithmsNode:
             if child.tag == 'algorithm':
-                algorithm = self.algorithmFactory.getAlgorithm(child)
+                algorithm = self.algorithmFactory.getAlgorithm(child, suffix)
                 if algorithm != None:
                     algorithms.append(algorithm)
-
         return algorithms

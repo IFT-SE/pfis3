@@ -15,7 +15,8 @@ class AlgorithmFactory:
 		self.langHelper = langHelper
 		self.tempDbPath = dbPath
 
-	def getAlgorithm(self, node):
+	def getAlgorithm(self, node, suffix):
+
 		if 'class' not in node.attrib or 'name' not in node.attrib \
 			or 'fileName' not in node.attrib or 'enabled' not in node.attrib:
 			raise RuntimeError('parseAlgorithm: Missing required attributes in algorithm elements')
@@ -24,35 +25,48 @@ class AlgorithmFactory:
 		if node.attrib['enabled'] == 'true':
 			algClass = node.attrib['class']
 
-			if algClass == 'Adjacency' : return self.__parseAdjacency(node)
-			elif algClass == 'CallDepth' : return self.__parseCallDepth(node)
-			elif algClass == 'Frequency' : return self.__parseFrequency(node)
-			elif algClass == 'PFIS' : return self.__parsePFIS(node)
-			elif algClass == 'PFISTouchOnce' : return self.__parsePFISTouchOnce(node)
-			elif algClass == 'Recency' : return self.__parseRecency(node)
-			elif algClass == 'SourceTopology' : return self.__parseSourceTopology(node)
-			elif algClass == 'TFIDF' : return self.__parseTFIDF(node)
-			elif algClass == 'LSI' : return self.__parseLSI(node)
-			elif algClass == 'WorkingSet' : return self.__parseWorkingSet(node)
+			if algClass == 'Adjacency' : return self.__parseAdjacency(node, suffix)
+			elif algClass == 'CallDepth' : return self.__parseCallDepth(node, suffix)
+			elif algClass == 'Frequency' : return self.__parseFrequency(node, suffix)
+			elif algClass == 'PFIS' : return self.__parsePFIS(node, suffix)
+			elif algClass == 'PFISTouchOnce' : return self.__parsePFISTouchOnce(node, suffix)
+			elif algClass == 'Recency' : return self.__parseRecency(node, suffix)
+			elif algClass == 'SourceTopology' : return self.__parseSourceTopology(node, suffix)
+			elif algClass == 'TFIDF' : return self.__parseTFIDF(node, suffix)
+			elif algClass == 'LSI' : return self.__parseLSI(node, suffix)
+			elif algClass == 'WorkingSet' : return self.__parseWorkingSet(node, suffix)
 			else:
 				raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
 
-	def __parseAdjacency(self, node):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		return Adjacency(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+	def getSuffixedNames(self, node, graphTypeSuffix):
+		extensionIndex = node.attrib['fileName'].find('.txt')
+		fileName = node.attrib['fileName'][0:extensionIndex]
+		algoName = node.attrib['name']
+		if graphTypeSuffix is not None:
+			fileName = fileName + "__" + graphTypeSuffix
+			algoName = algoName + "__" + graphTypeSuffix
+		return (fileName + ".txt", algoName)
 
-	def __parseCallDepth(self, node):
+	def __parseAdjacency(self, node, graphTypeSuffix):
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		return CallDepth(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+		return Adjacency(self.langHelper, algoName,
+			fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parseFrequency(self, node):
+	def __parseCallDepth(self, node, graphTypeSuffix):
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		return Frequency(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+		return CallDepth(self.langHelper, algoName,
+			fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parsePFIS(self, node):
+	def __parseFrequency(self, node, graphTypeSuffix):
+		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+
+		return Frequency(self.langHelper, algoName,
+			fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+
+	def __parsePFIS(self, node, graphTypeSuffix):
 		# TODO: Implement goal words array, maybe as a child tag labeled 'goal'
 		# with CDATA as the content. Then feed it into the split and parse...
 
@@ -70,14 +84,15 @@ class AlgorithmFactory:
 		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
 		if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
-		return PFIS(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], history=history, goal=goal,
+		return PFIS(self.langHelper, algoName,
+			fileName, history=history, goal=goal,
 			decayFactor=decayFactor, decayHistory=decayHistory,
 			numSpread=numSpread,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parsePFISTouchOnce(self, node):
+	def __parsePFISTouchOnce(self, node, graphTypeSuffix):
 		# TODO: Implement goal words array, maybe as a child tag labeled 'goal'
 		# with CDATA as the content. Then feed it into the split and parse...
 
@@ -91,50 +106,58 @@ class AlgorithmFactory:
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
-
-		return PFISTouchOnce(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], history=history, goal=goal,
+		return PFISTouchOnce(self.langHelper, algoName,
+			fileName, history=history, goal=goal,
 			decayFactor=decayFactor, decayHistory=decayHistory,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parseRecency(self, node):
+	def __parseRecency(self, node, graphTypeSuffix):
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 
-		return Recency(self.langHelper, node.attrib['name'], node.attrib['fileName'],
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+
+		return Recency(self.langHelper, algoName, fileName,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parseSourceTopology(self, node):
+	def __parseSourceTopology(self, node, graphTypeSuffix):
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
-		return SourceTopology(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], includeTop=topPredictionsOptions[0],
+		return SourceTopology(self.langHelper, algoName,
+			fileName, includeTop=topPredictionsOptions[0],
 			numTopPredictions=topPredictionsOptions[1])
 
-	def __parseTFIDF(self, node):
+	def __parseTFIDF(self, node, graphTypeSuffix):
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		return TFIDF(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], dbFilePath=self.tempDbPath,
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+
+		return TFIDF(self.langHelper, algoName,
+			fileName, dbFilePath=self.tempDbPath,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parseLSI(self, node):
+	def __parseLSI(self, node, graphTypeSuffix):
 		numTopics = 200
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		if 'numTopics' in node.attrib: numTopics = float(node.attrib['numTopics'])
 
-		return LSI(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], dbFilePath=self.tempDbPath, numTopics=numTopics,
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+
+		return LSI(self.langHelper, algoName,
+			fileName, dbFilePath=self.tempDbPath, numTopics=numTopics,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parseWorkingSet(self, node):
+	def __parseWorkingSet(self, node, graphTypeSuffix):
 		workingSetSize = 10
 
 		if 'workingSetSize' in node.attrib: workingSetSize = int(node.attrib['workingSetSize'])
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
-		return WorkingSet(self.langHelper, node.attrib['name'],
-			node.attrib['fileName'], workingSetSize=workingSetSize,
+		return WorkingSet(self.langHelper, algoName,
+			fileName, workingSetSize=workingSetSize,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
 	def getTopPredictionsAttributes(self, node):

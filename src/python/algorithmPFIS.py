@@ -2,7 +2,7 @@ from algorithmPFISBase import PFISBase
 
 class PFIS(PFISBase):
 
-    VERBOSE = 1
+    VERBOSE = 0
     DEBUG_NODE = 'L/hexcom/Current/js_v9/main.js;.init(b)'
 
     def __init__(self, langHelper, name, fileName, history=False, goal = [], 
