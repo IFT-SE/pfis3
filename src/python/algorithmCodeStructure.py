@@ -46,7 +46,7 @@ class CodeStructure(PredictiveAlgorithm):
                            navToPredict.toFileNav.timestamp)
     
     def __breadthFirstSearch(self, pfisGraph, fromNode, methodToPredict):
-        if fromNode not in pfisGraph.graph.node:
+        if pfisGraph.getFqnOfEquivalentNode(fromNode) is None:
             raise RuntimeError('breadthFirstSearch: Node not found in PFIS Graph: ' + fromNode)
         
         queue = deque()
