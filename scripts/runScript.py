@@ -77,10 +77,7 @@ def runMode(args):
     
     # Make the output subdirectory
     dbDirName = os.path.basename(os.path.normpath(d))
-    subDir = os.path.join(o, d)
-    if not os.path.exists(subDir):
-        os.makedirs(subDir)
-        
+
     # Create the PFIS jobs
     print "runScript.py is building the job queue..."
     

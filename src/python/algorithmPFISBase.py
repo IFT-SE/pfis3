@@ -62,8 +62,6 @@ class PFISBase(PredictiveAlgorithm):
                 topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
 
             equivalentMethod = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
-            if equivalentMethod != methodToPredict:
-                print "Different: ", equivalentMethod, methodToPredict
             if equivalentMethod in sortedMethods:
                 ranking = self.getRankForMethod(equivalentMethod, sortedMethods, self.mapNodesToActivation)
 
