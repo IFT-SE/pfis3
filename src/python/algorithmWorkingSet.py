@@ -11,7 +11,7 @@ class WorkingSet(PredictiveAlgorithm):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
-        methods = self.__getOrderedRecentMethods(navPath, navNumber)
+        methods = self.__getOrderedRecentMethods(pfisGraph, navPath, navNumber)
         navToPredict = navPath.navigations[navNumber]
         
         if not navToPredict.isToUnknown():
@@ -38,8 +38,21 @@ class WorkingSet(PredictiveAlgorithm):
                                str(navToPredict.toFileNav),
                                navToPredict.toFileNav.timestamp)
         
-    
-    def __getOrderedRecentMethods(self, navPath, navNum):
+    def __getOrderedRecentMethods(self, pfisGraph, navPath, navNum):
+        visitedMethods = []
+        for i in range(0, navNum):
+            visitedMethod = navPath.navigations[i]
+            visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)
+            if visitedMethodEquivalent in visitedMethods:
+                visitedMethods.remove(visitedMethodEquivalent)
+            visitedMethods.append(visitedMethodEquivalent)
+
+        visitedMethods.reverse()
+        return visitedMethods[0:self.__workingSetSize]
+
+
+    #TODO: Sruti, Bhargav - remove this is the other one works alright!
+    def __getOrderedRecentMethods_obsolete(self, pfisGraph, navPath, navNum):
         visitedMethods = []
         workingSetEndNav = navNum + 1
         workingSetStartNav = 1
@@ -51,10 +64,10 @@ class WorkingSet(PredictiveAlgorithm):
             nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
-                if visitedMethod in visitedMethods:
-                    visitedMethods.remove(visitedMethod)
+                visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)
+                if visitedMethodEquivalent in visitedMethods:
+                    visitedMethods.remove(visitedMethodEquivalent)
                 
-                visitedMethods.append(visitedMethod)
-        
+                visitedMethods.append(visitedMethodEquivalent)
         visitedMethods.reverse()
         return visitedMethods
