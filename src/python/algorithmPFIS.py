@@ -12,14 +12,11 @@ class PFIS(PFISBase):
                           decayFactor, decayHistory, includeTop, numTopPredictions)
         self.NUM_SPREAD = numSpread
 
-    def computeTargetScores(self, graph, mapNodesToActivation):
-        return mapNodesToActivation
-                     
     def spreadActivation(self, pfisGraph):
         #self.printNodes(pfisGraph)
         for _ in range(0, self.NUM_SPREAD):
             for node in self.mapNodesToActivation.keys():
-                if node not in pfisGraph.graph.node:
+                if not pfisGraph.containsNode(node):
                     continue
                 
                 neighbors = pfisGraph.getAllNeighbors(node)

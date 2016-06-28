@@ -29,6 +29,3 @@ class PFISTouchOnce(PFISBase):
                 if neighbor not in self.mapNodesToActivation:
                     self.mapNodesToActivation[neighbor] = (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
                     queue.append(neighbor)
-
-    def computeTargetScores(self, graph, mapNodesToActivation):
-        return mapNodesToActivation
