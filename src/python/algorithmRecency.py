@@ -10,7 +10,7 @@ class Recency(PredictiveAlgorithm):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
-        methods = self.__getOrderedRecentMethods(navPath, navNumber)
+        methods = self.__getOrderedRecentMethods(pfisGraph, navPath, navNumber)
         navToPredict = navPath.navigations[navNumber]
         
         if not navToPredict.isToUnknown():
@@ -22,33 +22,34 @@ class Recency(PredictiveAlgorithm):
             if self.includeTop:
                 topPrediction = [methods[0]]
             
-            rank = 1
-            for methodFqn in methods:
-                if methodFqn == methodToPredict:
-                    return Prediction(navNumber, rank, len(methods), 0,
-                                           fromMethodFqn,
-                                           methodToPredict,
-                                           navToPredict.toFileNav.timestamp,
-                                           topPrediction)
-                rank += 1
-        
+
+            methodToPredictEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+            if methodToPredictEquivalent in methods:
+                rank = methods.index(methodToPredictEquivalent) + 1
+                return Prediction(navNumber, rank, len(methods), 0,
+                                       fromMethodFqn,
+                                       methodToPredict,
+                                       navToPredict.toFileNav.timestamp,
+                                       topPrediction)
+
         return Prediction(navNumber, 999999, len(methods), 0,
                                str(navToPredict.fromFileNav), 
                                str(navToPredict.toFileNav),
                                navToPredict.toFileNav.timestamp)
         
     
-    def __getOrderedRecentMethods(self, navPath, navNum):
+    def __getOrderedRecentMethods(self, pfisGraph, navPath, navNum):
         visitedMethods = []
         
         for i in range(navNum + 1):
             nav = navPath.navigations[i]
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
-                if visitedMethod in visitedMethods:
-                    visitedMethods.remove(visitedMethod)
+                visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)
+                if visitedMethodEquivalent in visitedMethods:
+                    visitedMethods.remove(visitedMethodEquivalent)
                 
-                visitedMethods.append(visitedMethod)
+                visitedMethods.append(visitedMethodEquivalent)
         
         visitedMethods.reverse()
         return visitedMethods
