@@ -32,7 +32,6 @@ class PfisGraph(object):
         self.VERBOSE_BUILD = verbose
         self.graph = nx.Graph()
 
-
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row
@@ -347,3 +346,9 @@ class PfisGraph(object):
 
     def getFqnOfEquivalentNode(self, methodFqn):
         return methodFqn
+
+    def containsNode(self, node):
+        return node in self.graph.node
+
+    def getNode(self, nodeName):
+        return self.graph.node[nodeName]

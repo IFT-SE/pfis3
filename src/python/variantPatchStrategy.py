@@ -15,7 +15,6 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 
 	def __init__(self, langHelper, variantsDb):
 		DefaultPatchStrategy.__init__(self, langHelper)
-		print variantsDb
 		self.variantsDb = variantsDb
 		self.idToPatchMap = {}
 		self.fqnToIdMap = {}
