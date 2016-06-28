@@ -19,7 +19,7 @@ class CodeStructure(PredictiveAlgorithm):
         self.nodeDistances = {}
         sortedRanksMethodsOnly = []
         
-        if not navToPredict.isToUnknown() and methodToPredict in pfisGraph.graph.node:
+        if not navToPredict.isToUnknown() and pfisGraph.containsNode(methodToPredict):
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
             if result > 0:
                 sortedRanks = sorted(self.nodeDistances, key = lambda node: self.nodeDistances[node])
@@ -46,12 +46,13 @@ class CodeStructure(PredictiveAlgorithm):
                            navToPredict.toFileNav.timestamp)
     
     def __breadthFirstSearch(self, pfisGraph, fromNode, methodToPredict):
-        if pfisGraph.getFqnOfEquivalentNode(fromNode) is None:
+        if not pfisGraph.containsNode(fromNode):
             raise RuntimeError('breadthFirstSearch: Node not found in PFIS Graph: ' + fromNode)
         
+        fromNodeEquivalent = pfisGraph.getFqnOfEquivalentNode(fromNode)
         queue = deque()
-        self.nodeDistances[fromNode] = 0
-        queue.append(fromNode)
+        self.nodeDistances[fromNodeEquivalent] = 0
+        queue.append(fromNodeEquivalent)
         
         while len(queue) > 0:
             
@@ -62,9 +63,10 @@ class CodeStructure(PredictiveAlgorithm):
                     self.nodeDistances[neighbor] = self.nodeDistances[currentNode] + 1
                     queue.append(neighbor)
                     
-        del self.nodeDistances[fromNode]
+        del self.nodeDistances[fromNodeEquivalent]
                     
-        if methodToPredict in self.nodeDistances:
-            return self.nodeDistances[methodToPredict] 
+        methodToPredictEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+        if methodToPredictEquivalent in self.nodeDistances:
+            return self.nodeDistances[methodToPredictEquivalent]
         
         return -1

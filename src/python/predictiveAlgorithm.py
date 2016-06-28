@@ -29,7 +29,7 @@ class PredictiveAlgorithm(object):
     def getRanksForMethodsOnly(self, sortedRankList, pfisGraph):
         methods = []
         for node in sortedRankList:
-            if pfisGraph.graph.node[node]['type'] == NodeType.METHOD:
+            if pfisGraph.getNode(node)['type'] == NodeType.METHOD:
                 if not self.langHelper.excludeMethod(node):
                     methods.append(node)
                 
