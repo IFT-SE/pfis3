@@ -23,16 +23,15 @@ class WorkingSet(PredictiveAlgorithm):
             if self.includeTop:
                 topPrediction = [methods[0]]
             
-            rank = 1
-            for methodFqn in methods:
-                if methodFqn == methodToPredict:
-                    return Prediction(navNumber, rank, len(methods), 0,
-                                           fromMethodFqn,
-                                           methodToPredict,
-                                           navToPredict.toFileNav.timestamp,
-                                           topPrediction)
-                rank += 1
-        
+            methodToPredictEquiv = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+            if methodToPredictEquiv in methods:
+                rank = methods.index(methodToPredictEquiv)
+                return Prediction(navNumber, rank, len(methods), 0,
+                                       fromMethodFqn,
+                                       methodToPredict,
+                                       navToPredict.toFileNav.timestamp,
+                                       topPrediction)
+
         return Prediction(navNumber, 999999, len(methods), 0,
                                str(navToPredict.fromFileNav), 
                                str(navToPredict.toFileNav),
@@ -41,11 +40,14 @@ class WorkingSet(PredictiveAlgorithm):
     def __getOrderedRecentMethods(self, pfisGraph, navPath, navNum):
         visitedMethods = []
         for i in range(0, navNum):
-            visitedMethod = navPath.navigations[i]
-            visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)
-            if visitedMethodEquivalent in visitedMethods:
-                visitedMethods.remove(visitedMethodEquivalent)
-            visitedMethods.append(visitedMethodEquivalent)
+            nav = navPath.navigations[i]
+
+            if nav.fromFileNav is not None:
+                visitedMethod = nav.fromFileNav.methodFqn
+                visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)
+                if visitedMethodEquivalent in visitedMethods:
+                    visitedMethods.remove(visitedMethodEquivalent)
+                visitedMethods.append(visitedMethodEquivalent)
 
         visitedMethods.reverse()
         return visitedMethods[0:self.__workingSetSize]
