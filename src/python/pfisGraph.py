@@ -8,7 +8,6 @@ from graphAttributes import NodeType
 from graphAttributes import EdgeType
 
 class PfisGraph(object):
-    
 
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
@@ -315,16 +314,17 @@ class PfisGraph(object):
         print "\tGraph contains " + str(self.graph.number_of_edges()) + " edges."
 
     def printEntireGraphStats(self):
-        print "Nodes\t", str(self.graph.number_of_nodes())
-        print "Edges\t", str(self.graph.number_of_edges())
-
         variantEdges = 0
         edge_iter = self.graph.edges_iter()
         for edge in edge_iter:
             edge_data = self.graph.get_edge_data(edge[0], edge[1])
             if EdgeType.VARIANT_OF in edge_data["types"]:
                 variantEdges = variantEdges+1
-        print "Variant edges\t", str(variantEdges)
+
+        print "--------------------------------------------"
+        print "Nodes\tEdges\tVariant Edges\n"
+        print str(self.graph.number_of_nodes()), "\t", str(self.graph.number_of_edges()), "\t", str(variantEdges), "\n"
+        print "--------------------------------------------"
 
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
         validNeighbors = []
