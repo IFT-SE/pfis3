@@ -151,6 +151,7 @@ def combineMode(args):
         
         fileHandlers = []
         numHits = []
+        numUnknowns = []
         for outputFile in outputFiles:
             f = open(outputFile, 'r')
             line = f.readline()
@@ -159,6 +160,7 @@ def combineMode(args):
             tokens = line.split('\t')
             algName = tokens[2][0:(tokens[2].rfind(' Rank'))]
             numHits.append(0)
+            numUnknowns.append(0)
             combinedOutputFile.write('\t' + algName)
 #             combinedOutputFile.write('\t' + outputFile[(outputFile.rfind(os.sep) + 1):outputFile.rfind('.')])
             
@@ -179,24 +181,30 @@ def combineMode(args):
                         combinedOutputFile.write('\t' + str(ratio))
                         score = ratio
                     else:
+                        if rank == 999999:
+                            numUnknowns[index] += 1
                         combinedOutputFile.write('\t' + str(rank))
-
                     if score <= hitRateThreshold:
                         if i > numToIgnore:
                             numHits[index] += 1
 
                 index +=1
             combinedOutputFile.write('\n')
-            
-        combinedOutputFile.write('\t\t\tHit rates')
-        for n in numHits:
-            combinedOutputFile.write('\t' + str(float(n) / (numLines - 1 - numToIgnore)))
-            
-        combinedOutputFile.write('\n')
+
+        writeAggregateRow(combinedOutputFile, 'Hit rates', numHits, lambda n: str(float(n) / (numLines - 1 - numToIgnore)))
+        writeAggregateRow(combinedOutputFile, 'Unknown rates', numUnknowns, lambda n: str(float(n) / (numLines - 1)))
+
         
         for handler in fileHandlers:
             handler.close()
-            
+
+    def writeAggregateRow(combinedOutputFile, aggregateName, numHits, calcFunction):
+        combinedOutputFile.write('\t\t\t' + aggregateName)
+        for n in numHits:
+            print combinedOutputFile.name, aggregateName, n, calcFunction(n)
+            combinedOutputFile.write('\t' + calcFunction(n))
+        combinedOutputFile.write('\n')
+
     print "runScript.py is combining models' results..."
     
     outputDir = args['outputPath']
@@ -235,10 +243,12 @@ def multiFactorModelMode(args):
         numRows = len(mapData[headers[0]])
         numCols = len(headers)
         hitRates = ['','','','Hit rates']
+        unknownRates = ['','','','Unknown rates']
         
         for col in range(0, numCols):
             f.write(headers[col])
             hitRates.append(0.0)
+            unknownRates.append(0.0)
             if col < numCols - 1:
                 f.write('\t')
             else:
@@ -251,7 +261,8 @@ def multiFactorModelMode(args):
                 if col > 3 and float(value) <= hitThreshold:
                     if row >= numToIgnore:
                         hitRates[col] += 1
-                
+                if col >3 and float(value) == 999999:
+                    unknownRates[col] += 1
                 f.write(value)
                 if col < numCols - 1:
                     f.write('\t')
@@ -260,12 +271,19 @@ def multiFactorModelMode(args):
         
         for i in range(4, len(headers)):
             hitRates[i] = hitRates[i] / (numRows - numToIgnore)
+            unknownRates[i] = unknownRates[i] / numRows
             
         for col in range(0, numCols):
             f.write(str(hitRates[col]))
             if col < numCols - 1:
                 f.write('\t')
-        
+        f.write('\n')
+
+        for col in range(0, numCols):
+            f.write(str(unknownRates[col]))
+            if col < numCols - 1:
+                f.write('\t')
+        f.write('\n')
         f.close()
             
     def combineModels(combinedFilePath):
@@ -393,20 +411,17 @@ def finalResultsMode(args):
         
         return tokens[4:]
     
-    def getHitRates(filePath):
-        hitRates = None
+    def getRow(filePath, aggregateRowName):
         f = open(filePath, 'r')
-        
         for line in f:
             tokens = line.split('\t')
-            if len(tokens) > 3 and tokens[3] == 'Hit rates':
+            if len(tokens) > 3 and tokens[3] == aggregateRowName:
                 hitRates = tokens[4:]
                 break
-        
         f.close()
-        
         return hitRates
-    
+
+
     def writeResults(header, mapPathToHitRates, outputPath):
         f = open(outputPath, 'w')
         f.write('path')
@@ -426,9 +441,12 @@ def finalResultsMode(args):
     
     outputDir = args['outputPath']
     finalResultsFileName = args['finalResultsFileName']
+    unknownsFileName = args['unknownsFileName']
     multiModelFileName = args['multiModelFileName']
     outputFilePath = os.path.join(outputDir, finalResultsFileName)
+    unknownsFilePath = os.path.join(outputDir, unknownsFileName)
     mapPathToHitRates = {}
+    mapPathToUnknownRates = {}
     
     header = None
     subFolders = [os.path.join(outputDir, d) \
@@ -447,16 +465,19 @@ def finalResultsMode(args):
                 if header is None:
                     header = getHeader(multiModelFilePath)
                     
-                hitRates = getHitRates(multiModelFilePath)
+                hitRates = getRow(multiModelFilePath, 'Hit rates')
+                unknownRates = getRow(multiModelFilePath, 'Unknown rates')
                 if hitRates is None:
                     print "Couldn't find hit rates in " + multiModelFilePath
                     sys.exit(2)
                     
                 mapPathToHitRates[dbResultsFolder] = hitRates
+                mapPathToUnknownRates[dbResultsFolder] = unknownRates
             else:
                 print "Warning: Could not find: " + multiModelFileName
     
     writeResults(header, mapPathToHitRates, outputFilePath)
+    writeResults(header, mapPathToUnknownRates, unknownsFilePath)
     print "runScript.py finished creating final results..."
    
 def print_usage():
@@ -536,6 +557,7 @@ def parseArgs():
         "hitRateThreshold" : None,
         "multiModelFileName" : None,
         "finalResultsFileName" : None,
+        "unknownsFileName": "Unknowns.final",
         "ignoreFirstXPredictions" : None,
         "numThreads" : None,
         "mode" : None,
