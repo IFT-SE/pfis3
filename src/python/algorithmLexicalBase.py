@@ -33,7 +33,8 @@ class LexicalBase(PredictiveAlgorithm):
             
             self.lexicalHelper.addDocumentsToCorpus(startTimestamp, endTimestamp, pfisGraph)
             model = self.getModel()
-            sorted_sims = self.lexicalHelper.getSortedSimilarityMatrix(model, fromMethodFqn)
+            fromMethodFqnEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
+            sorted_sims = self.lexicalHelper.getSortedSimilarityMatrix(model, fromMethodFqnEquivalent)
             
             mapMethodsToScore = {}
             
@@ -41,8 +42,9 @@ class LexicalBase(PredictiveAlgorithm):
                 _, score = sorted_sims[i]
                 sortedMethods.append(self.lexicalHelper.corpus.methodFqns[i])
                 mapMethodsToScore[self.lexicalHelper.corpus.methodFqns[i]] = score
-                
-            value = mapMethodsToScore[methodToPredict]
+
+            methodToPredictEqivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+            value = mapMethodsToScore[methodToPredictEqivalent]
             firstIndex = self.getFirstIndex(sortedMethods, mapMethodsToScore, value)
             lastIndex = self.getLastIndex(sortedMethods, mapMethodsToScore, value)
             numTies = lastIndex - firstIndex + 1
@@ -88,7 +90,8 @@ class LexicalHelper(object):
                     self.langHelper.fixSlashes(row['referrer'])
                     
             words = pfisGraph.getWordNodes_splitCamelAndStem(referrer)
-            self.corpus.addDocument(target, words)
+            targetEquivalent = pfisGraph.getFqnOfEquivalentNode(target)
+            self.corpus.addDocument(targetEquivalent, words)
             
         c.close()
         conn.close()
@@ -129,7 +132,9 @@ class CorpusOfMethodContents(TextCorpus):
             self.dictionary.add_documents(self.get_texts())
     
     def getMethodContentsForFqn(self, fqn):
-        return self.methodContents[self.mapMethodFQNtoIndex[fqn]]
+        if fqn in self.mapMethodFQNtoIndex.keys():
+            return self.methodContents[self.mapMethodFQNtoIndex[fqn]]
+        return None
     
     def get_texts(self):
         for content in self.methodContents:
