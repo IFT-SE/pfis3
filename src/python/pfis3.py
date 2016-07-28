@@ -6,6 +6,7 @@ from languageHelperFactory import LanguageHelperFactory
 from xmlAlgorithmOptions import XMLOptionsParser
 from predictor import Predictor
 from navpath import NavigationPath
+from variantAwareNavigationPath import VariantAwareNavigationPath
 
 def print_usage():
 	print "python pfis3.py -d <path to PFIG database> -s <path to stop words file>"
@@ -79,13 +80,13 @@ def main():
 	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
 
 	navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
-	#graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType = "Default")
-	#runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
+	graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType = "Default")
+	runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
 
-	graphAlgorithmsMap = xmlParser.getAlgorithms(navPathType="VariantAware")
-	if len(graphAlgorithmsMap.keys()) != 0:
-		variantAwareNavPath = navPath.getVariantAwarePath()
-		runAlgorithms(args, graphAlgorithmsMap, variantAwareNavPath)
+	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="VariantAware")
+	if len(graphAlgorithmsMapForVariantAwarePath.keys()) != 0:
+		navPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc)
+		runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
 
 	# Exit gracefully
 	sys.exit(0)
