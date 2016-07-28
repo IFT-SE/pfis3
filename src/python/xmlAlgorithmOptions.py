@@ -25,7 +25,8 @@ class XMLOptionsParser(object):
     def __isNavPathType(self, algorithmsNode, navPathType):
         navPathTypeStr = "default"
         if 'navPathType' in algorithmsNode.attrib:
-            navPathTypeStr = str(navPathType).lower()
+            navPathTypeAttrib = algorithmsNode.attrib['navPathType']
+            navPathTypeStr = str(navPathTypeAttrib).lower()
 
         if navPathTypeStr == str(navPathType).lower():
             return True
