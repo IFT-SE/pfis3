@@ -231,6 +231,11 @@ class NavigationPath(object):
     def getLength(self):
         return len(self.navigations)
 
+    def getVariantAwarePath(self):
+        raise NotImplementedError()
+
+
+#TODO: move to a separate file
 class Navigation(object):
     # A navigation is a tuple representing one programmer navigation through the
     # code. fromFileNav represents the where the programmer navigated from and 
@@ -269,7 +274,7 @@ class Navigation(object):
             toLoc = str(self.toFileNav)
             
         return str(fromLoc) + ' --> ' + str(toLoc)
-        
+
 class FileNavigation(object):
     # A file navigation represents the Text selection offset data that was 
     # captured by PFIG. The Text selection offset occurs any time a programmer's

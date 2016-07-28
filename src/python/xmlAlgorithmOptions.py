@@ -9,19 +9,30 @@ class XMLOptionsParser(object):
         self.algorithmFactory = AlgorithmFactory(langHelper, tempDbPath)
         self.graphFactory = GraphFactory(langHelper, tempDbPath, projSrcPath, stopWords)
 
-    def getAlgorithms(self):
+    def getAlgorithms(self, navPathType):
         tree = ElementTree(file=self.optionsFilePath)
         root = tree.getroot()
         graphAlgorithmsMap = {}
 
         for child in root:
-            if child.tag == 'algorithms':
+            if child.tag == 'algorithms' and self.__isNavPathType(child, navPathType):
                 graph = self.__getGraph(child)
                 algorithms = self.__getAlgorithms(child)
                 graphAlgorithmsMap[graph] = algorithms
 
         return graphAlgorithmsMap
-                
+
+    def __isNavPathType(self, algorithmsNode, navPathType):
+        navPathTypeStr = "default"
+        if 'navPathType' in algorithmsNode.attrib:
+            navPathTypeStr = str(navPathType).lower()
+
+        if navPathTypeStr == str(navPathType).lower():
+            return True
+        else:
+            return False
+
+
     def __getGraph(self, algorithmsNode):
         graphType = None
         variantsDb = None

@@ -62,6 +62,7 @@ def parseArgs():
 def main():
 
 	args = parseArgs()
+	projSrc = args['projectSrcFolderPath']
 
 	#Initialize the processor with the appropriate language specific processor
 	langHelper = LanguageHelperFactory.getLanguageHelper(args['language'])
@@ -69,32 +70,40 @@ def main():
 	# Start by making a working copy of the database
 	workingDbCopy = args['tempDbPath']
 	copyDatabase(args['dbPath'], workingDbCopy)
+	# Load the stop words file
 	stopWords = loadStopWords(args['stopWordsPath'])
-	projSrc = args['projectSrcFolderPath']
 
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use
 	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
-	graphAlgorithmsMap = xmlParser.getAlgorithms()
 
-	# Load the stop words file
 	navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
+	#graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType = "Default")
+	#runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
 
+	graphAlgorithmsMap = xmlParser.getAlgorithms(navPathType="VariantAware")
+	if len(graphAlgorithmsMap.keys()) != 0:
+		variantAwareNavPath = navPath.getVariantAwarePath()
+		runAlgorithms(args, graphAlgorithmsMap, variantAwareNavPath)
+
+	# Exit gracefully
+	sys.exit(0)
+
+
+def runAlgorithms(args, graphAlgorithmsMap, navPath):
 	# Create the PFIS graph (which also determines the navigations)
 	for graph in graphAlgorithmsMap.keys():
-		#Create a predictor instance for each graph type
+		# Create a predictor instance for each graph type
 		predictor = Predictor(graph, navPath)
 
 		algorithms = graphAlgorithmsMap[graph]
-		#Make all predictions for the graph for all algorithms
+		# Make all predictions for the graph for all algorithms
 		results = predictor.makeAllPredictions(algorithms, args['outputPath'], args['topPredictionsFolderPath'])
 
 		# Save each algorithms predictions to the a separate file in the output folder
 		savePredictionsToFiles(results)
 
-	# Exit gracefully
-	sys.exit(0)
 
 def savePredictionsToFiles(results):
 	for algorithm in results:
