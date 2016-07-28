@@ -201,7 +201,7 @@ def combineMode(args):
     def writeAggregateRow(combinedOutputFile, aggregateName, numHits, calcFunction):
         combinedOutputFile.write('\t\t\t' + aggregateName)
         for n in numHits:
-            print combinedOutputFile.name, aggregateName, n, calcFunction(n)
+            # print combinedOutputFile.name, aggregateName, n, calcFunction(n)
             combinedOutputFile.write('\t' + calcFunction(n))
         combinedOutputFile.write('\n')
 
