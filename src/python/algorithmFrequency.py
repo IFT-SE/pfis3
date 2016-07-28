@@ -12,7 +12,7 @@ class Frequency(PredictiveAlgorithm):
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
         self.__getOrderedFrequentMethods(pfisGraph, navPath, navNumber)
-        navToPredict = navPath.navigations[navNumber]
+        navToPredict = navPath.getNavigation(navNumber)
         
         if not navToPredict.isToUnknown():
             # methodToPredict is the method we want to predict
@@ -47,7 +47,7 @@ class Frequency(PredictiveAlgorithm):
     
     def __getOrderedFrequentMethods(self, pfisGraph, navPath, navNum):
         for i in range(navNum + 1):
-            nav = navPath.navigations[i]
+            nav = navPath.getNavigation(i)
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
                 visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)

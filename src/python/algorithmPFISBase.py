@@ -21,7 +21,7 @@ class PFISBase(PredictiveAlgorithm):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 
-        navToPredict = navPath.navigations[navNumber]
+        navToPredict = navPath.getNavigation(navNumber)
         sortedMethods = []
 
         if not navToPredict.isToUnknown():
@@ -75,7 +75,7 @@ class PFISBase(PredictiveAlgorithm):
         activation = 1.0
         # Stop before the first navigation
         for i in range(navNumber, 0, -1):
-            nav = navPath.navigations[i]
+            nav = navPath.getNavigation(i)
 
             if not nav.isToUnknown():
                 method = nav.fromFileNav.methodFqn

@@ -11,7 +11,7 @@ class Predictor(object):
 
 		self.updateGraphByOneNavigation()
 
-		if len(self.navPath.navigations) < 2:
+		if self.navPath.getLength() < 2:
 			raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
 
 		# Build the output data structure
@@ -19,7 +19,7 @@ class Predictor(object):
 		for algorithm in algorithms:
 			results[algorithm.name] = Predictions(algorithm.name, outputFolder, algorithm.fileName, algorithm.includeTop, topPredictionsFolder)
 
-		totalPredictions = len(self.navPath.navigations) - 1
+		totalPredictions = self.navPath.getLength() - 1
 
 		for _ in range(1, totalPredictions + 1):
 			self.updateGraphByOneNavigation()
@@ -40,7 +40,7 @@ class Predictor(object):
 
 		if self.navNumber < self.navPath.getLength() - 1:
 			self.navNumber += 1
-			newEndTimestamp = self.navPath.navigations[self.navNumber].toFileNav.timestamp
+			newEndTimestamp = self.navPath.getNavigation(self.navNumber).toFileNav.timestamp
 
 		self.graph.updateGraphByOneNavigation(self.endTimeStamp, newEndTimestamp)
 

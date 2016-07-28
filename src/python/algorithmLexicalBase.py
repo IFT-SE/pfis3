@@ -15,7 +15,7 @@ class LexicalBase(PredictiveAlgorithm):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
         
-        navToPredict = navPath.navigations[navNumber]
+        navToPredict = navPath.getNavigation(navNumber)
         sortedMethods = []
         
         if not navToPredict.isToUnknown():

@@ -12,7 +12,7 @@ class WorkingSet(PredictiveAlgorithm):
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
         methods = self.__getOrderedRecentMethods(pfisGraph, navPath, navNumber)
-        navToPredict = navPath.navigations[navNumber]
+        navToPredict = navPath.getNavigation(navNumber)
         
         if not navToPredict.isToUnknown():
             # methodToPredict is the method we want to predict
@@ -40,7 +40,7 @@ class WorkingSet(PredictiveAlgorithm):
     def __getOrderedRecentMethods(self, pfisGraph, navPath, navNum):
         visitedMethods = []
         for i in range(0, navNum):
-            nav = navPath.navigations[i]
+            nav = navPath.getNavigation(i)
 
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
@@ -63,7 +63,7 @@ class WorkingSet(PredictiveAlgorithm):
             workingSetStartNav = navNum - self.__workingSetSize + 1
 
         for i in range(workingSetStartNav, workingSetEndNav):
-            nav = navPath.navigations[i]
+            nav = navPath.getNavigation(i)
             if nav.fromFileNav is not None:
                 visitedMethod = nav.fromFileNav.methodFqn
                 visitedMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(visitedMethod)

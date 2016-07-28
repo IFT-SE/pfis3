@@ -13,7 +13,7 @@ class CodeStructure(PredictiveAlgorithm):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath') 
         
-        navToPredict = navPath.navigations[navNumber]
+        navToPredict = navPath.getNavigation(navNumber)
         fromMethodFqn = navToPredict.fromFileNav.methodFqn
         methodToPredict = navToPredict.toFileNav.methodFqn
         self.nodeDistances = {}
