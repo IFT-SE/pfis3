@@ -315,15 +315,34 @@ class PfisGraph(object):
 
     def printEntireGraphStats(self):
         variantEdges = 0
+        topologyLinkEdges = 0
+
         edge_iter = self.graph.edges_iter()
         for edge in edge_iter:
             edge_data = self.graph.get_edge_data(edge[0], edge[1])
+            if EdgeType.ADJACENT in edge_data["types"]\
+                    or EdgeType.CALLS in edge_data["types"] \
+                    or EdgeType.VARIANT_OF in edge_data["types"]:
+                topologyLinkEdges = topologyLinkEdges + 1
             if EdgeType.VARIANT_OF in edge_data["types"]:
                 variantEdges = variantEdges+1
 
+
+        nodes_iter = self.graph.nodes_iter()
+        methodNodeCount = 0
+        for node in nodes_iter:
+            if self.graph.node[node]['type'] == NodeType.METHOD:
+                methodNodeCount = methodNodeCount + 1
+
+
+        values = [str(self.graph.number_of_nodes()),
+                  str(self.graph.number_of_edges()),
+                  str(methodNodeCount),
+                  str(topologyLinkEdges),
+                  str(variantEdges)]
         print "--------------------------------------------"
-        print "Nodes\tEdges\tVariant Edges\n"
-        print str(self.graph.number_of_nodes()), "\t", str(self.graph.number_of_edges()), "\t", str(variantEdges), "\n"
+        print "All Nodes\tAll Edges\tPatch Nodes\tLink Edges (Adj,Call or Var)\tVariant Edges\n"
+        print "\t".join(values) + "\n"
         print "--------------------------------------------"
 
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
