@@ -81,3 +81,6 @@ class AbstractLanguageHelper:
 
     def isPfigHeaderFqn(self, fqn):
         return '.pfigheader()v' in fqn.lower()
+
+    def isVariantOf(self, fqn1, fqn2):
+        raise NotImplementedError("is variant of : abstract language helper")

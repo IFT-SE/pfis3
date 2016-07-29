@@ -23,13 +23,17 @@ class XMLOptionsParser(object):
         return graphAlgorithmsMap
 
     def __isNavPathType(self, algorithmsNode, navPathType):
-        navPathTypeStr = "default"
+        navPathTypeStr = None
+
         if 'navPathType' in algorithmsNode.attrib:
             navPathTypeAttrib = algorithmsNode.attrib['navPathType']
-            navPathTypeStr = str(navPathTypeAttrib).lower()
+            navPathTypeStr = str(navPathTypeAttrib)
+        else:
+            navPathTypeStr = 'Default'
 
-        if navPathTypeStr == str(navPathType).lower():
+        if navPathTypeStr.lower() == navPathType.lower():
             return True
+
         else:
             return False
 

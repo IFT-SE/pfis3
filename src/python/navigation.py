@@ -24,7 +24,14 @@ class Navigation(object):
         return True
 
     def clone(self):
-        return Navigation(self.fromFileNav.clone(), self.toFileNav.clone())
+        fromNav = None
+        toNav = None
+        if self.fromFileNav is not None:
+            fromNav = self.fromFileNav.clone()
+        if self.toFileNav is not None:
+            toNav = self.toFileNav.clone()
+
+        return Navigation(fromNav, toNav)
 
     def __str__(self):
         fromLoc = None

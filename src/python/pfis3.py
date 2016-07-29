@@ -79,14 +79,15 @@ def main():
 	# Determine the algorithms to use
 	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
 
-	navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
-	graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType = "Default")
-	runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
+	graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType="Default")
+	if len(graphAlgorithmsMapWithDefaultNavPath.keys()) > 0:
+		navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
+		runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
 
 	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="VariantAware")
-	if len(graphAlgorithmsMapForVariantAwarePath.keys()) != 0:
-		navPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc)
-		runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
+	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
+		variantAwareNavPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc)
+		runAlgorithms(args, graphAlgorithmsMapForVariantAwarePath, variantAwareNavPath)
 
 	# Exit gracefully
 	sys.exit(0)

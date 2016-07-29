@@ -31,7 +31,7 @@ class NavigationPath(object):
         self.__findMethodsForFileNavigations(conn)
         if self.VERBOSE_PATH:
             print 'Done building path.'
-        self.__printNavigations()
+        self._printNavigations()
         conn.close()
 
     def __findFileNavigationsInDb(self, conn):
@@ -224,14 +224,15 @@ class NavigationPath(object):
                 elif self.VERBOSE_PATH:
                     print '\tNot a header.'
 
-    def __printNavigations(self):
-        print "Navigation path:"
-        for i in range(self.getLength()):
-            navigation = self._navigations[i]
-            print '\t' + str(i) + ':\t' + str(navigation)
-
     def getNavigation(self, i):
         return self._navigations[i]
 
     def getLength(self):
         return len(self._navigations)
+
+    def _printNavigations(self):
+        print "Navigation path:"
+        for i in range(len(self._navigations)):
+            navigation = self._navigations[i]
+            print '\t' + str(i) + ':\t' + str(navigation)
+
