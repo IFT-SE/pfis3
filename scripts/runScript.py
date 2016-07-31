@@ -49,6 +49,16 @@ def main():
             print_usage()
             sys.exit(2)
         finalResultsMode(args)
+
+    if args['mode'] == '-H':
+        if args["outputPath"] is None or args["allHitRatesFileName"] is None \
+            or args['multiModelFileName'] is None:
+            print 'Missing parameters for final results mode.'
+            print_usage()
+            sys.exit(2)
+        allHitRatesMode(args)
+
+
     if args['mode'] == '-A':
         for key in args:
             if args[key] is None and key not in option_args :
@@ -58,8 +68,81 @@ def main():
         runMode(args)
         combineMode(args)
         multiFactorModelMode(args)
-        finalResultsMode(args)          
+        finalResultsMode(args)
+        allHitRatesMode(args)
+
     sys.exit(0)
+
+def allHitRatesMode(args):
+    def computeAllHitRates(multiModelFilePath, allHitRatesFilePath):
+        thresholds = [5,10,20,30,40,50,60,70,80,90,100]
+
+        multiModelsFile = open(multiModelFilePath, "r")
+
+        headerRow = multiModelsFile.readline().replace("\n", "").replace("\r", "")
+        columnNames = headerRow.split("\t")[4:]
+        hitCounts = []
+        for _ in thresholds:
+            hitCounts.append([0]*len(columnNames))
+
+        line = multiModelsFile.readline()
+        navCount = 0
+        while (line!=None and "hit rates" not in line.lower()):
+            navCount = navCount + 1
+
+            line = line.replace("\n", "").replace("\r", "")
+            values = line.split("\t")[4:]
+            ranks = [float(val) for val in values]
+            for thresholdIndex in range(0, len(thresholds)):
+                threshold = thresholds[thresholdIndex]
+                thresholdRow = hitCounts[thresholdIndex]
+                for rankIndex in range(0, len(ranks)):
+                    if ranks[rankIndex] <= threshold:
+                        thresholdRow[rankIndex] = thresholdRow[rankIndex] + 1
+
+            line = multiModelsFile.readline()
+        multiModelsFile.close()
+
+        hitRates = []
+        for i in range(0, len(hitCounts)):
+            hitRateRow = [(float(hitCount) / navCount) for hitCount in hitCounts[i]]
+            hitRates.append(hitRateRow)
+
+        allHitRatesFile = open(allHitRatesFilePath, "w")
+
+        headerString = "Threshold"
+        headerString = headerString + "\t" + "\t".join(columnNames) + "\n"
+
+        allHitRatesFile.write(headerString)
+        for t in range(0, len(thresholds)):
+            row = str(thresholds[t])
+            hitRatesAsString = [str(hitRate) for hitRate in hitRates[t]]
+            row = row +"\t" + "\t".join(hitRatesAsString) + "\n"
+            allHitRatesFile.write(row)
+        allHitRatesFile.close()
+
+    outputDir = args['outputPath']
+    multiModelFileName = args['multiModelFileName']
+    allHitRatesFileName = args['allHitRatesFileName']
+
+    subFolders = [os.path.join(outputDir, d) \
+                   for d in os.listdir(outputDir) \
+                   if os.path.isdir(os.path.join(outputDir, d))]
+
+    for subFolder in subFolders:
+        dbResultsFolders = [os.path.join(subFolder, f) \
+                              for f in os.listdir(subFolder) \
+                              if os.path.isdir(os.path.join(subFolder, f))]
+
+        for dbResultsFolder in dbResultsFolders:
+            print "Combining all hit rates for " + dbResultsFolder
+            multiModelFilePath = os.path.join(dbResultsFolder, multiModelFileName)
+            if os.path.exists(multiModelFilePath):
+                allHitRatesFilePath = os.path.join(dbResultsFolder, allHitRatesFileName)
+                computeAllHitRates(multiModelFilePath, allHitRatesFilePath)
+            else:
+                print "Warning: Could not find: " + multiModelFilePath
+
 
 def runMode(args):
     NUM_CHILD_PROCESSES = int(args['numThreads'])
@@ -212,6 +295,7 @@ def combineMode(args):
     hitRateThreshold = float(args['hitRateThreshold'])
     multiModelFileName = args['multiModelFileName']
     numToIgnore = int(args['ignoreFirstXPredictions'])
+    allHitRatesFileName = args['allHitRatesFileName']
     
     subFolders = [os.path.join(outputDir, d) \
                    for d in os.listdir(outputDir) \
@@ -228,7 +312,8 @@ def combineMode(args):
                               if os.path.isfile(os.path.join(dbResultsFolder, f))
                               and f.endswith('.txt') \
                               and not f.endswith(multiModelFileName) \
-                              and not f.endswith(outputFileName)
+                              and not f.endswith(outputFileName) \
+                           and not f.endswith(allHitRatesFileName)
                            ]
             if len(outputFiles) > 0:
                 print "Combining results in " + dbResultsFolder
@@ -304,7 +389,7 @@ def multiFactorModelMode(args):
 
         graphTypes = set([headerName.partition("__")[2] for headerName in allSingleModelHeaders])
         for graphType in graphTypes:
-            singleModelHeaders = [header for header in allSingleModelHeaders if graphType in header]
+            singleModelHeaders = [header for header in allSingleModelHeaders if graphType == header.partition("__")[2]]
             newModelHeaders = singleModelHeaders
 
             for _ in range(0, len(singleModelHeaders) - 1):
@@ -313,7 +398,7 @@ def multiFactorModelMode(args):
                     allHeaders.append(header)
 
         return allHeaders, mapData
-        
+
     def doCombinations(singleModelHeaders, multiModelHeaders, mapData):
         newModelHeaders = []
 
@@ -540,6 +625,8 @@ def print_usage():
     print "                    -o <path to output folder> "
     print "                    -f <name of the final results file (zzz.final)>"
     print "                    -m <name of multi-factor model results file (yyy.txt)>"
+    print "    if -H:"
+    print "                    -a <all hit rates file (zzz.txt)>"
     print "    if -A:"
     print "                    all parameters required"
 
@@ -562,11 +649,12 @@ def parseArgs():
         "numThreads" : None,
         "mode" : None,
         "topPredictionsFolder": None,
-        "useRatios" : False
+        "useRatios" : False,
+        "allHitRatesFileName" : None
     }
 
     def assign_argument_value(argsMap, option, value):
-        if option == '-R' or option == '-C' or option == '-M' or option == '-F' or option =='-A':
+        if option == '-R' or option == '-C' or option == '-M' or option == '-F' or option =='-A' or option =='-H':
             arguments['mode'] = option
             return
         if option == '-r':
@@ -588,14 +676,15 @@ def parseArgs():
             "-i" : "ignoreFirstXPredictions",
             "-t" : "numThreads",
             "-n" : "topPredictionsFolder",
-            "-r" : "useRatios"
+            "-r" : "useRatios",
+            "-a" : "allHitRatesFileName"
         }
 
         key = optionKeyMap[option]
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFHAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r:a:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
