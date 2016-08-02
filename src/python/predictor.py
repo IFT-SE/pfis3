@@ -1,4 +1,5 @@
 from predictions import Predictions
+from navpath import NavigationPath
 
 class Predictor(object):
 	def __init__(self, graph, navPath):
@@ -35,7 +36,30 @@ class Predictor(object):
 		print '\tMaking predictions for ' + predictiveAlgorithm.name + '...'
 		return predictiveAlgorithm.makePrediction(self.graph, self.navPath, self.navNumber)
 
+	def __addUnseenButKnownPatch(self):
+		if self.navPath.getDefaultNavigation(self.navNumber).isToUnknown():
+			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
+
+			if self.graph.containsNode(actualNavigation.methodFqn):
+				raise Exception("You think a known is an unknown: ", actualNavigation.methodFqn, self.navNumber)
+
+			else:
+				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
+				if mostRecentSimilarNav is not None:
+					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
+
+	def __removeTemporarilyAddedNodeIfAny(self):
+		if self.navPath.getDefaultNavigation(self.navNumber).isToUnknown():
+			currentNav = self.navPath.getNavigation(self.navNumber)
+			additionalNode = currentNav.toFileNav.methodFqn
+			if self.graph.containsNode(additionalNode):
+				self.graph.removeNode(additionalNode)
+
 	def updateGraphByOneNavigation(self):
+
+		if self.navPath.getNavPathType() == NavigationPath.VARIANT_AWARE:
+			self.__removeTemporarilyAddedNodeIfAny()
+
 		newEndTimestamp = 0
 
 		if self.navNumber < self.navPath.getLength() - 1:
@@ -45,3 +69,10 @@ class Predictor(object):
 		self.graph.updateGraphByOneNavigation(self.endTimeStamp, newEndTimestamp)
 
 		self.endTimeStamp = newEndTimestamp
+
+		if self.navPath.getNavPathType() == NavigationPath.VARIANT_AWARE:
+
+			# The actual patch navigated to is not present in graph but we make a prediction,
+			# so temporarily add the node in the graph, similar to earlier seen variant.
+
+			self.__addUnseenButKnownPatch()

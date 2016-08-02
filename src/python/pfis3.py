@@ -84,9 +84,16 @@ def main():
 		navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
 		runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
 
+	#TODO: Collapse all navpaths into a single one for PFIS-V
+
 	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="VariantAware")
 	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
-		variantAwareNavPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc)
+		variantAwareNavPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc, collapse=False)
+		runAlgorithms(args, graphAlgorithmsMapForVariantAwarePath, variantAwareNavPath)
+
+	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="VariantAwareCollapsed")
+	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
+		variantAwareNavPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc, collapse=True)
 		runAlgorithms(args, graphAlgorithmsMapForVariantAwarePath, variantAwareNavPath)
 
 	# Exit gracefully

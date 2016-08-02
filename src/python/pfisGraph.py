@@ -371,3 +371,24 @@ class PfisGraph(object):
 
     def getNode(self, nodeName):
         return self.graph.node[nodeName]
+
+    def cloneNode(self, cloneTo, cloneFrom):
+        #Create a node
+        self.graph.add_node(cloneTo)
+
+        #Copy Node attributes
+        clonedNode = self.getNode(cloneTo)
+        clonedNode['type'] = self.getNode(cloneFrom)
+
+        #Copy edge relationships
+        sourceNodeNeighbors = self.getAllNeighbors(cloneFrom)
+        for neighborFqn in sourceNodeNeighbors:
+            neighborNode = self.getNode(neighborFqn)
+
+            edgeTypes = self.graph.get_edge_data(cloneFrom, neighborFqn)['types']
+
+            for edgeType in edgeTypes:
+                self._addEdge(cloneTo, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)
+
+    def removeNode(self, nodeFqn):
+        self.graph.remove_node(nodeFqn)

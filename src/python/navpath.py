@@ -7,6 +7,9 @@ from navigation import FileNavigation
 
 class NavigationPath(object):
 
+    DEFAULT = "Default"
+    VARIANT_AWARE = "VariantAware"
+    VARIANT_AWARE_COLLAPSED = "VariantAwareCollapsed"
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
     METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length') AND timestamp <= ? ORDER BY timestamp"
 
@@ -19,6 +22,7 @@ class NavigationPath(object):
         self.__fileNavigations = []
         self._navigations = []
 
+        self._name = NavigationPath.DEFAULT
         #Do not account for similar patches across variants
         self.knownPatches = KnownPatches(langHelper)
 
@@ -33,6 +37,10 @@ class NavigationPath(object):
             print 'Done building path.'
         self._printNavigations()
         conn.close()
+
+
+    def getNavPathType(self):
+        return self._name
 
     def __findFileNavigationsInDb(self, conn):
         # Here, we find all the instances of Text selection offset actions in
@@ -236,3 +244,8 @@ class NavigationPath(object):
             navigation = self._navigations[i]
             print '\t' + str(i) + ':\t' + str(navigation)
 
+    def getPriorNavToSimilarPatchIfAny(self, navNumber):
+        raise Exception("Looking for similar patch in default navpath: ", navNumber)
+
+    def getDefaultNavigation(self,i):
+        return self._navigations[i]
