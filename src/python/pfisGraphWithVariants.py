@@ -22,3 +22,8 @@ class PfisGraphWithVariants(PfisGraph):
 	def getAllNeighbors(self, node):
 		edges = EdgeType.getAll()
 		return self.getNeighborsOfDesiredEdgeTypes(node, edges)
+
+	def cloneNode(self, cloneTo, cloneFrom):
+		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
+		nodeType = self.getNode(cloneTo)['type']
+		self._addEdgesToOtherVariants(cloneTo, nodeType)
