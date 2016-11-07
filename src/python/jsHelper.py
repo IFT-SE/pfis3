@@ -78,3 +78,4 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			#TODO: Queer case of headers!!!
 			#return match1[1] == match2[1] # Match for entire path
 			return match1[2] == match2[2] #Match just method name
+
