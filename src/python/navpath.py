@@ -10,7 +10,6 @@ class NavigationPath(object):
     DEFAULT = "Default"
     VARIANT_AWARE = "VariantAware"
     VARIANT_AWARE_COLLAPSED = "VariantAwareCollapsed"
-    TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
     METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length') AND timestamp <= ? ORDER BY timestamp"
 
     def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
@@ -49,7 +48,7 @@ class NavigationPath(object):
         # in this function. We store time stamps here since they will be used to
         # determine if self.knownMethods entries need to be added or updated.
         c = conn.cursor()
-        c.execute(self.TEXT_SELECTION_OFFSET_QUERY)
+        c.execute(self.langHelper.TEXT_SELECTION_OFFSET_QUERY)
 
         prevFilePath = None
         prevOffset = None

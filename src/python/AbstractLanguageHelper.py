@@ -7,6 +7,7 @@ class AbstractLanguageHelper:
     REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+);.*") #todo: why is this called eclipse?
     REGEX_PROJECT = re.compile(r"\/(.*)\/src/.*")
 
+    TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
 
     def __init__(self, fileExtension, normalizedPathRegex, packageRegex):
         self.FileExtension = fileExtension

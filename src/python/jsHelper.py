@@ -10,6 +10,10 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	METHOD_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).js.*?;.(.*?)\(.*')
 	OUTER_CLASS_REGEX = re.compile(r'(.*.js).*')
 
+	TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log" \
+								  " WHERE action = 'Text selection offset' AND target like '%.js%'" \
+								  " ORDER BY timestamp"
+
 	def __init__(self):
 		fileExtension = ".js"
 		normalizedPathRegex = r"(.*)\.js"
