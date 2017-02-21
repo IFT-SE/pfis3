@@ -9,6 +9,15 @@ class Navigation(object):
 
     def isToSameMethod(self):
         if self.fromFileNav is not None and self.toFileNav is not None:
+            if 'changes.txt' in self.toFileNav.filePath and 'changes.txt' in self.fromFileNav.filePath:
+                firstVar = self.toFileNav.filePath
+                secondVar = self.fromFileNav.filePath
+                firstVar = firstVar[8:]
+                firstVar = firstVar[:-12]
+                secondVar = secondVar[8:]
+                secondVar = secondVar[:-12]
+                if firstVar == secondVar:
+                    return True
             if self.fromFileNav.methodFqn is not None and self.toFileNav.methodFqn is not None:
                 return self.fromFileNav.methodFqn == self.toFileNav.methodFqn
         return False

@@ -59,8 +59,8 @@ class NavigationPath(object):
                 str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
 
             if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in  Java DB
-                    if self.langHelper.hasCorrectExtension(filePath):
-                        self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset))
+                    #if self.langHelper.hasCorrectExtension(filePath):
+                    self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset))
 
             prevFilePath = filePath
             prevOffset = offset
@@ -127,7 +127,8 @@ class NavigationPath(object):
             if len(self._navigations) > 0:
                 prevNavigation = self._navigations[-1]
                 fromFileNavigation = prevNavigation.toFileNav.clone()
-                self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, toFileNavigation)
+                if 'js' in fromFileNavigation.filePath:
+                    self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, toFileNavigation)
                 fromMethodPatch = self.knownPatches.findMethodByOffset(fromFileNavigation.filePath, fromFileNavigation.offset)
 
 
@@ -168,6 +169,8 @@ class NavigationPath(object):
         foundGap = False
 
         for navigation in self._navigations:
+            if 'changes.txt' in navigation.toFileNav.filePath:
+                navigation.toFileNav.isGap = False
             if not foundGap:
                 if navigation.fromFileNav is None:
                     if navigation.toFileNav.isGap:
