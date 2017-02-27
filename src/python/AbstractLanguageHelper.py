@@ -42,8 +42,11 @@ class AbstractLanguageHelper:
             return m.group(1)
         return ''
 
-    def hasCorrectExtension(self, filePath):
+    def hasLanguageExtension(self, filePath):
         return filePath.lower().endswith(self.FileExtension)
+
+    def isNavToValidFileType(self, filePath):
+        return self.hasLanguageExtension(filePath)
 
     #==============================================================================#
     # Helper methods for initial weights on the graph                              #

@@ -25,26 +25,30 @@ class KnownPatches(object):
         # normalized path so that later when we query by FQN, we can quickly
         # retrieve a file's contents. This is because a normalized FQN should
         # match a normalized path if both are representing the same class.
-        norm = self.langHelper.normalize(filePathOrFqn)
-        if norm != '':
+        normalizedFqn = self.langHelper.normalize(filePathOrFqn)
+        if normalizedFqn != '':
             # Get the outer class because the data structure is by file name
-            norm = self.langHelper.getOuterClass(norm)
+            normalizedFqn = self.langHelper.getOuterClass(normalizedFqn)
             
             # Set up the initial empty list if this is the first instance of the
             # file
             #TODO: Not inlined to handle edge case : files or classes with no methods
-            if norm not in self.files:
-                self.files[norm] = []
+            if normalizedFqn not in self.files:
+                self.files[normalizedFqn] = []
                 
             # Add the method if it doesn't already exist in the file
             if self.langHelper.isMethodFqn(filePathOrFqn):
-                self.patchStrategy.addMethodPatchIfNotPresent(filePathOrFqn, self.files, norm)
+                self.patchStrategy.addMethodPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
+
+            #TODO:
+            # elif self.langHelper.isChangelogFqn(filePathOrFqn):
+                # To files to list-of-patches dictionary, add a changelog patch for the file.
 
 
     def findMethodByFqn(self, fqn):
         return self.patchStrategy.getMethodPatchByFqn(fqn, self.files)
 
-    def findMethodByOffset(self, filePath, offset):
+    def findPatchByOffset(self, filePath, offset):
         
         # Query the known patches by an offset. If a method corresponds to this
         # offset in the given file, then its corresponding MethodData object is
@@ -54,7 +58,8 @@ class KnownPatches(object):
         
         if norm == '' or norm not in self.files:
             return None
-        
+
+        #TODO: if changelog type, then ignore offset and return the changelog patch.
         methods = self.files[norm]
 
         surroundingMethods = [method for method in methods if method.isOffsetInMethod(offset)]

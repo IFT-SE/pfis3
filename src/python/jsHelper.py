@@ -55,6 +55,11 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def performDBPostProcessing(self, db):
 		JSAdditionalDbProcessor(db).process()
 
+
+	def isNavToValidFileType(self, filePath):
+		#TODO: allow change log also as a valid file type.
+		return self.hasLanguageExtension(filePath)
+
 	def isVariantOf(self, fqn1, fqn2):
 		#L/hexcom/2014-05-26-10:18:35/js/view.js;.renderText(x"," y"," fontSize"," color"," text)
 		#L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested methods

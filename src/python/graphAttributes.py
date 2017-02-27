@@ -51,7 +51,7 @@ class NodeType(object):
             return NodeType.CLASS
 
         if action == 'Package Explorer tree':
-            if langHelper.hasCorrectExtension(referrer):
+            if langHelper.hasLanguageExtension(referrer):
                 return NodeType.FILE
             return NodeType.PACKAGE
 

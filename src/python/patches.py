@@ -30,3 +30,7 @@ class VariantInfo(object):
         self.methodPath = methodPath
         self.startVariant = startVariant
         self.endVariant = endVariant
+
+class ChangelogPatch(object):
+    def __init__(self, fqn):
+        self.fqn=fqn

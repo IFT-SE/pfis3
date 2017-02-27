@@ -53,22 +53,29 @@ class Navigation(object):
 
         return str(fromLoc) + ' --> ' + str(toLoc)
 
+class PatchType(object):
+    METHOD = 'method'
+    CHANGELOG = 'change_log'
+
 class FileNavigation(object):
     # A file navigation represents the Text selection offset data that was
     # captured by PFIG. The Text selection offset occurs any time a programmer's
     # text cursor position changes. If we determine that the text cursor is in a
     # method that the programmer has knowledge of then, methodFqn has that info.
     # If methodFqn is none, then this was a navigation to an 'unknown location'
-    def __init__(self, timestamp, filePath, offset):
+    def __init__(self, timestamp, filePath, offset, patchType):
         self.timestamp = timestamp
-        self.filePath = filePath;
+        self.filePath = filePath
+        self.patchType = patchType
         self.offset = offset
-        self.methodFqn = None
         self.isGap = False
+        self.methodFqn = None
+        #TODO: make sure methodFqn is same as filePath for changelog patch types
 
     def clone(self):
         fileNavClone = FileNavigation(self.timestamp, self.filePath, self.offset)
         fileNavClone.methodFqn = self.methodFqn
+        fileNavClone.patchType = self.patchType
         return fileNavClone
 
     def __str__(self):

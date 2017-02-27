@@ -55,12 +55,14 @@ class NavigationPath(object):
         prevOffset = None
 
         for row in c:
-            timestamp, filePath, offset = \
-                str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
+            timestamp, filePath, offset = str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
 
             if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in  Java DB
-                    #if self.langHelper.hasCorrectExtension(filePath):
-                    self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset))
+                    if self.langHelper.isNavToValidFileType(filePath):
+                        #TODO: implement this!
+                        #patchType = self.langHelper.getPatchType(filePath)
+                        patchType=None
+                        self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset, patchType))
 
             prevFilePath = filePath
             prevOffset = offset
@@ -98,10 +100,9 @@ class NavigationPath(object):
 
             c = conn.execute(self.METHOD_DECLARATIONS_QUERY, [toFileNavigation.timestamp])
             for row in c:
-                action, target, referrer = row['action'], \
-                    row['target'], row['referrer']
+                action, target, referrer = row['action'], row['target'], row['referrer']
 
-                if action == 'Method declaration':
+                if action == 'Method declaration' or action=='Changelog declaration':
                     self.knownPatches.addFilePatch(referrer)
                 elif action == 'Method declaration offset':
                     method = self.knownPatches.findMethodByFqn(target)
@@ -110,7 +111,7 @@ class NavigationPath(object):
                 elif action == 'Method declaration length':
                     method = self.knownPatches.findMethodByFqn(target)
                     if method is not None:
-                        method.length = int(referrer);
+                        method.length = int(referrer)
 
             # Recall that navigations contains the navigation data after its
             # been translated to methods and headers
@@ -127,14 +128,15 @@ class NavigationPath(object):
             if len(self._navigations) > 0:
                 prevNavigation = self._navigations[-1]
                 fromFileNavigation = prevNavigation.toFileNav.clone()
+                #TODO: remove this hardcoded js debug thingy!
                 if 'js' in fromFileNavigation.filePath:
                     self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, toFileNavigation)
-                fromMethodPatch = self.knownPatches.findMethodByOffset(fromFileNavigation.filePath, fromFileNavigation.offset)
+                fromMethodPatch = self.knownPatches.findPatchByOffset(fromFileNavigation.filePath, fromFileNavigation.offset)
 
 
             # We query known methods here to see if the offset of the current
             # toFileNavigation is among the known patches.
-            toMethodPatch = self.knownPatches.findMethodByOffset(toFileNavigation.filePath, toFileNavigation.offset)
+            toMethodPatch = self.knownPatches.findPatchByOffset(toFileNavigation.filePath, toFileNavigation.offset)
 
 
             # Create the navigation object representing this navigation
@@ -169,6 +171,8 @@ class NavigationPath(object):
         foundGap = False
 
         for navigation in self._navigations:
+            #TODO: SS|BP: externalize hard-coded changelog file name to config.
+            # May be do a "patch-type" and use that for this check.
             if 'changes.txt' in navigation.toFileNav.filePath:
                 navigation.toFileNav.isGap = False
             if not foundGap:
@@ -211,7 +215,7 @@ class NavigationPath(object):
         #TODO: Sruti: Can this be otherwise? why this equality check?
 
         if prevNav.isToUnknown():
-            previousNavToMethod = self.knownPatches.findMethodByOffset(prevNav.toFileNav.filePath, prevNav.toFileNav.offset)
+            previousNavToMethod = self.knownPatches.findPatchByOffset(prevNav.toFileNav.filePath, prevNav.toFileNav.offset)
             if previousNavToMethod is None:
                 if self.VERBOSE_PATH:
                         print '\tChecking if ' + str(prevNav.toFileNav) + ' is a header...'
