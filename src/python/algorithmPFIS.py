@@ -25,7 +25,6 @@ class PFIS(PFISBase):
                     if neighbor not in self.mapNodesToActivation:
                         self.mapNodesToActivation[neighbor] = 0.0
 
-
                     if PFIS.VERBOSE and neighbor == PFIS.DEBUG_NODE:
                         print "------------------------------"
                         print "Node:", node, self.mapNodesToActivation[node]

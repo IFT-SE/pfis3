@@ -24,6 +24,9 @@ class MethodPatch(object):
     def __str__(self):
         return str(self.startOffset) + ' to ' + str(self.startOffset + self.length - 1) + ': ' + self.fqn
 
+class PatchType(object):
+    SOURCE = 'source_code'
+    CHANGELOG = 'change_log'
 
 class VariantInfo(object):
     def __init__(self, methodPath, startVariant, endVariant):
@@ -32,5 +35,10 @@ class VariantInfo(object):
         self.endVariant = endVariant
 
 class ChangelogPatch(object):
+
     def __init__(self, fqn):
         self.fqn=fqn
+        self.startOffset = -1
+        self.length = -1
+        self.uuid = uuid.uuid1()
+        self.variantInfo = None

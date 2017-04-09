@@ -1,4 +1,6 @@
 from patches import MethodPatch
+from patches import ChangelogPatch
+
 class DefaultPatchStrategy(object):
 	def __init__(self, langHelper):
 		self.langHelper = langHelper
@@ -25,3 +27,7 @@ class DefaultPatchStrategy(object):
 	def addMethodPatchIfNotPresent(self, methodFqn, files, normalizedClass):
 		if self.getMethodPatchByFqn(methodFqn, files) is None:
 			files[normalizedClass].append(MethodPatch(methodFqn))
+
+	def addChangelogPatchIfNotPresent(self, methodFqn, files, normalizedClass):
+		if self.getMethodPatchByFqn(methodFqn, files) is None:
+			files[normalizedClass].append(ChangelogPatch(methodFqn))

@@ -1,5 +1,6 @@
 import re
 import os
+from patches import PatchType
 
 class AbstractLanguageHelper:
 
@@ -23,6 +24,10 @@ class AbstractLanguageHelper:
 
     def getOuterClass(self, loc):
         raise Exception("Get outer class : Not implemented")
+
+    def getPatchType(self, filePath):
+        if self.hasLanguageExtension(filePath):
+            return PatchType.SOURCE
 
     def package(self, s):
         # Return the package. Empty string returned on fail.
@@ -76,7 +81,10 @@ class AbstractLanguageHelper:
     def isMethodFqn(self, filePathOrFqn):
         raise NotImplementedError()
 
-    def excludeMethod(self, node):
+    def isChangelogFqn(self, filePathOrFqn):
+        raise NotImplementedError()
+
+    def isLibMethodWithoutSource(self, node):
         return False
 
     def performDBPostProcessing(self, db):

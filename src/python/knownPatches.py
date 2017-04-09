@@ -1,6 +1,6 @@
 from defaultPatchStrategy import DefaultPatchStrategy
 from variantPatchStrategy import VariantPatchStrategy
-
+from patches import PatchType
 
 class KnownPatches(object):
     # This class keeps track of the classes that the programmers "knows about."
@@ -40,9 +40,9 @@ class KnownPatches(object):
             if self.langHelper.isMethodFqn(filePathOrFqn):
                 self.patchStrategy.addMethodPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
 
-            #TODO:
-            # elif self.langHelper.isChangelogFqn(filePathOrFqn):
-                # To files to list-of-patches dictionary, add a changelog patch for the file.
+            if self.langHelper.isChangelogFqn(filePathOrFqn):
+                self.patchStrategy.addChangelogPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
+
 
 
     def findMethodByFqn(self, fqn):
@@ -55,7 +55,12 @@ class KnownPatches(object):
         # returned, otherwise, None is returned.
             
         norm = self.langHelper.normalize(filePath)
-        
+
+        if self.langHelper.getPatchType(norm) == PatchType.CHANGELOG:
+            if norm in self.files:
+                return self.files[filePath][0]
+            return None
+
         if norm == '' or norm not in self.files:
             return None
 

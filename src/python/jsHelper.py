@@ -1,18 +1,22 @@
 from AbstractLanguageHelper import AbstractLanguageHelper
 import os
 import re
+from patches import PatchType
 from jsAdditionalDbProcessor import JSAdditionalDbProcessor
 
 
 class JavaScriptHelper (AbstractLanguageHelper):
 
 	JS_STD_LIB = 'LJS_Std_lib;.'
+	CHANGELOG_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).txt')
+	CHANGELOG_TYPE_REGEX = re.compile(r'(.*.txt)')
 	METHOD_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).js.*?;.(.*?)\(.*')
-	OUTER_CLASS_REGEX = re.compile(r'(.*.js).*')
+	OUTER_CLASS_REGEX = re.compile(r'(.*.js|.*.txt).*')
+	REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+).*")
 
 	def __init__(self):
 		fileExtension = ".js"
-		normalizedPathRegex = r"(.*)\.js"
+		normalizedPathRegex = r"(.*)\.[js|txt]"
 		packageRegex = r"(.*?)\/"
 		AbstractLanguageHelper.__init__(self, fileExtension, normalizedPathRegex, packageRegex)
 
@@ -27,8 +31,8 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			return m.groups()[0]
 
 		filepath = self.fixSlashes(string)
-		n = self.REGEX_NORM_PATH.match(filepath)
-		if n:
+		hasMatch = self.REGEX_NORM_PATH.match(filepath)
+		if hasMatch:
 			return filepath
 
 	def getOuterClass(self, fqnToContainer):
@@ -44,10 +48,15 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			return True
 		return False
 
+	def isChangelogFqn(self, filePathOrFqn):
+		if self.CHANGELOG_TARGET_REGEX.match(filePathOrFqn) != None:
+			return True
+		return False
+
 	def getFileName(self, projectFolderPath, className, extn):
 		return os.path.join(projectFolderPath, className[1:])
 
-	def excludeMethod(self, node):
+	def isLibMethodWithoutSource(self, node):
 		if node.startswith(self.JS_STD_LIB):
 			return True
 		return False
@@ -55,9 +64,9 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def performDBPostProcessing(self, db):
 		JSAdditionalDbProcessor(db).process()
 
-
 	def isNavToValidFileType(self, filePath):
-		#TODO: allow change log also as a valid file type.
+		if self.CHANGELOG_TYPE_REGEX.match(filePath) != None:
+			return True
 		return self.hasLanguageExtension(filePath)
 
 	def isVariantOf(self, fqn1, fqn2):
@@ -84,3 +93,10 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			#return match1[1] == match2[1] # Match for entire path
 			return match1[2] == match2[2] #Match just method name
 
+	def getPatchType(self, filePath):
+		if self.CHANGELOG_TYPE_REGEX.match(filePath) != None:
+			return PatchType.CHANGELOG
+		elif self.hasLanguageExtension(filePath):
+			return PatchType.SOURCE
+
+		return None

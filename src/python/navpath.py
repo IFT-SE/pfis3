@@ -11,7 +11,7 @@ class NavigationPath(object):
     VARIANT_AWARE = "VariantAware"
     VARIANT_AWARE_COLLAPSED = "VariantAwareCollapsed"
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
-    METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length') AND timestamp <= ? ORDER BY timestamp"
+    METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length', 'Changelog declaration') AND timestamp <= ? ORDER BY timestamp"
 
     def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
         self.dbFilePath = dbFilePath
@@ -59,11 +59,8 @@ class NavigationPath(object):
 
             if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in  Java DB
                     if self.langHelper.isNavToValidFileType(filePath):
-                        #TODO: implement this!
-                        #patchType = self.langHelper.getPatchType(filePath)
-                        patchType=None
+                        patchType = self.langHelper.getPatchType(filePath)
                         self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset, patchType))
-
             prevFilePath = filePath
             prevOffset = offset
         c.close()
@@ -102,7 +99,7 @@ class NavigationPath(object):
             for row in c:
                 action, target, referrer = row['action'], row['target'], row['referrer']
 
-                if action == 'Method declaration' or action=='Changelog declaration':
+                if action == 'Method declaration' or action == 'Changelog declaration':
                     self.knownPatches.addFilePatch(referrer)
                 elif action == 'Method declaration offset':
                     method = self.knownPatches.findMethodByFqn(target)
@@ -128,9 +125,7 @@ class NavigationPath(object):
             if len(self._navigations) > 0:
                 prevNavigation = self._navigations[-1]
                 fromFileNavigation = prevNavigation.toFileNav.clone()
-                #TODO: remove this hardcoded js debug thingy!
-                if 'js' in fromFileNavigation.filePath:
-                    self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, toFileNavigation)
+                self.__addPFIGFileHeadersIfNeeded(conn, prevNavigation, toFileNavigation)
                 fromMethodPatch = self.knownPatches.findPatchByOffset(fromFileNavigation.filePath, fromFileNavigation.offset)
 
 
@@ -171,10 +166,6 @@ class NavigationPath(object):
         foundGap = False
 
         for navigation in self._navigations:
-            #TODO: SS|BP: externalize hard-coded changelog file name to config.
-            # May be do a "patch-type" and use that for this check.
-            if 'changes.txt' in navigation.toFileNav.filePath:
-                navigation.toFileNav.isGap = False
             if not foundGap:
                 if navigation.fromFileNav is None:
                     if navigation.toFileNav.isGap:

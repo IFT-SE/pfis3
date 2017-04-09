@@ -12,7 +12,7 @@ class PfisGraph(object):
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
-                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent') " \
+                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'Changelog declaration scent', 'Changelog declaration') " \
                   "AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
@@ -71,7 +71,7 @@ class PfisGraph(object):
             if action in ('Package', 'Imports', 'Extends', 'Implements',
                           'Method declaration', 'Constructor invocation',
                           'Method invocation', 'Variable declaration',
-                          'Variable type'):
+                          'Variable type', 'Changelog declaration'):
                 for word in self.__getWordNodes_splitNoStem(target):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         
@@ -87,10 +87,10 @@ class PfisGraph(object):
             # FQN node.
             elif action in ('Constructor invocation scent',
                             'Method declaration scent',
-                            'Method invocation scent'):
+                            'Method invocation scent', 'Changelog declaration scent'):
                 for word in self.__getWordNodes_splitNoStem(referrer):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
-                    
+
                 for word in self.getWordNodes_splitCamelAndStem(referrer):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         c.close()
@@ -116,7 +116,7 @@ class PfisGraph(object):
 
             self.updateTopology(action, target, referrer, targetNodeType, referrerNodeType)
 
-        c.close
+        c.close()
     
         print "\tDone processing topology."
         self.__printGraphStats()

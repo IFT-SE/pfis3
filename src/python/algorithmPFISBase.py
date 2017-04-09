@@ -35,7 +35,8 @@ class PFISBase(PredictiveAlgorithm):
                 print "Map was empty!!!!!!!!"
                 print self.name
 
-            sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, pfisGraph.getFqnOfEquivalentNode(fromMethodFqn))
+            fromFQN = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
+            sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromFQN)
             topPredictions = []
 
             if self.includeTop:
@@ -108,7 +109,7 @@ class PFISBase(PredictiveAlgorithm):
             if pfisGraph.containsNode(node):
                 #self.langHelper.excludeMethod(node): this can be added as a node attribute itself
                 if pfisGraph.getNode(node)['type'] == NodeType.METHOD \
-                        and not self.langHelper.excludeMethod(node):
+                        and not self.langHelper.isLibMethodWithoutSource(node):
                     activatedMethodNodes.append(node)
 
             sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method], reverse = True)

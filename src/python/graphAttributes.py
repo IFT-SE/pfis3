@@ -8,6 +8,7 @@ class NodeType(object):
     PROJECT = 6
     WORD = 7
     SPECIAL = 8
+    CHANGELOG = 9
 
     __targetNodes = {}
     __targetNodes["Extends"] = CLASS
@@ -20,6 +21,8 @@ class NodeType(object):
     __targetNodes["New file header"] = METHOD
     __targetNodes["Package"] = FILE
     __targetNodes["Variable type"] = VARIABLE
+    __targetNodes["Changelog declaration scent"] = CHANGELOG
+    __targetNodes["Changelog declaration"] = CHANGELOG
 
     __referrerNodes = {}
     __referrerNodes["Extends"] = CLASS
@@ -29,6 +32,7 @@ class NodeType(object):
     __referrerNodes["Method invocation"] = METHOD
     __referrerNodes["Package"] = PACKAGE
     __referrerNodes["Variable declaration"] = VARIABLE
+    __referrerNodes["Changelog declaration"] = CHANGELOG
 
     @staticmethod
     def getTargetNodeType(action, target):

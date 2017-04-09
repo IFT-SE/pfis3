@@ -41,7 +41,7 @@ class Predictor(object):
 			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
 
 			if self.graph.containsNode(actualNavigation.methodFqn):
-				raise Exception("You think a known is an unknown: ", actualNavigation.methodFqn, self.navNumber)
+				print "Exception: Unseen method already exists in graph: ", actualNavigation.methodFqn, self.navNumber
 
 			else:
 				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)

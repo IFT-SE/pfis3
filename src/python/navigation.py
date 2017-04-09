@@ -9,15 +9,6 @@ class Navigation(object):
 
     def isToSameMethod(self):
         if self.fromFileNav is not None and self.toFileNav is not None:
-            if 'changes.txt' in self.toFileNav.filePath and 'changes.txt' in self.fromFileNav.filePath:
-                firstVar = self.toFileNav.filePath
-                secondVar = self.fromFileNav.filePath
-                firstVar = firstVar[8:]
-                firstVar = firstVar[:-12]
-                secondVar = secondVar[8:]
-                secondVar = secondVar[:-12]
-                if firstVar == secondVar:
-                    return True
             if self.fromFileNav.methodFqn is not None and self.toFileNav.methodFqn is not None:
                 return self.fromFileNav.methodFqn == self.toFileNav.methodFqn
         return False
@@ -53,9 +44,6 @@ class Navigation(object):
 
         return str(fromLoc) + ' --> ' + str(toLoc)
 
-class PatchType(object):
-    METHOD = 'method'
-    CHANGELOG = 'change_log'
 
 class FileNavigation(object):
     # A file navigation represents the Text selection offset data that was
@@ -73,7 +61,7 @@ class FileNavigation(object):
         #TODO: make sure methodFqn is same as filePath for changelog patch types
 
     def clone(self):
-        fileNavClone = FileNavigation(self.timestamp, self.filePath, self.offset)
+        fileNavClone = FileNavigation(self.timestamp, self.filePath, self.offset, self.patchType)
         fileNavClone.methodFqn = self.methodFqn
         fileNavClone.patchType = self.patchType
         return fileNavClone

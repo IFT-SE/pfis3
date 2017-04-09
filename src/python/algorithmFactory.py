@@ -74,7 +74,11 @@ class AlgorithmFactory:
 		# not in the XML, we shoudln't have to create variables for them
 
 		history = False
-		goal = []
+		#TODO: Put this hard-coded goal words list as an option in the config
+		goal = ['score', 'indicator', 'above', 'hexagon,', 'exception',
+				'text', 'color', 'should', 'changed', 'black', 'score',
+				'calculated', 'differently', 'now', 'stay', 'Users', 'put',
+				'back', 'bonus', 'multiplier', 'parentheses', 'next']
 		decayFactor = 0.85
 		decayHistory = 0.9
 		numSpread = 2

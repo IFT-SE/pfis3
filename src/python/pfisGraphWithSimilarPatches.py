@@ -9,6 +9,10 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 		self.knownMethodPatches = KnownPatches(langHelper, variantsDb)
 
 	def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
+
+		self._updateKnownPatches(node1, node1Type)
+		self._updateKnownPatches(node2, node2Type)
+
 		if node1Type != NodeType.METHOD and node2Type != NodeType.METHOD:
 			PfisGraphWithVariants._addEdge(self, node1, node2, node1Type, node2Type, edgeType)
 
@@ -17,12 +21,12 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 			node2Equivalent = self._getEquivalentNode(node2, node2Type)
 			PfisGraphWithVariants._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
+	def _updateKnownPatches(self, node, nodeType):
+		if nodeType in [NodeType.METHOD, NodeType.CHANGELOG] and not self.langHelper.isLibMethodWithoutSource(node):
+			self.knownMethodPatches.addFilePatch(node)
 
 	def _getEquivalentNode(self, node, nodeType):
-		if nodeType != NodeType.METHOD:
-			return node
-
-		elif self.langHelper.excludeMethod(node):
+		if nodeType not in [NodeType.METHOD, NodeType.CHANGELOG] or self.langHelper.isLibMethodWithoutSource(node):
 			return node
 
 		else:
@@ -31,7 +35,7 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 
 	def getEquivalentGraphNode(self, node):
 		#TODO: See why there are TWO different methods
-		self.knownMethodPatches.addFilePatch(node)
+
 		method = self.knownMethodPatches.findMethodByFqn(node)
 		return method.fqn
 

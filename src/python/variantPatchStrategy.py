@@ -19,29 +19,41 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 		self.idToPatchMap = {}
 		self.fqnToIdMap = {}
 
-
 	def addMethodPatchIfNotPresent(self, methodFqn, files, normalizedClass):
 		#See patch for same FQN exists
 		methodPatch = self.getMethodPatchByFqn(methodFqn, files)
-
 		#Is patch for FQN does not exist, do the following
 		if methodPatch is None:
-
 			#Get a method patch, with appropriate ID
-			methodPatch = self.__getNewlyVisitedMethodPatch(methodFqn)
+			methodPatch = self.__getNewlyVisitedPatch(methodFqn)
 
-			#If ID not exists earlier, ID -> Patch map
-			if methodPatch.uuid not in self.idToPatchMap.keys():
-				self.idToPatchMap[methodPatch.uuid] = methodPatch
+			self.__addPatchIfNotPresent(methodPatch, methodFqn, files, normalizedClass)
 
-			#Add entry for FQN -> UUID
-			self.fqnToIdMap[methodFqn] = methodPatch.uuid
+	def addChangelogPatchIfNotPresent(self, changelogFqn, files, normalizedClass):
+		# See patch for same FQN exists
+		changelogPatch = self.getMethodPatchByFqn(changelogFqn, files)
 
-			#Add to known patches for file
-			if methodPatch not in files[normalizedClass]:
-				files[normalizedClass].append(methodPatch)
+		if changelogPatch is None:
+			changelogPatch = self.__getNewlyVisitedPatch(changelogFqn)
 
-	def __getNewlyVisitedMethodPatch(self, methodFqn):
+			self.__addPatchIfNotPresent(changelogPatch, changelogFqn, files, normalizedClass)
+
+	def __addPatchIfNotPresent(self, patch, filePathOrFqn, files, normalizedClass):
+		# If ID not exists earlier, ID -> Patch map
+		if patch.uuid not in self.idToPatchMap.keys():
+			self.idToPatchMap[patch.uuid] = patch
+
+		# Add entry for FQN -> UUID
+		self.fqnToIdMap[filePathOrFqn] = patch.uuid
+
+		# Add to known patches for file
+		if patch not in files[normalizedClass]:
+			files[normalizedClass].append(patch)
+
+	def __getNewlyVisitedPatch(self, methodFqn):
+		if self.langHelper.isChangelogFqn(methodFqn):
+			return ChangelogPatch(methodFqn)
+
 		# If FQN is a file header, create a new header if it is not already available
 		# Otherwise, get the right patch from varinat information db
 
@@ -55,14 +67,6 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 			uuid = self.fqnToIdMap[fqn]
 			return self.idToPatchMap[uuid]
 		return None
-
-	def _getMethodPatchByFqn_(self, fqn, files):
-		patchRow = self.__getPatchRow(fqn)
-		uuid = patchRow[4]
-		if uuid in self.idToPatchMap:
-			return self.idToPatchMap[uuid]
-		else:
-			return None
 
 	def __getPathRelativeToVariantFolder(self, fqn):
 		if self.langHelper.isMethodFqn(fqn):
