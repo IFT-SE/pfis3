@@ -13,7 +13,9 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 		self._updateKnownPatches(node1, node1Type)
 		self._updateKnownPatches(node2, node2Type)
 
-		if node1Type != NodeType.METHOD and node2Type != NodeType.METHOD:
+		#TODO: Get rid of DRY code : checking [NodeType.METHOD, NodeType.CHANGELOG]
+		#      move as a static to NodeType class
+		if node1Type in [NodeType.METHOD, NodeType.CHANGELOG] and node2Type in [NodeType.METHOD, NodeType.CHANGELOG]:
 			PfisGraphWithVariants._addEdge(self, node1, node2, node1Type, node2Type, edgeType)
 
 		else:
@@ -44,13 +46,13 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 		return equivalentPatch.fqn
 
 	def containsNode(self, node):
-		if self.langHelper.isMethodFqn(node):
+		if self.langHelper.isMethodFqn(node) or self.langHelper.isChangelogFqn(node):
 			equivalentNode = self.getFqnOfEquivalentNode(node)
 			return equivalentNode in self.graph.nodes()
 		return node in self.graph.nodes()
 
 	def getNode(self, nodeName):
 		equivalentNode = nodeName
-		if self.langHelper.isMethodFqn(nodeName):
+		if self.langHelper.isMethodFqn(nodeName) or self.langHelper.isChangelogFqn(nodeName):
 			equivalentNode = self.getFqnOfEquivalentNode(nodeName)
 		return self.graph.node[equivalentNode]

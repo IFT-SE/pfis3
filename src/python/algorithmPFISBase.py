@@ -81,7 +81,7 @@ class PFISBase(PredictiveAlgorithm):
             if not nav.isToUnknown():
                 method = nav.fromFileNav.methodFqn
                 if pfisGraph.containsNode(method):
-                    if pfisGraph.getNode(method)['type'] == NodeType.METHOD:
+                    if pfisGraph.getNode(method)['type'] in [NodeType.METHOD, NodeType.CHANGELOG]:
                         if method not in self.mapNodesToActivation:
                             # TODO consider making history additive, that is if
                             # a location is visited more than once, sum up its 
@@ -108,7 +108,7 @@ class PFISBase(PredictiveAlgorithm):
 
             if pfisGraph.containsNode(node):
                 #self.langHelper.excludeMethod(node): this can be added as a node attribute itself
-                if pfisGraph.getNode(node)['type'] == NodeType.METHOD \
+                if pfisGraph.getNode(node)['type'] in [NodeType.METHOD, NodeType.CHANGELOG] \
                         and not self.langHelper.isLibMethodWithoutSource(node):
                     activatedMethodNodes.append(node)
 

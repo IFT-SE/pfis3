@@ -12,11 +12,11 @@ class PfisGraph(object):
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
-                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'Changelog declaration scent', 'Changelog declaration') " \
+                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'Changelog declaration', 'Changelog declaration scent') " \
                   "AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
-                     "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type') " \
+                     "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Changelog declaration') " \
                      "AND timestamp >= ? AND timestamp < ?"
     ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' " \
                       "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp"
@@ -216,6 +216,7 @@ class PfisGraph(object):
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.TYPE)
+        #No additional handling for changelogs. Only variant-of edges are needed as part of topology update.
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
@@ -315,6 +316,7 @@ class PfisGraph(object):
 
     def printEntireGraphStats(self):
         variantEdges = 0
+        changelogEdges = 0
         topologyLinkEdges = 0
 
         edge_iter = self.graph.edges_iter()
@@ -326,22 +328,28 @@ class PfisGraph(object):
                 topologyLinkEdges = topologyLinkEdges + 1
             if EdgeType.VARIANT_OF in edge_data["types"]:
                 variantEdges = variantEdges+1
+                if edge[0] != edge[1] and 'changes.txt' in edge[0] and 'changes.txt' in edge[1]:
+                    changelogEdges = changelogEdges + 1
 
 
         nodes_iter = self.graph.nodes_iter()
         methodNodeCount = 0
+        changelogNodeCount = 0
         for node in nodes_iter:
             if self.graph.node[node]['type'] == NodeType.METHOD:
                 methodNodeCount = methodNodeCount + 1
-
+            elif self.graph.node[node]['type'] == NodeType.CHANGELOG:
+                changelogNodeCount = changelogNodeCount + 1
 
         values = [str(self.graph.number_of_nodes()),
                   str(self.graph.number_of_edges()),
                   str(methodNodeCount),
+                  str(changelogNodeCount),
                   str(topologyLinkEdges),
-                  str(variantEdges)]
+                  str(variantEdges),
+                  str(changelogEdges)]
         print "--------------------------------------------"
-        print "All Nodes\tAll Edges\tPatch Nodes\tLink Edges (Adj,Call or Var)\tVariant Edges\n"
+        print "All Nodes\tAll Edges\tMethod Nodes\tChangelog Nodes\tLink Edges (Adj,Call or Var)\tVariant Edges\tChangelog Edges\n"
         print "\t".join(values) + "\n"
         print "--------------------------------------------"
 

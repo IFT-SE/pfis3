@@ -70,28 +70,28 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		return self.hasLanguageExtension(filePath)
 
 	def isVariantOf(self, fqn1, fqn2):
-		#L/hexcom/2014-05-26-10:18:35/js/view.js;.renderText(x"," y"," fontSize"," color"," text)
-		#L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested methods
 
-		#FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)') - matches entire path to method
-		FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*);.(.*)\(')
+		if self.isMethodFqn(fqn1) and self.isMethodFqn(fqn2):
+			return self._checkMethodSimilarity(fqn1, fqn2)
+		elif self.isChangelogFqn(fqn1) and self.isChangelogFqn(fqn2):
+			return self._checkChangelogSimilarity(fqn1, fqn2)
 
-		#They are not FQNs of non-std methods in the topology
-		if FILE_TARGET_REGEX.match(fqn1) == None or FILE_TARGET_REGEX.match(fqn2) == None:
-			return False
+	def _checkMethodSimilarity(self, fqn1, fqn2):
+		# L/hexcom/2014-05-26-10:18:35/js/view.js;.renderText(x"," y"," fontSize"," color"," text)
+		# L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested method FQN example
+		# MethodFQNRegex checks for pattern.
+		# Here we attempt to split that FQN to also match nested methods, folders, etc. So that won't work.
 
-		match1 = FILE_TARGET_REGEX.match(fqn1).groups()
-		match2 = FILE_TARGET_REGEX.match(fqn2).groups()
+		METHOD_SIMILARITY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*);.(.*)\(')
+		match1 = METHOD_SIMILARITY_REGEX.match(fqn1).groups()
+		match2 = METHOD_SIMILARITY_REGEX.match(fqn2).groups()
 
-		# Return false if both are in same variant
-		if match1[0] == match2[0]:
-			return False
+		# Same FQN and method names, but different variant names
+		return match1[0] != match2[0] and match1[2] == match2[2] #TODO: check FQN! "and match1[1] == match2[1]"
 
-		else:
-			#Right now it is just FQN
-			#TODO: Queer case of headers!!!
-			#return match1[1] == match2[1] # Match for entire path
-			return match1[2] == match2[2] #Match just method name
+	def _checkChangelogSimilarity(self, fqn1, fqn2):
+		CHANGELOG_SIMILARITY_REGEX = re.compile('L/hexcom/(.*?)/')
+		return CHANGELOG_SIMILARITY_REGEX.match(fqn1).groups()[0] != CHANGELOG_SIMILARITY_REGEX.match(fqn2).groups()[0]
 
 	def getPatchType(self, filePath):
 		if self.CHANGELOG_TYPE_REGEX.match(filePath) != None:
