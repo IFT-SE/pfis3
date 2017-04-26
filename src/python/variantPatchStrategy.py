@@ -19,50 +19,37 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 		self.idToPatchMap = {}
 		self.fqnToIdMap = {}
 
-	def addMethodPatchIfNotPresent(self, methodFqn, files, normalizedClass):
-		#See patch for same FQN exists
-		methodPatch = self.getMethodPatchByFqn(methodFqn, files)
-		#Is patch for FQN does not exist, do the following
-		if methodPatch is None:
-			#Get a method patch, with appropriate ID
-			methodPatch = self.__getNewlyVisitedPatch(methodFqn)
+	def addPatchIfNotPresent(self, patchFqn, files, normalizedClass):
+		# See patch for same FQN exists, else add
+		if self.getPatchByFqn(patchFqn, files) is not None:
+			return
 
-			self.__addPatchIfNotPresent(methodPatch, methodFqn, files, normalizedClass)
+		newPatch = self.__getNewlyVisitedPatch(patchFqn)
+		files[normalizedClass].append(newPatch)
 
-	def addChangelogPatchIfNotPresent(self, changelogFqn, files, normalizedClass):
-		# See patch for same FQN exists
-		changelogPatch = self.getMethodPatchByFqn(changelogFqn, files)
+		#Update the patch details in fqn-id-node maps
+		if newPatch.uuid not in self.idToPatchMap.keys():
+			self.idToPatchMap[newPatch.uuid] = newPatch
+		self.fqnToIdMap[patchFqn] = newPatch.uuid
 
-		if changelogPatch is None:
-			changelogPatch = self.__getNewlyVisitedPatch(changelogFqn)
+	def __getNewlyVisitedPatch(self, patchFqn):
+		if self.langHelper.isMethodFqn(patchFqn):
+			newPatch = MethodPatch(patchFqn)
 
-			self.__addPatchIfNotPresent(changelogPatch, changelogFqn, files, normalizedClass)
+			# If it is an actual method patch (not PFIGHeader),
+			# get the right patch UUID from the equivalence DB
 
-	def __addPatchIfNotPresent(self, patch, filePathOrFqn, files, normalizedClass):
-		# If ID not exists earlier, ID -> Patch map
-		if patch.uuid not in self.idToPatchMap.keys():
-			self.idToPatchMap[patch.uuid] = patch
+			if not self.langHelper.isPfigHeaderFqn(patchFqn):
+				self.__updatePatchUUIDFromEquivalenceDb(newPatch)
 
-		# Add entry for FQN -> UUID
-		self.fqnToIdMap[filePathOrFqn] = patch.uuid
+		elif self.langHelper.isChangelogFqn(patchFqn):
+			newPatch = ChangelogPatch(patchFqn)
 
-		# Add to known patches for file
-		if patch not in files[normalizedClass]:
-			files[normalizedClass].append(patch)
-
-	def __getNewlyVisitedPatch(self, methodFqn):
-		if self.langHelper.isChangelogFqn(methodFqn):
-			return ChangelogPatch(methodFqn)
-
-		# If FQN is a file header, create a new header if it is not already available
-		# Otherwise, get the right patch from varinat information db
-
-		if self.langHelper.isPfigHeaderFqn(methodFqn):
-			return MethodPatch(methodFqn)
 		else:
-			return self.__fetchMethodPatchFromDb(methodFqn)
+			raise Exception("Not a patch fqn:", patchFqn)
+		return newPatch
 
-	def getMethodPatchByFqn(self, fqn, files):
+	def getPatchByFqn(self, fqn, files):
 		if fqn in self.fqnToIdMap.keys():
 			uuid = self.fqnToIdMap[fqn]
 			return self.idToPatchMap[uuid]
@@ -76,11 +63,10 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 		if self.langHelper.isMethodFqn(fqn):
 			return VariantPatchStrategy.FILE_TARGET_REGEX.match(fqn).groups()[0]
 
-	def __fetchMethodPatchFromDb(self, fqn):
-		patchRow = self.__getPatchRow(fqn)
-		methodPatch = MethodPatch(fqn)
-		methodPatch.uuid = patchRow[4]
-		return methodPatch
+	def __updatePatchUUIDFromEquivalenceDb(self, newPatch):
+		patchRow = self.__getPatchRow(newPatch.fqn)
+		newPatch.uuid = patchRow[4]
+
 
 	def __getPatchRow(self, fqn):
 

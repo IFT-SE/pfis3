@@ -35,7 +35,6 @@ class VariantInfo(object):
         self.endVariant = endVariant
 
 class ChangelogPatch(object):
-
     def __init__(self, fqn):
         self.fqn=fqn
         self.startOffset = -1

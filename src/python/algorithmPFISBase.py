@@ -1,3 +1,4 @@
+from graphAttributes import EdgeType
 from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import Prediction
 from pfisGraph import NodeType
@@ -12,7 +13,17 @@ class PFISBase(PredictiveAlgorithm):
         self.goal = goal
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
+        self.DECAY_BETWEEN_VARIANTS=decayFactor
         self.mapNodesToActivation = None
+
+    def getDecayFactor(self, edgeTypes):
+        edgeType = edgeTypes[0]
+        if edgeType == EdgeType.VARIANT_OF:
+            return self.DECAY_BETWEEN_VARIANTS
+        elif edgeType in [EdgeType.CONTAINS, EdgeType.CALLS, EdgeType.ADJACENT]:
+            return self.DECAY_FACTOR
+        else:
+            raise Exception("Invalid Edge Type: ", edgeType)
 
     def spreadActivation(self, pfisGraph):
         raise NotImplementedError('spreadActivation is not implemented in PFISBase')

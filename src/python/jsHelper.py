@@ -64,13 +64,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def performDBPostProcessing(self, db):
 		JSAdditionalDbProcessor(db).process()
 
-	def isNavToValidFileType(self, filePath):
-		if self.CHANGELOG_TYPE_REGEX.match(filePath) != None:
-			return True
-		return self.hasLanguageExtension(filePath)
-
 	def isVariantOf(self, fqn1, fqn2):
-
 		if self.isMethodFqn(fqn1) and self.isMethodFqn(fqn2):
 			return self._checkMethodSimilarity(fqn1, fqn2)
 		elif self.isChangelogFqn(fqn1) and self.isChangelogFqn(fqn2):
@@ -98,5 +92,4 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			return PatchType.CHANGELOG
 		elif self.hasLanguageExtension(filePath):
 			return PatchType.SOURCE
-
 		return None

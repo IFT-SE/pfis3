@@ -5,7 +5,7 @@ class DefaultPatchStrategy(object):
 	def __init__(self, langHelper):
 		self.langHelper = langHelper
 
-	def getMethodPatchByFqn(self, fqn, files):
+	def getPatchByFqn(self, fqn, files):
 		# Query the known patches by a method's FQN. Returns the MethodData
 		# object if it was found, or None if it wasn't. The MethodData object
 		# can then be updated as necessary.
@@ -16,18 +16,22 @@ class DefaultPatchStrategy(object):
 
 		if norm in files:
 			# Return the method data object in the list that matches the desired FQN
-			for method in files[norm]:
-				if method.fqn == fqn:
-					return method
+			for patch in files[norm]:
+				if patch.fqn == fqn:
+					return patch
 			return None
 
+	def addPatchIfNotPresent(self, patchFqn, files, normalizedClass):
+		if self.getPatchByFqn(patchFqn, files) is not None:
+			return
+
+		if self.langHelper.isMethodFqn(patchFqn):
+			newPatch = MethodPatch(patchFqn)
+		elif self.langHelper.isChangelogFqn(patchFqn):
+			newPatch = ChangelogPatch(patchFqn)
 		else:
-			return None
+			raise Exception("Not a patch fqn:", patchFqn)
 
-	def addMethodPatchIfNotPresent(self, methodFqn, files, normalizedClass):
-		if self.getMethodPatchByFqn(methodFqn, files) is None:
-			files[normalizedClass].append(MethodPatch(methodFqn))
+		files[normalizedClass].append(newPatch)
 
-	def addChangelogPatchIfNotPresent(self, methodFqn, files, normalizedClass):
-		if self.getMethodPatchByFqn(methodFqn, files) is None:
-			files[normalizedClass].append(ChangelogPatch(methodFqn))
+

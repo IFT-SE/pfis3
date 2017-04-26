@@ -36,17 +36,13 @@ class KnownPatches(object):
             if normalizedFqn not in self.files:
                 self.files[normalizedFqn] = []
                 
-            # Add the method if it doesn't already exist in the file
-            if self.langHelper.isMethodFqn(filePathOrFqn):
-                self.patchStrategy.addMethodPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
-
-            if self.langHelper.isChangelogFqn(filePathOrFqn):
-                self.patchStrategy.addChangelogPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
+            # Add the patch if it doesn't already exist in the file
+            self.patchStrategy.addPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
 
 
 
     def findMethodByFqn(self, fqn):
-        return self.patchStrategy.getMethodPatchByFqn(fqn, self.files)
+        return self.patchStrategy.getPatchByFqn(fqn, self.files)
 
     def findPatchByOffset(self, filePath, offset):
         

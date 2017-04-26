@@ -355,17 +355,23 @@ class PfisGraph(object):
 
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
         validNeighbors = []
-
-        equivalentNode = node
-        if self.langHelper.isMethodFqn(node):
-            equivalentNode = self.getFqnOfEquivalentNode(node)
+        equivalentNode = self.getFqnOfEquivalentNode(node)
 
         for neighbor in self.graph.neighbors(equivalentNode):
             for edgeType in edgeTypes:
-                if edgeType in self.graph[equivalentNode][neighbor]['types'] and neighbor not in validNeighbors:
+                if edgeType in self.getEdgeTypesBetween(equivalentNode, neighbor) and neighbor not in validNeighbors:
                     validNeighbors.append(neighbor)
 
         return validNeighbors
+
+    def getEdgeTypesBetween(self, node1, node2):
+        node1Equiv = self.getFqnOfEquivalentNode(node1)
+        node2Equiv = self.getFqnOfEquivalentNode(node2)
+        if self.graph.has_edge(node1Equiv, node2Equiv):
+            return self.graph[node1Equiv][node2Equiv]['types']
+        else:
+            raise Exception(str.format("No edge between nodes: {0} (Eq: {1}) and {2}(Eq:{3}) ",
+                                       node1, node1Equiv, node2, node2Equiv))
 
     def getAllNeighbors(self, node):
         edges = EdgeType.getStandardEdgeTypes()
@@ -393,7 +399,7 @@ class PfisGraph(object):
         for neighborFqn in sourceNodeNeighbors:
             neighborNode = self.getNode(neighborFqn)
 
-            edgeTypes = self.graph.get_edge_data(cloneFrom, neighborFqn)['types']
+            edgeTypes = self.getEdgeTypesBetween(cloneFrom, neighborFqn)
 
             for edgeType in edgeTypes:
                 self._addEdge(cloneTo, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)

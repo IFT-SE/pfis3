@@ -25,18 +25,21 @@ class PFIS(PFISBase):
                     if neighbor not in self.mapNodesToActivation:
                         self.mapNodesToActivation[neighbor] = 0.0
 
+                    edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
+                    decay_factor = self.getDecayFactor(edge_types)
+
                     if PFIS.VERBOSE and neighbor == PFIS.DEBUG_NODE:
                         print "------------------------------"
                         print "Node:", node, self.mapNodesToActivation[node]
                         print "Neighbor count: ",len(neighbors)
-                        print "Standard decay fator:", self.DECAY_FACTOR
-                        print "Std spread", self.mapNodesToActivation[node] * self.DECAY_FACTOR
+                        print "Standard decay fator:", decay_factor
+                        print "Std spread", self.mapNodesToActivation[node] * decay_factor
                         print "EdgeWeight due to neighbors decay : 1/ neighbor_count: ", edgeWeight
-                        print "Spread incl edge weight: ", (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+                        print "Spread incl edge weight: ", (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
                         print "Neighbor:", neighbor, self.mapNodesToActivation[neighbor]
 
                     self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
-                                                          (self.mapNodesToActivation[node] * edgeWeight * self.DECAY_FACTOR)
+                                                          (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
 
                     if PFIS.VERBOSE and neighbor == PFIS.DEBUG_NODE:
                         print "Final neighbor weight", self.mapNodesToActivation[neighbor]
