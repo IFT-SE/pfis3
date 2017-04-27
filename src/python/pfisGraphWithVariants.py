@@ -2,8 +2,8 @@ from pfisGraph import PfisGraph
 from graphAttributes import EdgeType
 
 class PfisGraphWithVariants(PfisGraph):
-	def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], verbose=False):
-		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, verbose)
+	def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], goalWords=[], verbose=False):
+		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
 
 	def updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType):
 		PfisGraph.updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType)

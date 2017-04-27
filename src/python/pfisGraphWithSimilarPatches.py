@@ -2,8 +2,8 @@ from knownPatches import KnownPatches
 from pfisGraphWithVariants import PfisGraphWithVariants
 
 class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
-	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, stopWords=[], verbose=False):
-		PfisGraphWithVariants.__init__(self, dbFilePath, langHelper, projSrc, stopWords, verbose)
+	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, stopWords=[], goalWords=[], verbose=False):
+		PfisGraphWithVariants.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
 		self.variantsDb = variantsDb
 		self.knownMethodPatches = KnownPatches(langHelper, variantsDb)
 

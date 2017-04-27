@@ -5,11 +5,11 @@ class PFIS(PFISBase):
     VERBOSE = 0
     DEBUG_NODE = 'L/hexcom/Current/js_v9/main.js;.init(b)'
 
-    def __init__(self, langHelper, name, fileName, history=False, goal = [], 
-                 decayFactor = 0.85, decayHistory = 0.9, numSpread = 2,
+    def __init__(self, langHelper, name, fileName, history=False, goal = False,
+                 decayFactor = 0.85, decayVariants=0.85, decayHistory = 0.9, numSpread = 2,
                  includeTop = False, numTopPredictions=0):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayHistory, includeTop, numTopPredictions)
+                          decayFactor, decayVariants, decayHistory, includeTop, numTopPredictions)
         self.NUM_SPREAD = numSpread
 
     def spreadActivation(self, pfisGraph):
@@ -18,8 +18,8 @@ class PFIS(PFISBase):
             for node in self.mapNodesToActivation.keys():
                 if not pfisGraph.containsNode(node):
                     continue
-                
                 neighbors = pfisGraph.getAllNeighbors(node)
+
                 edgeWeight = 1.0 / len(neighbors)
                 for neighbor in neighbors:
                     if neighbor not in self.mapNodesToActivation:
@@ -41,12 +41,13 @@ class PFIS(PFISBase):
                     self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
                                                           (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
 
+
                     if PFIS.VERBOSE and neighbor == PFIS.DEBUG_NODE:
                         print "Final neighbor weight", self.mapNodesToActivation[neighbor]
 
-                    # Add Verbose flag check
-                #if PFIS.VERBOSE:
-                    #self.printNodes(pfisGraph)
+                        # Add Verbose flag check
+                        #if PFIS.VERBOSE:
+                        #self.printNodes(pfisGraph)
 
     def printNodes(self, pfisGraph):
         nodeList = pfisGraph.graph.nodes()

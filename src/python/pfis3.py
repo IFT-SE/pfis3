@@ -74,10 +74,16 @@ def main():
 	# Load the stop words file
 	stopWords = loadStopWords(args['stopWordsPath'])
 
+	#TODO: Extract list to file and read later
+	goalWords = ['score', 'indicator', 'above', 'hexagon,', 'exception',
+				'text', 'color', 'should', 'changed', 'black', 'score',
+				'calculated', 'differently', 'now', 'stay', 'Users', 'put',
+				'back', 'bonus', 'multiplier', 'parentheses', 'next']
+
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use
-	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords)
+	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords, goalWords)
 
 	graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType="Default")
 	if len(graphAlgorithmsMapWithDefaultNavPath.keys()) > 0:

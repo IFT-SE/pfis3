@@ -5,15 +5,15 @@ from pfisGraph import NodeType
 
 class PFISBase(PredictiveAlgorithm):
 
-    def __init__(self, langHelper, name, fileName, history=False, goal = [], \
-                 decayFactor = 0.85, decayHistory = 0.9,
+    def __init__(self, langHelper, name, fileName, history=False, goal=False, \
+                 decayFactor = 0.85, decayVariants=0.85, decayHistory = 0.9,
                  includeTop = False, numTopPredictions=0):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.history = history
         self.goal = goal
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
-        self.DECAY_BETWEEN_VARIANTS=decayFactor
+        self.DECAY_BETWEEN_VARIANTS = decayVariants
         self.mapNodesToActivation = None
 
     def getDecayFactor(self, edgeTypes):
@@ -103,11 +103,12 @@ class PFISBase(PredictiveAlgorithm):
             activation *= self.DECAY_HISTORY
 
     def __initializeGoalWords(self, pfisGraph):
-        for word in self.goal:
-            for stemmedWord in pfisGraph.getWordNodes_splitCamelAndStem(word):
-                if pfisGraph.containsNode(stemmedWord):
-                    if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
-                        self.mapNodesToActivation[stemmedWord] = 1.0
+        if self.goal:
+            for word in pfisGraph.getGoalWords():
+                for stemmedWord in pfisGraph.getWordNodes_splitCamelAndStem(word):
+                    if pfisGraph.containsNode(stemmedWord):
+                        if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
+                            self.mapNodesToActivation[stemmedWord] = 1.0
 
     def __getMethodNodesFromGraph(self, pfisGraph, excludeNode):
         activatedMethodNodes = []
@@ -125,3 +126,10 @@ class PFISBase(PredictiveAlgorithm):
 
             sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method], reverse = True)
         return sortedNodes
+
+    def getEdgeWeightForType(self, edgeType):
+        if edgeType == EdgeType.VARIANT_OF:
+            return self.DECAY_BETWEEN_VARIANTS
+        elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.CONTAINS]:
+            return  self.DECAY_FACTOR
+        raise Exception("Invalid Edge Type: ", edgeType)

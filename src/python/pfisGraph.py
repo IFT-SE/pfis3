@@ -24,10 +24,11 @@ class PfisGraph(object):
     REGEX_SPLIT_CAMEL_CASE = re.compile(r'_|\W+|\s+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=[0-9]+)|(?<=[0-9])(?=[a-zA-Z]+)')
     
 
-    def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], verbose=False):
+    def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], goalWords=[], verbose=False):
         self.dbFilePath = dbFilePath
         self.langHelper = langHelper
         self.stopWords = stopWords
+        self.goalWords = goalWords
         self.VERBOSE_BUILD = verbose
         self.graph = nx.Graph()
 
@@ -255,7 +256,7 @@ class PfisGraph(object):
     #==============================================================================#
     
     def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
-        if self.graph.has_edge(node1, node2):
+        if self.graph.has_edge(node1, node2) and edgeType not in self.graph.edge[node1][node2]['types']:
             self.graph.edge[node1][node2]['types'].append(edgeType)
         else:
             self.graph.add_edge(node1, node2, attr_dict={'types': [edgeType]})
@@ -352,6 +353,9 @@ class PfisGraph(object):
         print "All Nodes\tAll Edges\tMethod Nodes\tChangelog Nodes\tLink Edges (Adj,Call or Var)\tVariant Edges\tChangelog Edges\n"
         print "\t".join(values) + "\n"
         print "--------------------------------------------"
+
+    def getGoalWords(self):
+        return self.goalWords
 
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
         validNeighbors = []
