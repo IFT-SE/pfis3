@@ -1,7 +1,7 @@
 from pfisGraph import PfisGraph
 from graphAttributes import EdgeType
 
-class PfisGraphWithVariants(PfisGraph):
+class VariantAwarePfisGraph(PfisGraph):
 	def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], goalWords=[], verbose=False):
 		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
 

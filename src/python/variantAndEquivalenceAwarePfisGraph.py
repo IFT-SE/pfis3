@@ -1,9 +1,9 @@
 from knownPatches import KnownPatches
-from pfisGraphWithVariants import PfisGraphWithVariants
+from variantAwarePfisGraph import VariantAwarePfisGraph
 
-class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
+class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, stopWords=[], goalWords=[], verbose=False):
-		PfisGraphWithVariants.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
+		VariantAwarePfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
 		self.variantsDb = variantsDb
 		self.knownMethodPatches = KnownPatches(langHelper, variantsDb)
 
@@ -15,7 +15,7 @@ class PfisGraphWithSimilarPatches(PfisGraphWithVariants):
 		node1Equivalent = self.getFqnOfEquivalentNode(node1)
 		node2Equivalent = self.getFqnOfEquivalentNode(node2)
 
-		PfisGraphWithVariants._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
+		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
 	def _updateEquivalenceInformationIfNeeded(self, node):
 		if (self.langHelper.isMethodFqn(node) or self.langHelper.isChangelogFqn(node)) \

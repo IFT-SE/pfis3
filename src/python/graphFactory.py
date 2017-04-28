@@ -1,6 +1,6 @@
 from pfisGraph import PfisGraph
-from pfisGraphWithVariants import PfisGraphWithVariants
-from pfisGraphWithSimilarPatches import PfisGraphWithSimilarPatches
+from variantAwarePfisGraph import VariantAwarePfisGraph
+from variantAndEquivalenceAwarePfisGraph import VariantAndEquivalenceAwarePfisGraph
 
 class GraphFactory:
 	def __init__(self, langHelper, dbPath, projSrcPath, stopWords=[], goalWords=[]):
@@ -17,10 +17,10 @@ class GraphFactory:
 		if graphType.lower() == "PfisGraph".lower():
 			return PfisGraph(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords, self.goalWords)
 
-		if graphType.lower() == "PfisGraphWithVariants".lower():
-			return PfisGraphWithVariants(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords, self.goalWords)
+		if graphType.lower() == "VariantAwarePfisGraph".lower():
+			return VariantAwarePfisGraph(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords, self.goalWords)
 
-		if graphType.lower() == "PfisGraphWithSimilarPatches".lower():
+		if graphType.lower() == "VariantAndEquivalenceAwarePfisGraph".lower():
 			if variantsDb is None:
-				raise Exception("Missing attrib: variantsDb for graphType PfisGraphWithSimilarPatches in XML config file.")
-			return PfisGraphWithSimilarPatches(self.dbPath, self.langHelper, self.projSrcPath, variantsDb, self.stopWords, self.goalWords)
+				raise Exception("Missing attrib: variantsDb for graphType VariantAndEquivalenceAwarePfisGraph in XML config file.")
+			return VariantAndEquivalenceAwarePfisGraph(self.dbPath, self.langHelper, self.projSrcPath, variantsDb, self.stopWords, self.goalWords)
