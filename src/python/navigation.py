@@ -58,7 +58,6 @@ class FileNavigation(object):
         self.offset = offset
         self.isGap = False
         self.methodFqn = None
-        #TODO: make sure methodFqn is same as filePath for changelog patch types
 
     def clone(self):
         fileNavClone = FileNavigation(self.timestamp, self.filePath, self.offset, self.patchType)

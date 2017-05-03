@@ -107,7 +107,12 @@ class KnownPatches(object):
             adjacentMethodLists.append(sortedMethods)
             
         return adjacentMethodLists
-            
+
+    def cloneEquivalenceInformation(self, cloneTo, cloneFrom):
+        self.patchStrategy.cloneEquivalenceInformation(cloneTo, cloneFrom)
+
+    def removeNodeEquivalence(self, nodeFqn):
+        self.patchStrategy.removeNodeEquivalence(nodeFqn)
 
     def __str__(self):
         s = ''

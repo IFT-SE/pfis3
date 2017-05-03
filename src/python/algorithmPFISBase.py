@@ -7,14 +7,15 @@ class PFISBase(PredictiveAlgorithm):
 
     def __init__(self, langHelper, name, fileName, history=False, goal=False, \
                  decayFactor = 0.85, decayVariants=0.85, decayHistory = 0.9,
-                 includeTop = False, numTopPredictions=0):
-        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
+                 includeTop = False, numTopPredictions=0, verbose=False):
+        PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions, verbose)
         self.history = history
         self.goal = goal
         self.DECAY_FACTOR = decayFactor
         self.DECAY_HISTORY = decayHistory
         self.DECAY_BETWEEN_VARIANTS = decayVariants
         self.mapNodesToActivation = None
+        self.VERBOSE = False
 
     def getDecayFactor(self, edgeTypes):
         edgeType = edgeTypes[0]
@@ -99,6 +100,8 @@ class PFISBase(PredictiveAlgorithm):
                             # weights. This approach keeps the highest 
                             # activation
                             self.mapNodesToActivation[method] = activation
+                            if self.VERBOSE:
+                                print "History: ", method, " ", activation
 
             activation *= self.DECAY_HISTORY
 

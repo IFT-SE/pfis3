@@ -8,8 +8,8 @@ from navigation import FileNavigation
 class NavigationPath(object):
 
     DEFAULT = "Default"
-    VARIANT_AWARE = "VariantAware"
-    VARIANT_AWARE_COLLAPSED = "VariantAwareCollapsed"
+    PFIS_V = "PFIS-V"
+
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
     METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length', 'Changelog declaration') AND timestamp <= ? ORDER BY timestamp"
 

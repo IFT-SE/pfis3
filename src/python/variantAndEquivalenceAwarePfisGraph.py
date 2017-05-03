@@ -26,14 +26,24 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		if (self.langHelper.isMethodFqn(node) or self.langHelper.isChangelogFqn(node)) \
 				and not self.langHelper.isLibMethodWithoutSource(node):
 			equivalentPatch = self.knownMethodPatches.findMethodByFqn(node)
-			return equivalentPatch.fqn
-		else:
-			return node
+			if equivalentPatch is not None:
+				return equivalentPatch.fqn
+		return node
 
 	def containsNode(self, node):
+		if node is None:
+			return False
 		equivalentNode = self.getFqnOfEquivalentNode(node)
 		return equivalentNode in self.graph.nodes()
 
 	def getNode(self, nodeName):
 		equivalentNode = self.getFqnOfEquivalentNode(nodeName)
 		return self.graph.node[equivalentNode]
+
+	def cloneNode(self, cloneTo, cloneFrom):
+		#For other graph types, we actually clone nodes.
+		#For this graph type, cloning node means simply using the same equivalence nodes ID.
+		self.knownMethodPatches.cloneEquivalenceInformation(cloneTo, cloneFrom)
+
+	def removeNode(self, nodeFqn):
+		self.knownMethodPatches.removeNodeEquivalence(nodeFqn)

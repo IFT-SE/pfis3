@@ -1,6 +1,6 @@
 from pfisGraph import NodeType
 class PredictiveAlgorithm(object):
-    def __init__(self, langHelper, name, fileName, includeTop=False, numTopPredictions=0):
+    def __init__(self, langHelper, name, fileName, includeTop=False, numTopPredictions=0, verbose=False):
         self.langHelper = langHelper
         self.name = name
         self.fileName = fileName

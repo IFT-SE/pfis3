@@ -55,6 +55,13 @@ class VariantPatchStrategy(DefaultPatchStrategy):
 			return self.idToPatchMap[uuid]
 		return None
 
+	def cloneEquivalenceInformation(self, cloneTo, cloneFrom):
+		if cloneTo not in self.fqnToIdMap.keys():
+			self.fqnToIdMap[cloneTo] = self.fqnToIdMap[cloneFrom]
+
+	def removeNodeEquivalence(self, nodeFqn):
+		self.fqnToIdMap.pop(nodeFqn)
+
 	def __getPathRelativeToVariantFolder(self, fqn):
 		if self.langHelper.isMethodFqn(fqn):
 			return VariantPatchStrategy.FILE_TARGET_REGEX.match(fqn).groups()[1]

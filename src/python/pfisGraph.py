@@ -226,14 +226,12 @@ class PfisGraph(object):
     
         c = conn.cursor()
         c.execute(self.ADJACENCY_QUERY, [prevEndTimestamp, newEndTimestamp])
-        
+
         for row in c:
             target, referrer = self.langHelper.fixSlashes(row['target']), int(row['referrer'])
-            
             knownPatches.addFilePatch(target);
-            method = knownPatches.findMethodByFqn(target);
+            method = knownPatches.findMethodByFqn(target)
             method.startOffset = referrer
-        
         c.close()
         
         adjacentMethodLists = knownPatches.getAdajecentMethods()
@@ -393,20 +391,26 @@ class PfisGraph(object):
     def cloneNode(self, cloneTo, cloneFrom):
         #Create a node
         self.graph.add_node(cloneTo)
+        clonedNode = self.getNode(cloneTo)
+
 
         #Copy Node attributes
-        clonedNode = self.getNode(cloneTo)
         clonedNode['type'] = self.getNode(cloneFrom)['type']
 
-        #Copy edge relationships
-        sourceNodeNeighbors = self.getAllNeighbors(cloneFrom)
-        for neighborFqn in sourceNodeNeighbors:
-            neighborNode = self.getNode(neighborFqn)
+        #Changelogs do not have same content, so just create an empty patch
+        if clonedNode['type'] == NodeType.CHANGELOG:
+            return
 
-            edgeTypes = self.getEdgeTypesBetween(cloneFrom, neighborFqn)
+        if clonedNode['type'] == NodeType.METHOD:
+        # For method patches, copy edge relationships (and hence the method content, scent, etc)
+            sourceNodeNeighbors = self.getAllNeighbors(cloneFrom)
+            for neighborFqn in sourceNodeNeighbors:
+                neighborNode = self.getNode(neighborFqn)
 
-            for edgeType in edgeTypes:
-                self._addEdge(cloneTo, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)
+                edgeTypes = self.getEdgeTypesBetween(cloneFrom, neighborFqn)
+
+                for edgeType in edgeTypes:
+                    self._addEdge(cloneTo, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)
 
 
     def removeNode(self, nodeFqn):

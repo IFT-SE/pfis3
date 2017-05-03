@@ -37,6 +37,9 @@ class Predictor(object):
 		return predictiveAlgorithm.makePrediction(self.graph, self.navPath, self.navNumber)
 
 	def __addUnseenButKnownPatch(self):
+		# If patch is not seen, it can still be unknown for PFIS-V.
+		# In order to predict such a patch, we temporarily add it to the graph,
+		# and remove it as soon as the prediction is made.
 		if self.navPath.getDefaultNavigation(self.navNumber).isToUnknown():
 			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
 
@@ -57,7 +60,7 @@ class Predictor(object):
 
 	def updateGraphByOneNavigation(self):
 
-		if self.navPath.getNavPathType() == NavigationPath.VARIANT_AWARE:
+		if self.navPath.getNavPathType() == NavigationPath.PFIS_V:
 			self.__removeTemporarilyAddedNodeIfAny()
 
 		newEndTimestamp = 0
@@ -70,9 +73,7 @@ class Predictor(object):
 
 		self.endTimeStamp = newEndTimestamp
 
-		if self.navPath.getNavPathType() == NavigationPath.VARIANT_AWARE:
-
+		if self.navPath.getNavPathType() == NavigationPath.PFIS_V:
 			# The actual patch navigated to is not present in graph but we make a prediction,
 			# so temporarily add the node in the graph, similar to earlier seen variant.
-
 			self.__addUnseenButKnownPatch()

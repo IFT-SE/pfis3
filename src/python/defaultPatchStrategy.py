@@ -24,14 +24,17 @@ class DefaultPatchStrategy(object):
 	def addPatchIfNotPresent(self, patchFqn, files, normalizedClass):
 		if self.getPatchByFqn(patchFqn, files) is not None:
 			return
-
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
 		elif self.langHelper.isChangelogFqn(patchFqn):
 			newPatch = ChangelogPatch(patchFqn)
 		else:
 			raise Exception("Not a patch fqn:", patchFqn)
+ 		files[normalizedClass].append(newPatch)
 
-		files[normalizedClass].append(newPatch)
+	def cloneEquivalenceInformation(self, cloneTo, cloneFrom):
+		#equivalence is NA for default patch strategy
+		return
 
-
+	def removeNodeEquivalence(self, nodeFqn):
+		return

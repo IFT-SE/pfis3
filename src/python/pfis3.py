@@ -6,7 +6,7 @@ from languageHelperFactory import LanguageHelperFactory
 from xmlAlgorithmOptions import XMLOptionsParser
 from predictor import Predictor
 from navpath import NavigationPath
-from variantAwareNavigationPath import VariantAwareNavigationPath
+from PFISVNavPath import PFIS_V_NavPath
 
 def print_usage():
 	print "python pfis3.py -d <path to PFIG database> -s <path to stop words file>"
@@ -92,14 +92,9 @@ def main():
 
 	#TODO: Collapse all navpaths into a single one for PFIS-V
 
-	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="VariantAware")
+	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="PFIS-V")
 	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
-		variantAwareNavPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc, collapse=False)
-		runAlgorithms(args, graphAlgorithmsMapForVariantAwarePath, variantAwareNavPath)
-
-	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="VariantAwareCollapsed")
-	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
-		variantAwareNavPath = VariantAwareNavigationPath(workingDbCopy, langHelper, projSrc, collapse=True)
+		variantAwareNavPath = PFIS_V_NavPath(workingDbCopy, langHelper, projSrc)
 		runAlgorithms(args, graphAlgorithmsMapForVariantAwarePath, variantAwareNavPath)
 
 	# Exit gracefully
