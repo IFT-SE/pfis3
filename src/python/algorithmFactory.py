@@ -8,6 +8,7 @@ from algorithmSourceTopology import SourceTopology
 from algorithmTFIDF import TFIDF
 from algorithmLSI import LSI
 from algorithmWorkingSet import WorkingSet
+from algorithmVariantOfLinks import VariantOf
 
 
 class AlgorithmFactory:
@@ -35,6 +36,7 @@ class AlgorithmFactory:
 			elif algClass == 'TFIDF' : return self.__parseTFIDF(node, suffix)
 			elif algClass == 'LSI' : return self.__parseLSI(node, suffix)
 			elif algClass == 'WorkingSet' : return self.__parseWorkingSet(node, suffix)
+			elif algClass == 'VariantOf' : return self.__parseVariantOf(node, suffix)
 			else:
 				raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
 
@@ -46,6 +48,12 @@ class AlgorithmFactory:
 			fileName = fileName + "__" + graphTypeSuffix
 			algoName = algoName + "__" + graphTypeSuffix
 		return (fileName + ".txt", algoName)
+
+	def __parseVariantOf(self, node, graphTypeSuffix):
+		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+		return VariantOf(self.langHelper, algoName,
+						 fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
 	def __parseAdjacency(self, node, graphTypeSuffix):
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
