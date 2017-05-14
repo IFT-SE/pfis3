@@ -75,13 +75,13 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		# L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested method FQN example
 		# MethodFQNRegex checks for pattern.
 		# Here we attempt to split that FQN to also match nested methods, folders, etc. So that won't work.
+		# METHOD_SIMILARITY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*);.(.*)\(')
 
-		METHOD_SIMILARITY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*);.(.*)\(')
-		match1 = METHOD_SIMILARITY_REGEX.match(fqn1).groups()
-		match2 = METHOD_SIMILARITY_REGEX.match(fqn2).groups()
+		match1 = self.METHOD_TARGET_REGEX.match(fqn1).groups()
+		match2 = self.METHOD_TARGET_REGEX.match(fqn2).groups()
 
 		# Same FQN and method names, but different variant names
-		return match1[0] != match2[0] and match1[2] == match2[2] #TODO: check FQN! "and match1[1] == match2[1]"
+		return match1[0] != match2[0] and match1[1] == match2[1] and match1[2] == match2[2]
 
 	def _checkChangelogSimilarity(self, fqn1, fqn2):
 		CHANGELOG_SIMILARITY_REGEX = re.compile('L/hexcom/(.*?)/')
