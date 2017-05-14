@@ -1,24 +1,29 @@
-from defaultPatchStrategy import DefaultPatchStrategy
-from variantPatchStrategy import VariantPatchStrategy
-from patches import PatchType
+from patches import *
 
 class KnownPatches(object):
     # This class keeps track of the classes that the programmers "knows about."
     # It is used primarily to map from Text selection offset events to actual
     # methods.
 
-    @staticmethod
-    def getPatchStrategy(langHelper, variantsDb=None):
-        if variantsDb is None:
-            return DefaultPatchStrategy(langHelper)
-        else:
-            return VariantPatchStrategy(langHelper, variantsDb)
-
-
-    def __init__(self, languageHelper, variantsDb=None):
+    def __init__(self, languageHelper):
         self.langHelper = languageHelper
         self.files = {}
-        self.patchStrategy = KnownPatches.getPatchStrategy(languageHelper, variantsDb)
+
+    def getPatchByFqn(self, fqn):
+		# Query the known patches by a method's FQN. Returns the MethodData
+		# object if it was found, or None if it wasn't. The MethodData object
+		# can then be updated as necessary.
+		norm = self.langHelper.normalize(fqn)
+
+		# Get the outer class because the data structure is by file name
+		norm = self.langHelper.getOuterClass(norm)
+
+		if norm in self.files:
+			# Return the method data object in the list that matches the desired FQN
+			for patch in self.files[norm]:
+				if patch.fqn == fqn:
+					return patch
+			return None
 
     def addFilePatch(self, filePathOrFqn):
         # Add a file to the known files. Each file is stored according to its
@@ -37,12 +42,22 @@ class KnownPatches(object):
                 self.files[normalizedFqn] = []
                 
             # Add the patch if it doesn't already exist in the file
-            self.patchStrategy.addPatchIfNotPresent(filePathOrFqn, self.files, normalizedFqn)
+            self.addPatchIfNotPresent(filePathOrFqn, normalizedFqn)
 
+    def addPatchIfNotPresent(self, patchFqn, normalizedClass):
+		if self.getPatchByFqn(patchFqn) is not None:
+			return
+		if self.langHelper.isMethodFqn(patchFqn):
+			newPatch = MethodPatch(patchFqn)
+		elif self.langHelper.isChangelogFqn(patchFqn):
+			newPatch = ChangelogPatch(patchFqn)
+		else:
+			raise Exception("Not a patch fqn:", patchFqn)
+ 		self.files[normalizedClass].append(newPatch)
 
 
     def findMethodByFqn(self, fqn):
-        return self.patchStrategy.getPatchByFqn(fqn, self.files)
+        return self.getPatchByFqn(fqn)
 
     def findPatchByOffset(self, filePath, offset):
         
@@ -71,32 +86,6 @@ class KnownPatches(object):
 
         return None
     
-    def isOffsetInGap(self, filePath, offset):
-        # Because there is no gap between the file header and the 1st method, we
-        # only need to consider gaps from the 1st declaration onwards
-        norm = self.langHelper.normalize(filePath)
-        
-        if norm == '' or norm not in self.files:
-            raise RuntimeError('isOffsetInGap: knownPatches does not contain the normalized file: ' + norm)
-        
-        methods = self.files[norm]
-        if len(methods) == 0:
-            return False
-        
-        lowestOffset = methods[0].startOffset
-        
-        for method in methods:
-            if method.startOffset < lowestOffset:
-                lowestOffset = method.startOffset
-            if method.isOffsetInMethod(offset):
-                return False
-        
-        if offset < lowestOffset:
-            # We are in what will eventually be the header, so return False
-            return False
-        
-        return True
-            
     def getAdajecentMethods(self):
         # Returns a list of method lists where each inner list is the set of
         # methods in a file ordered by offset.
@@ -107,12 +96,6 @@ class KnownPatches(object):
             adjacentMethodLists.append(sortedMethods)
             
         return adjacentMethodLists
-
-    def cloneEquivalenceInformation(self, cloneTo, cloneFrom):
-        self.patchStrategy.cloneEquivalenceInformation(cloneTo, cloneFrom)
-
-    def removeNodeEquivalence(self, nodeFqn):
-        self.patchStrategy.removeNodeEquivalence(nodeFqn)
 
     def __str__(self):
         s = ''

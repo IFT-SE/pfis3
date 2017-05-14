@@ -17,15 +17,6 @@ class PFISBase(PredictiveAlgorithm):
         self.mapNodesToActivation = None
         self.VERBOSE = False
 
-    def getDecayFactor(self, edgeTypes):
-        edgeType = edgeTypes[0]
-        if edgeType == EdgeType.VARIANT_OF:
-            return self.DECAY_BETWEEN_VARIANTS
-        elif edgeType in [EdgeType.CONTAINS, EdgeType.CALLS, EdgeType.ADJACENT]:
-            return self.DECAY_FACTOR
-        else:
-            raise Exception("Invalid Edge Type: ", edgeType)
-
     def spreadActivation(self, pfisGraph):
         raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
@@ -90,18 +81,17 @@ class PFISBase(PredictiveAlgorithm):
         for i in range(navNumber, 0, -1):
             nav = navPath.getNavigation(i)
 
-            if not nav.isToUnknown():
-                method = nav.fromFileNav.methodFqn
-                if pfisGraph.containsNode(method):
-                    if pfisGraph.getNode(method)['type'] in [NodeType.METHOD, NodeType.CHANGELOG]:
-                        if method not in self.mapNodesToActivation:
-                            # TODO consider making history additive, that is if
-                            # a location is visited more than once, sum up its 
-                            # weights. This approach keeps the highest 
-                            # activation
-                            self.mapNodesToActivation[method] = activation
-                            if self.VERBOSE:
-                                print "History: ", method, " ", activation
+            method = nav.fromFileNav.methodFqn
+            if pfisGraph.containsNode(method):
+                if pfisGraph.getNode(method)['type'] in [NodeType.METHOD, NodeType.CHANGELOG]:
+                    if method not in self.mapNodesToActivation:
+                        # TODO consider making history additive, that is if
+                        # a location is visited more than once, sum up its
+                        # weights. This approach keeps the highest
+                        # activation
+                        self.mapNodesToActivation[method] = activation
+                        if self.VERBOSE:
+                            print "History: ", method, " ", activation
 
             activation *= self.DECAY_HISTORY
 
@@ -130,9 +120,11 @@ class PFISBase(PredictiveAlgorithm):
             sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method], reverse = True)
         return sortedNodes
 
-    def getEdgeWeightForType(self, edgeType):
-        if edgeType == EdgeType.VARIANT_OF:
-            return self.DECAY_BETWEEN_VARIANTS
-        elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.CONTAINS]:
-            return  self.DECAY_FACTOR
-        raise Exception("Invalid Edge Type: ", edgeType)
+    def getDecayWeight(self, edgeTypes):
+        def getEdgeWeightForType(edgeType):
+            if edgeType == EdgeType.VARIANT_OF:
+                return self.DECAY_BETWEEN_VARIANTS
+            elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.CONTAINS]:
+                return  self.DECAY_FACTOR
+            raise Exception("Invalid Edge Type: ", edgeType)
+        return max([getEdgeWeightForType(edgeType) for edgeType in edgeTypes])

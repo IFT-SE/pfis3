@@ -30,9 +30,8 @@ class PFIS_V_NavPath(NavigationPath):
 
 	def getPriorNavToSimilarPatchIfAny(self, unknownNavNumber):
 		actualLocNavigatedTo = self._navigations[unknownNavNumber + 1].fromFileNav
-		for i in range(unknownNavNumber - 1, -1, -1):
+		for i in range(unknownNavNumber, -1, -1):
 			priorNav = self._navigations[i].fromFileNav
-
 			print "i", priorNav
 			if priorNav != None:
 				if self.langHelper.isVariantOf(priorNav.methodFqn, actualLocNavigatedTo.methodFqn):
@@ -48,7 +47,7 @@ class PFIS_V_NavPath(NavigationPath):
 		actualLocNavigatedTo = self._navigations[unknownNavNumber+1].fromFileNav
 
 		#See if any prior fromNav has a nav to a variant of the actual patch navigated to
-		for i in range(unknownNavNumber-1, -1, -1):
+		for i in range(unknownNavNumber, -1, -1):
 			priorNav = self._navigations[i].fromFileNav
 			if priorNav != None:
 				if self.langHelper.isVariantOf(priorNav.methodFqn, actualLocNavigatedTo.methodFqn):

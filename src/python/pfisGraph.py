@@ -393,7 +393,6 @@ class PfisGraph(object):
         self.graph.add_node(cloneTo)
         clonedNode = self.getNode(cloneTo)
 
-
         #Copy Node attributes
         clonedNode['type'] = self.getNode(cloneFrom)['type']
 
