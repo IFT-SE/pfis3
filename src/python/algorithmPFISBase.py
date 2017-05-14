@@ -74,6 +74,7 @@ class PFISBase(PredictiveAlgorithm):
             self.__initializeHistory(pfisGraph, navPath, navNumber)
 
         self.__initializeGoalWords(pfisGraph)
+        # self.__removeWordsFromAbandonedChangelogs(pfisGraph, navPath, navNumber)
 
     def __initializeHistory(self, pfisGraph, navPath, navNumber):
         activation = 1.0
@@ -102,6 +103,16 @@ class PFISBase(PredictiveAlgorithm):
                     if pfisGraph.containsNode(stemmedWord):
                         if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
                             self.mapNodesToActivation[stemmedWord] = 1.0
+
+
+    def __removeWordsFromAbandonedChangelogs(self, pfisGraph, navPath, navNumber):
+        fromPatchFqn = navPath.getNavigation(navNumber).fromFileNav.methodFqn
+        fromNode = pfisGraph.getNode(fromPatchFqn)
+        if fromNode['type'] == NodeType.CHANGELOG:
+            words = pfisGraph.getNeighborsOfDesiredEdgeTypes(fromPatchFqn, [EdgeType.CONTAINS])
+            for word in words:
+                pfisGraph.removeEdge(fromPatchFqn, word)
+
 
     def __getMethodNodesFromGraph(self, pfisGraph, excludeNode):
         activatedMethodNodes = []

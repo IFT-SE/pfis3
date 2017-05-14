@@ -414,3 +414,8 @@ class PfisGraph(object):
 
     def removeNode(self, nodeFqn):
         self.graph.remove_node(nodeFqn)
+
+    def removeEdge(self, node1, node2):
+        if self.graph.has_edge(node1, node2):
+            self.graph.remove_edge(node1, node2)
+            print "removed edge: ", node1, node2
