@@ -9,6 +9,7 @@ from algorithmTFIDF import TFIDF
 from algorithmLSI import LSI
 from algorithmWorkingSet import WorkingSet
 from algorithmVariantOfLinks import VariantOf
+from algorithmGoalWordSimilarity import GoalWordSimilarity
 
 
 class AlgorithmFactory:
@@ -37,6 +38,7 @@ class AlgorithmFactory:
 			elif algClass == 'LSI' : return self.__parseLSI(node, suffix)
 			elif algClass == 'WorkingSet' : return self.__parseWorkingSet(node, suffix)
 			elif algClass == 'VariantOf' : return self.__parseVariantOf(node, suffix)
+			elif algClass == "GoalWordSimilarity" : return self.__parseGoalWordSimilarity(node, suffix)
 			else:
 				raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
 
@@ -142,6 +144,14 @@ class AlgorithmFactory:
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
 		return TFIDF(self.langHelper, algoName,
+			fileName, dbFilePath=self.tempDbPath,
+			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+
+	def __parseGoalWordSimilarity(self, node, graphTypeSuffix):
+		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+
+		return GoalWordSimilarity(self.langHelper, algoName,
 			fileName, dbFilePath=self.tempDbPath,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 

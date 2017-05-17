@@ -98,11 +98,10 @@ class PFISBase(PredictiveAlgorithm):
 
     def __initializeGoalWords(self, pfisGraph):
         if self.goal:
-            for word in pfisGraph.getGoalWords():
-                for stemmedWord in pfisGraph.getWordNodes_splitCamelAndStem(word):
-                    if pfisGraph.containsNode(stemmedWord):
-                        if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
-                            self.mapNodesToActivation[stemmedWord] = 1.0
+            for stemmedWord in pfisGraph.getGoalWords():
+                if pfisGraph.containsNode(stemmedWord):
+                    if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
+                        self.mapNodesToActivation[stemmedWord] = 1.0
 
 
     def __removeWordsFromAbandonedChangelogs(self, pfisGraph, navPath, navNumber):

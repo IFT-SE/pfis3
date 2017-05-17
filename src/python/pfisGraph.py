@@ -217,6 +217,11 @@ class PfisGraph(object):
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.TYPE)
+
+        # if targetNodeType in [NodeType.CHANGELOG, NodeType.METHOD]:
+        #     self._addEdge(target, FqnUtils.getVariantName(target), targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_WITHIN)
+        # if targetNodeType in [NodeType.CHANGELOG, NodeType.METHOD]:
+        #     self._addEdge(target, FQNUtils.getVariantName(target), targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_WITHIN)
         #No additional handling for changelogs. Only variant-of edges are needed as part of topology update.
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
@@ -353,7 +358,11 @@ class PfisGraph(object):
         print "--------------------------------------------"
 
     def getGoalWords(self):
-        return self.goalWords
+        stemmedGoalArray = []
+        for word in self.goalWords:
+            for stemmedWord in self.getWordNodes_splitCamelAndStem(word):
+                stemmedGoalArray.append(stemmedWord)
+        return stemmedGoalArray
 
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
         validNeighbors = []

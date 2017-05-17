@@ -34,7 +34,7 @@ class LexicalBase(PredictiveAlgorithm):
             self.lexicalHelper.addDocumentsToCorpus(startTimestamp, endTimestamp, pfisGraph)
             model = self.getModel()
             fromMethodFqnEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
-            sorted_sims = self.lexicalHelper.getSortedSimilarityMatrix(model, fromMethodFqnEquivalent)
+            sorted_sims = self.lexicalHelper.getSimilarityMatrix(model, fromMethodFqnEquivalent, True)
             
             mapMethodsToScore = {}
             
@@ -53,7 +53,7 @@ class LexicalBase(PredictiveAlgorithm):
             topPredictions = []
             if self.includeTop:
                 topPredictions = self.getTopPredictions(sortedMethods, mapMethodsToScore)
-                
+
             return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
                        str(navToPredict.fromFileNav), 
                        str(navToPredict.toFileNav),
@@ -96,24 +96,28 @@ class LexicalHelper(object):
         c.close()
         conn.close()
         
-    def getSortedSimilarityMatrix(self, model, queryMethodFqn):
-        
-        # Build the query and covert it to the model space
-        vec_bow = self.corpus.dictionary.doc2bow(self.corpus.getMethodContentsForFqn(queryMethodFqn))
-        vec_model = model[vec_bow]
-        
+    def getSimilarityMatrix(self, model, queryMethodFqn, sort=False):
+
         # Build the index of documents we want to compare against. In this
-        # case, it is the complete set of method declarations that the 
+        # case, it is the complete set of method declarations that the
         # programmer knows about so far
         corpus_model = model[self.corpus]
         index = similarities.SparseMatrixSimilarity(corpus_model, num_features = len(self.corpus.dictionary))
-        
+
+        # Build the query and covert it to the model space
+        vec_bow = self.corpus.dictionary.doc2bow(self.corpus.getMethodContentsForFqn(queryMethodFqn))
+        vec_model = model[vec_bow]
+
         # Perform the query and sort the results
         sims = index[vec_model]
-        return sorted(enumerate(sims), key = lambda item: item[1], reverse = True)
+
+        if sort:
+            return sorted(enumerate(sims), key = lambda item: item[1], reverse = True)
+        else:
+            return list(enumerate(sims))
     
 class CorpusOfMethodContents(TextCorpus):
-    
+    # TODO: Get rid of unnecessary indexing. Just keep a dictionary.
     def __init__(self):
         self.mapMethodFQNtoIndex = {}
         self.methodFqns = []

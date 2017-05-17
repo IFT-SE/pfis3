@@ -25,4 +25,4 @@ class VariantAwarePfisGraph(PfisGraph):
 	def cloneNode(self, cloneTo, cloneFrom):
 		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
 		nodeType = self.getNode(cloneTo)['type']
-		self._addEdgesToOtherVariants(cloneTo, nodeType)
+		self._addEdge(cloneTo, cloneFrom, nodeType, nodeType, EdgeType.VARIANT_OF)
