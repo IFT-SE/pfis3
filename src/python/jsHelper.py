@@ -13,6 +13,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	METHOD_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).js.*?;.(.*?)\(.*')
 	OUTER_CLASS_REGEX = re.compile(r'(.*.js|.*.txt).*')
 	REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+).*")
+	OUTPUT_TYPE_REGEX = re.compile(r'\[B\].*\.html')
 
 	def __init__(self):
 		fileExtension = ".js"
@@ -88,8 +89,11 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		return CHANGELOG_SIMILARITY_REGEX.match(fqn1).groups()[0] != CHANGELOG_SIMILARITY_REGEX.match(fqn2).groups()[0]
 
 	def getPatchType(self, filePath):
-		if self.CHANGELOG_TYPE_REGEX.match(filePath) != None:
-			return PatchType.CHANGELOG
-		elif self.hasLanguageExtension(filePath):
-			return PatchType.SOURCE
+		if '[B]' not in filePath:
+			if self.CHANGELOG_TYPE_REGEX.match(filePath) != None:
+				return PatchType.CHANGELOG
+			elif self.hasLanguageExtension(filePath):
+				return PatchType.SOURCE
+			elif self.OUTPUT_TYPE_REGEX.match(filePath) != None:
+				return PatchType.OUTPUT
 		return None

@@ -58,7 +58,6 @@ def main():
             sys.exit(2)
         allHitRatesMode(args)
 
-
     if args['mode'] == '-A':
         for key in args:
             if args[key] is None and key not in option_args :

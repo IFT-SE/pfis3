@@ -52,7 +52,8 @@ class JSAdditionalDbProcessor:
         full_list = []
 
         for row in result:
-            if row[DB_FIELDS.ACTION] == "Part activated" and row[DB_FIELDS.TARGET][-2:]== 'js' and '[B]' not in row[DB_FIELDS.REFERRER]:
+            if row[DB_FIELDS.ACTION] == "Part activated" and \
+                            row[DB_FIELDS.TARGET][-2:]== 'js' and '[B]' not in row[DB_FIELDS.REFERRER]:
                 open_tabs_list.append(i)
             i+=1
 

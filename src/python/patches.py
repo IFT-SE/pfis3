@@ -27,6 +27,7 @@ class MethodPatch(object):
 class PatchType(object):
     SOURCE = 'source_code'
     CHANGELOG = 'change_log'
+    OUTPUT = 'output'
 
 class VariantInfo(object):
     def __init__(self, methodPath, startVariant, endVariant):
