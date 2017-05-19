@@ -75,12 +75,11 @@ def main():
 	stopWords = loadStopWords(args['stopWordsPath'])
 
 	#TODO: Extract list to file and read later
-	# goalWords = ['score', 'indicator', 'hexagon,', 'exception',
-	# 			'text', 'color', 'changed', 'black', 'score',
-	# 			'calculated', 'differently', 'stay', 'Users',
-	# 			'back', 'bonus', 'multiplier', 'parentheses']
+	goalWords = ['score', 'indicator', 'hexagon,', 'exception',
+				'text', 'color', 'changed', 'black', 'score',
+				'calculated', 'differently', 'stay', 'Users',
+				'back', 'bonus', 'multiplier', 'parentheses']
 
-	goalWords = []
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use

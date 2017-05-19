@@ -115,6 +115,16 @@ class LexicalHelper(object):
             return sorted(enumerate(sims), key = lambda item: item[1], reverse = True)
         else:
             return list(enumerate(sims))
+
+    def getSimilarityBetween(self, model, patchFqn1, patchFqn2):
+        similarities = self.getSimilarityMatrix(model, patchFqn1)
+        index = self.corpus.getPosition(patchFqn2)
+        print patchFqn1, patchFqn2, similarities[index][1]
+        print self.corpus.getMethodContentsForFqn(patchFqn1)
+        print self.corpus.getMethodContentsForFqn(patchFqn2)
+        return similarities[index][1]
+
+
     
 class CorpusOfMethodContents(TextCorpus):
     # TODO: Get rid of unnecessary indexing. Just keep a dictionary.
@@ -123,11 +133,16 @@ class CorpusOfMethodContents(TextCorpus):
         self.methodFqns = []
         self.methodContents = []
         TextCorpus.__init__(self)
+
+    def getPosition(self, fqn):
+        if fqn not in self.mapMethodFQNtoIndex.keys():
+            raise Exception("Can't find FQN in corpus: ", fqn)
+        return self.mapMethodFQNtoIndex[fqn]
         
     def addDocument(self, methodFqn, words):
         if methodFqn not in self.mapMethodFQNtoIndex:
             self.methodFqns.append(methodFqn)
-            self.mapMethodFQNtoIndex[methodFqn] = len(self.mapMethodFQNtoIndex) - 1
+            self.mapMethodFQNtoIndex[methodFqn] = len(self.methodFqns) - 1
             self.methodContents.append(words)
             self.dictionary.doc2bow(words, allow_update = True)
         else:
@@ -143,6 +158,5 @@ class CorpusOfMethodContents(TextCorpus):
     def get_texts(self):
         for content in self.methodContents:
             yield content
-        
         
         

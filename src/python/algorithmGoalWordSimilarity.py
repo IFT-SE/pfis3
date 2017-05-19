@@ -6,6 +6,7 @@ from predictions import Prediction
 class GoalWordSimilarity(TFIDF):
     SCENT_QUERY = "SELECT referrer FROM logger_log WHERE action LIKE '% declaration scent' " \
                   "AND target = ? LIMIT 1"
+    GOAL_WORDS_FQN_KEY = "GOAL"
 
     def __init__(self, langHelper, name, fileName, dbFilePath, includeTop=False, numTopPredictions=0):
         TFIDF.__init__(self, langHelper, name, fileName, dbFilePath, includeTop, numTopPredictions)
@@ -20,7 +21,7 @@ class GoalWordSimilarity(TFIDF):
         sortedMethods = []
 
         if not navToPredict.isToUnknown():
-            fromMethodFqn = navToPredict.fromFileNav.methodFqn
+            navToPatchFqn = navToPredict.toFileNav.methodFqn
 
             conn = sqlite3.connect(self.dbFilePath)
             conn.row_factory = sqlite3.Row
@@ -28,20 +29,20 @@ class GoalWordSimilarity(TFIDF):
             referrer = None
 
             c = conn.cursor()
-            c.execute(self.SCENT_QUERY, [fromMethodFqn])
+            c.execute(self.SCENT_QUERY, [navToPatchFqn])
             for row in c:
                 referrer = self.langHelper.fixSlashes(row['referrer'])
             c.close()
             conn.close()
 
             if referrer is None:
-                raise Exception("Method body should not be none: ", fromMethodFqn)
+                raise Exception("Method body should not be none: ", navToPatchFqn)
 
-            self.lexicalHelper.corpus.addDocument("goal", pfisGraph.getGoalWords())
-            self.lexicalHelper.corpus.addDocument(fromMethodFqn, pfisGraph.getWordNodes_splitCamelAndStem(referrer))
+            self.lexicalHelper.corpus.addDocument(self.GOAL_WORDS_FQN_KEY, pfisGraph.getGoalWords())
+            self.lexicalHelper.corpus.addDocument(navToPatchFqn, pfisGraph.getWordNodes_splitCamelAndStem(referrer))
             model = self.getModel()
-            similarities = self.lexicalHelper.getSimilarityMatrix(model, fromMethodFqn)
-            similarityScore = similarities[0][1]
+            similarityScore = self.lexicalHelper.getSimilarityBetween(model, navToPatchFqn, self.GOAL_WORDS_FQN_KEY)
+
 
             topPredictions = []
             if self.includeTop:
@@ -49,9 +50,9 @@ class GoalWordSimilarity(TFIDF):
 
             if similarityScore > 0.0:
                 rank = 1
-                print self.lexicalHelper.corpus.getMethodContentsForFqn(fromMethodFqn), similarityScore
+                print self.lexicalHelper.corpus.getMethodContentsForFqn(navToPatchFqn), similarityScore
             else:
-                rank = 888888
+                rank = 0
             numTies = 1
             return Prediction(navNumber, rank, len(sortedMethods), numTies,
                               str(navToPredict.fromFileNav),
