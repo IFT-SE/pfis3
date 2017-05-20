@@ -32,7 +32,6 @@ class PFIS_V_NavPath(NavigationPath):
 		actualLocNavigatedTo = self._navigations[unknownNavNumber + 1].fromFileNav
 		for i in range(unknownNavNumber, -1, -1):
 			priorNav = self._navigations[i].fromFileNav
-			print "i", priorNav
 			if priorNav != None:
 				if self.langHelper.isVariantOf(priorNav.methodFqn, actualLocNavigatedTo.methodFqn):
 					return priorNav

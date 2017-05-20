@@ -12,7 +12,7 @@ class PfisGraph(object):
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
-                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'Changelog declaration', 'Changelog declaration scent') " \
+                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'Changelog declaration') " \
                   "AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
@@ -21,6 +21,8 @@ class PfisGraph(object):
     ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' " \
                       "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp"
                       
+    CHANGELOG_SCENT_QUERY = "SELECT referrer FROM logger_log WHERE action='Changelog declaration scent' AND target=?"
+
     REGEX_SPLIT_CAMEL_CASE = re.compile(r'_|\W+|\s+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=[0-9]+)|(?<=[0-9])(?=[a-zA-Z]+)')
     
 
@@ -31,6 +33,23 @@ class PfisGraph(object):
         self.goalWords = goalWords
         self.VERBOSE_BUILD = verbose
         self.graph = nx.Graph()
+
+
+    def getChangelogScent(self, fqn):
+        conn = sqlite3.connect(self.dbFilePath)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(self.CHANGELOG_SCENT_QUERY, [fqn])
+
+        for row in c:
+            contents = self.langHelper.fixSlashes(row['referrer'])
+
+        c.close()
+        conn.close()
+
+        words = self.__getWordNodes_splitNoStem(contents)
+        words.extend(self.getWordNodes_splitCamelAndStem(contents))
+        return words
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
@@ -88,7 +107,7 @@ class PfisGraph(object):
             # FQN node.
             elif action in ('Constructor invocation scent',
                             'Method declaration scent',
-                            'Method invocation scent', 'Changelog declaration scent'):
+                            'Method invocation scent'):
                 for word in self.__getWordNodes_splitNoStem(referrer):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
 
@@ -270,6 +289,15 @@ class PfisGraph(object):
         if self.VERBOSE_BUILD:
             print "\tAdding edge from", node1, "to", node2, "of type", edgeType
 
+
+    def _stopWord(self, word):
+        if word.lower() in self.stopWords:
+            return True
+        elif word.isdigit():
+            return True
+        else:
+            return False
+
     def __getWordNodes_splitNoStem(self, s):
         # Returns a list of word nodes from the given string after stripping all
         # non-alphanumeric characters. A word node is a tuple containing 'word' and
@@ -277,8 +305,8 @@ class PfisGraph(object):
         # done in this case.
         
         return [word.lower() \
-                    for word in re.split(r'\W+|\s+', s) \
-                    if word != '' and word.lower() not in self.stopWords]
+                    for word in re.split(r'\W+|\s+', s)\
+                    if word != '' and not self._stopWord(word)]
     
     def getWordNodes_splitCamelAndStem(self, s):
         # Returns a list of word nodes from the given string after stripping all
@@ -288,7 +316,7 @@ class PfisGraph(object):
         
         return [PorterStemmer().stem(word).lower() \
                     for word in self.__splitCamelWords(s) \
-                    if word.lower() not in self.stopWords]
+                    if not self._stopWord(word)]
     
     def __splitCamelWords(self, s):
         # Split camel case words. E.g.,
