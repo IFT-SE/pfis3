@@ -95,3 +95,9 @@ class AbstractLanguageHelper:
 
     def isVariantOf(self, fqn1, fqn2):
         raise NotImplementedError("is variant of : abstract language helper")
+
+    def getVariantName(self, fqn):
+        return None
+
+    def getPathRelativeToVariant(self, fqn):
+        return None

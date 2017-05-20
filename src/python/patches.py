@@ -1,4 +1,5 @@
 import uuid
+import sqlite3
 
 # TODO: Can this class and the HeaderData class be replaced/merged with the
 # FileNavigation class? They all seem to hold the same data...
@@ -42,3 +43,4 @@ class ChangelogPatch(object):
         self.length = -1
         self.uuid = uuid.uuid1()
         self.variantInfo = None
+

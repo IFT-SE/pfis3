@@ -2,6 +2,7 @@ from graphAttributes import EdgeType
 from predictiveAlgorithm import PredictiveAlgorithm
 from predictions import Prediction
 from pfisGraph import NodeType
+from patches import ChangelogPatch
 
 class PFISBase(PredictiveAlgorithm):
 
@@ -25,40 +26,88 @@ class PFISBase(PredictiveAlgorithm):
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 
         navToPredict = navPath.getNavigation(navNumber)
-        sortedMethods = []
+        if navToPredict.isToUnknown():
+            return Prediction(navNumber, 999999, 0, 0,
+                              str(navToPredict.fromFileNav),
+                              str(navToPredict.toFileNav),
+                              navToPredict.toFileNav.timestamp)
 
-        if not navToPredict.isToUnknown():
-            fromMethodFqn = navToPredict.fromFileNav.methodFqn
-            methodToPredict = navToPredict.toFileNav.methodFqn
+        elif self._isBetweenVariantNavigation(navPath, navNumber):
+            prediction = self._predictBetweenVariantNavigation(pfisGraph, navPath, navNumber)
+            if prediction is None:
+                raise Exception("SS, BP: Investigate why, else this might be another case of unknown")
+            return prediction
 
-            self.initialize(fromMethodFqn, navNumber, navPath, pfisGraph)
-            self.spreadActivation(pfisGraph)
+        else:
+            prediction = self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
+            if prediction is None:
+                raise Exception("SS, BP: Investigate why, else this might be another case of unknown")
+            return prediction
 
-            if self.mapNodesToActivation == None:
-                print "Map was empty!!!!!!!!"
-                print self.name
+    def _isBetweenVariantNavigation(self, navPath, navNumber):
+        navToPredict = navPath.getNavigation(navNumber)
+        fromVariant = self.langHelper.getVariantName(navToPredict.fromFileNav.methodFqn)
+        toVariant = self.langHelper.getVariantName(navToPredict.toFileNav.methodFqn)
 
-            fromFQN = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
-            sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromFQN)
+        #This handles the non-variant topology;
+        # extract this as an attribute of navpath or pfisGraph, rather than here.
+        #And only check for between variant / within-variant in variant topology cases
+        if fromVariant is None or toVariant is None:
+            return False
+        return fromVariant != toVariant
+
+    def _predictBetweenVariantNavigation(self, pfisGraph, navPath, navNumber):
+        seenPatches = navPath.getPatchesUpto(navNumber)
+        seenVariants = set([self.langHelper.getVariantName(patch) for patch in seenPatches])
+
+        navToPredict = navPath.getNavigation(navNumber)
+        fromMethodFqn = navToPredict.fromFileNav.methodFqn
+        methodToPredict = navToPredict.toFileNav.methodFqn
+        toVariant = self.langHelper.getVariantName(methodToPredict)
+
+        if toVariant in seenVariants or self.langHelper.isMethodFqn(fromMethodFqn):
+            print "Between variant, but known: ", toVariant
+            return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
+        else:
+            print "Between variant, : ", fromMethodFqn
+            enterVariantScent = self.computeBetweenVariantScent(pfisGraph, navPath, navNumber)
+            if enterVariantScent == 0:
+                return Prediction(navNumber, 0, 0, 0,
+                              str(navToPredict.fromFileNav),
+                              str(navToPredict.toFileNav),
+                              navToPredict.toFileNav.timestamp)
+            else:
+                return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
+
+    def _predictWithinVariantNavigation(self, pfisGraph, navPath, navNumber):
+        navToPredict = navPath.getNavigation(navNumber)
+        fromMethodFqn = navToPredict.fromFileNav.methodFqn
+        methodToPredict = navToPredict.toFileNav.methodFqn
+        self.initialize(fromMethodFqn, navNumber, navPath, pfisGraph)
+
+        self.spreadActivation(pfisGraph)
+
+        if self.mapNodesToActivation == None:
+            print "Map was empty!!!!!!!!"
+            print self.name
+
+        fromFQN = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
+        sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromFQN)
+
+        equivalentMethod = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+        if equivalentMethod in sortedMethods:
+            ranking = self.getRankForMethod(equivalentMethod, sortedMethods, self.mapNodesToActivation)
+
             topPredictions = []
-
             if self.includeTop:
                 topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
 
-            equivalentMethod = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
-            if equivalentMethod in sortedMethods:
-                ranking = self.getRankForMethod(equivalentMethod, sortedMethods, self.mapNodesToActivation)
+            return Prediction(navNumber, ranking["rankWithTies"], len(sortedMethods), ranking["numTies"],
+                              str(navToPredict.fromFileNav),
+                              str(navToPredict.toFileNav),
+                              navToPredict.toFileNav.timestamp,
+                              topPredictions)
 
-                return Prediction(navNumber, ranking["rankWithTies"], len(sortedMethods), ranking["numTies"],
-                                  str(navToPredict.fromFileNav),
-                                  str(navToPredict.toFileNav),
-                                  navToPredict.toFileNav.timestamp,
-                                  topPredictions)
-
-        return Prediction(navNumber, 999999, len(sortedMethods), 0,
-                          str(navToPredict.fromFileNav),
-                          str(navToPredict.toFileNav),
-                          navToPredict.toFileNav.timestamp)
 
     def initialize(self, fromMethodFqn, navNumber, navPath, pfisGraph):
         # Reset the graph
@@ -138,3 +187,15 @@ class PFISBase(PredictiveAlgorithm):
                 return  self.DECAY_FACTOR
             raise Exception("Invalid Edge Type: ", edgeType)
         return max([getEdgeWeightForType(edgeType) for edgeType in edgeTypes])
+
+    def computeBetweenVariantScent(self, pfisGraph, navPath, navNumber):
+        navToPredict = navPath.getNavigation(navNumber)
+        fromPatchFqn = navToPredict.fromFileNav.methodFqn
+        if not self.langHelper.isChangelogFqn(fromPatchFqn):
+            raise Exception("Cannot compute within variant scent for patch type: ", fromPatchFqn)
+        else:
+            fromPatchCues = set(pfisGraph.getNeighborsOfDesiredEdgeTypes(fromPatchFqn, EdgeType.CONTAINS))
+            goalWords = set(pfisGraph.getGoalWords())
+            common = fromPatchCues.intersection(goalWords)
+            return len(common)
+

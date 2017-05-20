@@ -10,10 +10,14 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	JS_STD_LIB = 'LJS_Std_lib;.'
 	CHANGELOG_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).txt')
 	CHANGELOG_TYPE_REGEX = re.compile(r'(.*.txt)')
+
 	METHOD_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).js.*?;.(.*?)\(.*')
 	OUTER_CLASS_REGEX = re.compile(r'(.*.js|.*.txt).*')
+
 	REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+).*")
 	OUTPUT_TYPE_REGEX = re.compile(r'\[B\].*\.html')
+
+	PATCH_HIERARCHY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
 
 	def __init__(self):
 		fileExtension = ".js"
@@ -97,3 +101,9 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			elif self.OUTPUT_TYPE_REGEX.match(filePath) != None:
 				return PatchType.OUTPUT
 		return None
+
+	def getPathRelativeToVariant(self, fqn):
+		return self.PATCH_HIERARCHY_REGEX.match(fqn).groups()[1]
+
+	def getVariantName(self, fqn):
+		return self.PATCH_HIERARCHY_REGEX.match(fqn).groups()[0]

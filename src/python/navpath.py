@@ -6,7 +6,6 @@ from navigation import Navigation
 from navigation import FileNavigation
 
 class NavigationPath(object):
-
     DEFAULT = "Default"
     PFIS_V = "PFIS-V"
 
@@ -248,3 +247,7 @@ class NavigationPath(object):
 
     def getDefaultNavigation(self,i):
         return self._navigations[i]
+
+    def getPatchesUpto(self, navNumber):
+        navs = [self.getNavigation(i) for i in range(0, navNumber+1)]
+        return [nav.fromFileNav.methodFqn for nav in navs]

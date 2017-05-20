@@ -12,8 +12,6 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
                             'join variants as v2 on vf.end=v2.num ' \
                             'where vf.method = ? and start <= ? and end >=?'
 
-	FILE_TARGET_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
-
 
 	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, stopWords=[], goalWords=[], verbose=False):
 		VariantAwarePfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
@@ -116,9 +114,10 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 
 	def __getPatchRow(self, fqn):
-
-		pathRelativeToVariant = self.__getPathRelativeToVariantFolder(fqn)
-		variantName = self.__getVariantName(fqn)
+		
+		if self.langHelper.isMethodFqn(fqn):
+			pathRelativeToVariant = self.langHelper.getPathRelativeToVariant(fqn)
+			variantName = self.langHelper.getVariantName(fqn)
 
 		if not os.path.exists(self.variantsDb):
 			raise Exception("Db not found: ", self.variantsDb)
@@ -140,11 +139,3 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 		return patchRow
 
-
-	def __getPathRelativeToVariantFolder(self, fqn):
-		if self.langHelper.isMethodFqn(fqn):
-			return self.FILE_TARGET_REGEX.match(fqn).groups()[1]
-
-	def __getVariantName(self, fqn):
-		if self.langHelper.isMethodFqn(fqn):
-			return self.FILE_TARGET_REGEX.match(fqn).groups()[0]
