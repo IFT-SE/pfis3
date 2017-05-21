@@ -84,6 +84,9 @@ class AbstractLanguageHelper:
     def isChangelogFqn(self, filePathOrFqn):
         raise NotImplementedError()
 
+    def isOutputFqn(self, filePathOrFqn):
+        raise NotImplementedError()
+
     def isLibMethodWithoutSource(self, node):
         return False
 

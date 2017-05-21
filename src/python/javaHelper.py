@@ -39,3 +39,9 @@ class JavaHelper(AbstractLanguageHelper):
 
     def performDBPostProcessing(self, db):
         return
+
+    def isChangelogFqn(self, filePathOrFqn):
+        return False
+
+    def isOutputFqn(self, filePathOrFqn):
+        return False

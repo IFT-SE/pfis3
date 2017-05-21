@@ -10,8 +10,9 @@ class NavigationPath(object):
     PFIS_V = "PFIS-V"
 
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
-    METHOD_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length', " \
-                                "'Changelog declaration') AND timestamp <= ? ORDER BY timestamp"
+    PATCH_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log " \
+                                "WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length', " \
+                                "'Changelog declaration', 'Output declaration') AND timestamp <= ? ORDER BY timestamp"
 
     def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
         self.dbFilePath = dbFilePath
@@ -38,7 +39,6 @@ class NavigationPath(object):
         self._printNavigations()
         conn.close()
 
-
     def getNavPathType(self):
         return self._name
 
@@ -56,14 +56,17 @@ class NavigationPath(object):
 
         for row in c:
             timestamp, filePath, offset = str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
-
-            if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in  Java DB
+            if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in Java DB
                     patchType = self.langHelper.getPatchType(filePath)
                     if patchType != None:
                         self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset, patchType))
             prevFilePath = filePath
             prevOffset = offset
         c.close()
+
+
+    def _isPatchDeclaration(self, action):
+        return action in ['Method declaration', 'Changelog declaration', 'Output declaration']
 
     def __findMethodsForFileNavigations(self, conn):
         # Here we map the file paths and offsets in the fileNavigations list to
@@ -95,16 +98,18 @@ class NavigationPath(object):
             # to update the method's declaration info if it gets updated at some
             # point in the future.
 
-            c = conn.execute(self.METHOD_DECLARATIONS_QUERY, [toFileNavigation.timestamp])
+            c = conn.execute(self.PATCH_DECLARATIONS_QUERY, [toFileNavigation.timestamp])
             for row in c:
                 action, target, referrer = row['action'], row['target'], row['referrer']
 
-                if action == 'Method declaration' or action == 'Changelog declaration':
+                if self._isPatchDeclaration(action):
                     self.knownPatches.addFilePatch(referrer)
+
                 elif action == 'Method declaration offset':
                     method = self.knownPatches.findMethodByFqn(target)
                     if method is not None:
                         method.startOffset = int(referrer)
+
                 elif action == 'Method declaration length':
                     method = self.knownPatches.findMethodByFqn(target)
                     if method is not None:
@@ -132,7 +137,6 @@ class NavigationPath(object):
             # We query known methods here to see if the offset of the current
             # toFileNavigation is among the known patches.
             toMethodPatch = self.knownPatches.findPatchByOffset(toFileNavigation.filePath, toFileNavigation.offset)
-
 
             # Create the navigation object representing this navigation
             navigation = Navigation(fromFileNavigation, toFileNavigation.clone())
