@@ -41,13 +41,18 @@ class PFISBase(PredictiveAlgorithm):
             print "Map was empty!!!!!!!!"
             print self.name
 
-        fromFQN = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
-        sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, fromFQN)
 
-        equivalentMethod = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
-        if equivalentMethod in sortedMethods:
-            ranking = self.getRankForMethod(equivalentMethod, sortedMethods, self.mapNodesToActivation)
+        fromMethodEquivalentFqn = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
+        toMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
 
+        if fromMethodEquivalentFqn == toMethodEquivalent and navPath.ifNavToUnseenPatch(navNumber):
+            excludeMethod = None
+        else:
+            excludeMethod = fromMethodEquivalentFqn
+
+        sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, excludeMethod)
+        if toMethodEquivalent in sortedMethods:
+            ranking = self.getRankForMethod(toMethodEquivalent, sortedMethods, self.mapNodesToActivation)
             topPredictions = []
             if self.includeTop:
                 topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
@@ -57,6 +62,8 @@ class PFISBase(PredictiveAlgorithm):
                               str(navToPredict.toFileNav),
                               navToPredict.toFileNav.timestamp,
                               topPredictions)
+        else:
+            raise Exception("Node not in activation list: ", toMethodEquivalent)
 
 
     def initialize(self, fromMethodFqn, navNumber, navPath, pfisGraph):
@@ -83,7 +90,7 @@ class PFISBase(PredictiveAlgorithm):
 
             method = nav.fromFileNav.methodFqn
             if pfisGraph.containsNode(method):
-                if pfisGraph.getNode(method)['type'] in [NodeType.METHOD, NodeType.CHANGELOG]:
+                if self.langHelper.isNavigablePatch(method):
                     if method not in self.mapNodesToActivation:
                         # TODO consider making history additive, that is if
                         # a location is visited more than once, sum up its
@@ -103,7 +110,7 @@ class PFISBase(PredictiveAlgorithm):
                         self.mapNodesToActivation[stemmedWord] = 1.0
 
 
-    def __getMethodNodesFromGraph(self, pfisGraph, excludeNode):
+    def __getMethodNodesFromGraph(self, pfisGraph, excludeNode=None):
         activatedMethodNodes = []
         sortedNodes = []
 
@@ -112,9 +119,7 @@ class PFISBase(PredictiveAlgorithm):
                 continue
 
             if pfisGraph.containsNode(node):
-                #self.langHelper.excludeMethod(node): this can be added as a node attribute itself
-                if pfisGraph.getNode(node)['type'] in [NodeType.METHOD, NodeType.CHANGELOG] \
-                        and not self.langHelper.isLibMethodWithoutSource(node):
+                if self.langHelper.isNavigablePatch(node):
                     activatedMethodNodes.append(node)
 
             sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method], reverse = True)
