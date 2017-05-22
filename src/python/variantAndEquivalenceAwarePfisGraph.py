@@ -31,18 +31,14 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
 	def _updateEquivalenceInformationIfNeeded(self, node):
-		if (self.langHelper.isMethodFqn(node) or self.langHelper.isChangelogFqn(node)) \
-				and not self.langHelper.isLibMethodWithoutSource(node):
+		if self.langHelper.isNavigablePatch(node):
 			self.addPatchIfNotPresent(node)
-
 
 	def addPatchIfNotPresent(self, patchFqn):
 		# See patch for same FQN exists, else add
 		if self.getPatchByFqn(patchFqn) is not None:
 			return
-
 		newPatch = self.__getNewlyVisitedPatch(patchFqn)
-
 		#Update the patch details in fqn-id-node maps
 		if newPatch.uuid not in self.idToPatchMap.keys():
 			self.idToPatchMap[newPatch.uuid] = newPatch
@@ -51,15 +47,16 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 	def __getNewlyVisitedPatch(self, patchFqn):
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
-
-			# If it is an actual method patch (not PFIGHeader),
-			# get the right patch UUID from the equivalence DB
-
+			# If it is a method patch (not PFIGHeader), get the right patch UUID from the equivalence DB
 			if not self.langHelper.isPfigHeaderFqn(patchFqn):
 				self.__updatePatchUUIDFromEquivalenceDb(newPatch)
 
 		elif self.langHelper.isChangelogFqn(patchFqn):
 			newPatch = ChangelogPatch(patchFqn)
+
+		#TODO: Sruti, Souti: account for equivalence
+		elif self.langHelper.isOutputFqn(patchFqn):
+			newPatch = OutputPatch(patchFqn)
 
 		else:
 			raise Exception("Not a patch fqn:", patchFqn)
@@ -72,8 +69,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		return None
 
 	def getFqnOfEquivalentNode(self, node):
-		if (self.langHelper.isMethodFqn(node) or self.langHelper.isChangelogFqn(node)) \
-				and not self.langHelper.isLibMethodWithoutSource(node):
+		if self.langHelper.isNavigablePatch(node):
 			equivalentPatch = self.getPatchByFqn(node)
 			if equivalentPatch is not None:
 				return equivalentPatch.fqn
@@ -95,7 +91,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 
 	def cloneNode(self, cloneTo, cloneFrom):
-		if self.langHelper.isMethodFqn(cloneTo):
+		if self.langHelper.isMethodFqn(cloneTo) or self.langHelper.isOutputFqn(cloneTo):
 			self.fqnToIdMap[cloneTo] = self.fqnToIdMap[cloneFrom]
 
 		if self.langHelper.isChangelogFqn(cloneTo):
@@ -105,13 +101,14 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		return
 
 	def removeNode(self, nodeFqn):
+		# Output and method patches are treated as equivalent to last seen, so just update the maps.
 		id = self.fqnToIdMap[nodeFqn]
 		self.fqnToIdMap.pop(nodeFqn)
 
-		if not self.langHelper.isMethodFqn(nodeFqn):
+		# For changelog, there is an actual node added, so remove that node.
+		if self.langHelper.isChangelogFqn(nodeFqn):
 			self.idToPatchMap.pop(id)
 			VariantAwarePfisGraph.removeNode(self, nodeFqn)
-
 
 	def __getPatchRow(self, fqn):
 		

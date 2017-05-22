@@ -7,7 +7,8 @@ class VariantAwarePfisGraph(PfisGraph):
 
 	def updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType):
 		PfisGraph.updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType)
-		if action in ['Method declaration', 'Changelog declaration'] :
+
+		if action in ['Method declaration', 'Changelog declaration', 'Output declaration'] :
 			self._addEdgesToOtherVariants(referrer, referrerNodeType)
 			self._addEdgesToOtherVariants(target, targetNodeType)
 
@@ -24,5 +25,7 @@ class VariantAwarePfisGraph(PfisGraph):
 
 	def cloneNode(self, cloneTo, cloneFrom):
 		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
+
+		# Add VARIANT_OF edges between newly created node and its variants.
 		nodeType = self.getNode(cloneTo)['type']
-		self._addEdge(cloneTo, cloneFrom, nodeType, nodeType, EdgeType.VARIANT_OF)
+		self._addEdgesToOtherVariants(cloneTo, nodeType)

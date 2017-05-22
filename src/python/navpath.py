@@ -255,3 +255,6 @@ class NavigationPath(object):
     def getPatchesUpto(self, navNumber):
         navs = [self.getNavigation(i) for i in range(1, navNumber+1)]
         return [nav.fromFileNav.methodFqn for nav in navs]
+
+    def ifNavToUnseenPatch(self, navNumber):
+        return self.getDefaultNavigation(navNumber).isToUnknown()

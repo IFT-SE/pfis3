@@ -7,8 +7,9 @@ class NodeType(object):
     PRIMITIVE = 5
     PROJECT = 6
     WORD = 7
-    SPECIAL = 8
+    SPECIAL = 8 #Some Java packages weirdness!
     CHANGELOG = 9
+    OUTPUT = 10
 
     __targetNodes = {}
     __targetNodes["Extends"] = CLASS
@@ -23,6 +24,7 @@ class NodeType(object):
     __targetNodes["Variable type"] = VARIABLE
     __targetNodes["Changelog declaration scent"] = CHANGELOG
     __targetNodes["Changelog declaration"] = CHANGELOG
+    __targetNodes["Output declaration"] = OUTPUT
 
     __referrerNodes = {}
     __referrerNodes["Extends"] = CLASS
@@ -33,6 +35,7 @@ class NodeType(object):
     __referrerNodes["Package"] = PACKAGE
     __referrerNodes["Variable declaration"] = VARIABLE
     __referrerNodes["Changelog declaration"] = CHANGELOG
+    __referrerNodes["Output declaration"] = OUTPUT
 
     @staticmethod
     def getTargetNodeType(action, target):

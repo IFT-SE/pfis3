@@ -112,3 +112,10 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
 	def getVariantName(self, fqn):
 		return self.PATCH_HIERARCHY_REGEX.match(fqn).groups()[0]
+
+	def isNavigablePatch(self, node):
+		if self.isLibMethodWithoutSource(node):
+			return False
+		elif self.isMethodFqn(node) or self.isChangelogFqn(node) or self.isOutputFqn(node):
+			return True
+		return False

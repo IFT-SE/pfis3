@@ -104,3 +104,6 @@ class AbstractLanguageHelper:
 
     def getPathRelativeToVariant(self, fqn):
         return None
+
+    def isNavigablePatch(self, fqn):
+        return self.isMethodFqn(fqn)

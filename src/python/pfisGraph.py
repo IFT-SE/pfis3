@@ -12,11 +12,12 @@ class PfisGraph(object):
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
-                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', 'Changelog declaration') " \
-                  "AND timestamp >= ? AND timestamp < ?"
+                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', " \
+                  "'Changelog declaration', 'Output declaration') AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
-                     "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', 'Changelog declaration') " \
+                     "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
+                     "'Changelog declaration', 'Output declaration') " \
                      "AND timestamp >= ? AND timestamp < ?"
     ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' " \
                       "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp"
@@ -34,22 +35,6 @@ class PfisGraph(object):
         self.VERBOSE_BUILD = verbose
         self.graph = nx.Graph()
 
-
-    def getChangelogScent(self, fqn):
-        conn = sqlite3.connect(self.dbFilePath)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        c.execute(self.CHANGELOG_SCENT_QUERY, [fqn])
-
-        for row in c:
-            contents = self.langHelper.fixSlashes(row['referrer'])
-
-        c.close()
-        conn.close()
-
-        words = self.__getWordNodes_splitNoStem(contents)
-        words.extend(self.getWordNodes_splitCamelAndStem(contents))
-        return words
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
@@ -74,6 +59,7 @@ class PfisGraph(object):
         # if self.VERBOSE_BUILD:
         #     print "\tExecuting scent query from ", self.endTimestamp, "to", newEndTimestamp
         c.execute(self.SCENT_QUERY, [prevEndTimestamp, newEndTimestamp])
+        #TODO: Sruti, Souti: account for output patch scent
         
         for row in c:
             action, target, referrer = \
@@ -113,6 +99,11 @@ class PfisGraph(object):
 
                 for word in self.getWordNodes_splitCamelAndStem(referrer):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+
+            elif action == 'Output declaration':
+                #TODO: Sruti, Souti: fill in actuals. This is a dummy for getting in the node in the graph.
+                self._addEdge(target, "hexcom", targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+
         c.close()
         
         print '\tDone adding scent-related nodes.'
@@ -129,8 +120,8 @@ class PfisGraph(object):
     
         for row in c:
             action, target, referrer, = \
-            row['action'], self.langHelper.fixSlashes(row['target']), \
-            self.langHelper.fixSlashes(row['referrer'])
+                row['action'], self.langHelper.fixSlashes(row['target']), self.langHelper.fixSlashes(row['referrer'])
+
             targetNodeType = NodeType.getTargetNodeType(action, target)
             referrerNodeType = NodeType.getReferrerNodeType(action, referrer, self.langHelper)
 
@@ -236,12 +227,6 @@ class PfisGraph(object):
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.TYPE)
-
-        # if targetNodeType in [NodeType.CHANGELOG, NodeType.METHOD]:
-        #     self._addEdge(target, FqnUtils.getVariantName(target), targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_WITHIN)
-        # if targetNodeType in [NodeType.CHANGELOG, NodeType.METHOD]:
-        #     self._addEdge(target, FQNUtils.getVariantName(target), targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_WITHIN)
-        #No additional handling for changelogs. Only variant-of edges are needed as part of topology update.
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
@@ -429,25 +414,19 @@ class PfisGraph(object):
         #Create a node
         self.graph.add_node(cloneTo)
         clonedNode = self.getNode(cloneTo)
-
-        #Copy Node attributes
         clonedNode['type'] = self.getNode(cloneFrom)['type']
 
-        #Changelogs do not have same content, so just create an empty patch
-        if clonedNode['type'] == NodeType.CHANGELOG:
-            return
+        #If source code or output patch, then also copy all their content and relationships
+        if clonedNode['type'] in [NodeType.METHOD, NodeType.OUTPUT]:
+            self._copyPatchContent(cloneFrom, clonedNode)
 
-        if clonedNode['type'] == NodeType.METHOD:
-        # For method patches, copy edge relationships (and hence the method content, scent, etc)
-            sourceNodeNeighbors = self.getAllNeighbors(cloneFrom)
-            for neighborFqn in sourceNodeNeighbors:
-                neighborNode = self.getNode(neighborFqn)
-
-                edgeTypes = self.getEdgeTypesBetween(cloneFrom, neighborFqn)
-
-                for edgeType in edgeTypes:
-                    self._addEdge(cloneTo, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)
-
+    def _copyPatchContent(self, cloneFromFqn, clonedNode):
+        sourceNodeNeighbors = self.getAllNeighbors(cloneFromFqn)
+        for neighborFqn in sourceNodeNeighbors:
+            neighborNode = self.getNode(neighborFqn)
+            edgeTypes = self.getEdgeTypesBetween(cloneFromFqn, neighborFqn)
+            for edgeType in edgeTypes:
+                self._addEdge(clonedNode, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)
 
     def removeNode(self, nodeFqn):
         self.graph.remove_node(nodeFqn)
@@ -456,3 +435,19 @@ class PfisGraph(object):
         if self.graph.has_edge(node1, node2):
             self.graph.remove_edge(node1, node2)
             print "removed edge: ", node1, node2
+
+    def getChangelogScent(self, fqn):
+        conn = sqlite3.connect(self.dbFilePath)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute(self.CHANGELOG_SCENT_QUERY, [fqn])
+
+        for row in c:
+            contents = self.langHelper.fixSlashes(row['referrer'])
+
+        c.close()
+        conn.close()
+
+        words = self.__getWordNodes_splitNoStem(contents)
+        words.extend(self.getWordNodes_splitCamelAndStem(contents))
+        return words

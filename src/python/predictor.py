@@ -2,13 +2,15 @@ from predictions import Predictions
 from navpath import NavigationPath
 
 class Predictor(object):
-	def __init__(self, graph, navPath):
+	def __init__(self, graph, navPath, outputFolderPath, topPredictionsPath=None):
 		self.graph = graph
 		self.navPath = navPath
+		self.outputFolder = outputFolderPath
+		self.topPredictionsFolder = topPredictionsPath
 		self.navNumber = -1
 		self.endTimeStamp = '0'
 
-	def makeAllPredictions(self, algorithms, outputFolder, topPredictionsFolder=None):
+	def makeAllPredictions(self, algorithms):
 
 		self.updateGraphByOneNavigation()
 
@@ -18,45 +20,22 @@ class Predictor(object):
 		# Build the output data structure
 		results = {}
 		for algorithm in algorithms:
-			results[algorithm.name] = Predictions(algorithm.name, outputFolder, algorithm.fileName, algorithm.includeTop, topPredictionsFolder)
+			results[algorithm.name] = Predictions(algorithm.name, self.outputFolder, algorithm.fileName,
+			                                      algorithm.includeTop, self.topPredictionsFolder)
 
 		totalPredictions = self.navPath.getLength() - 1
 
 		for _ in range(1, totalPredictions + 1):
 			self.updateGraphByOneNavigation()
+
 			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
 			for algorithm in algorithms:
-				results[algorithm.name].addPrediction(self.__makePrediction(algorithm))
+				prediction = algorithm.makePrediction(self.graph, self.navPath, self.navNumber)
+				results[algorithm.name].addPrediction(prediction)
 
 		print 'Done making predictions.'
 		print self.graph.printEntireGraphStats()
 		return results
-
-	def __makePrediction(self, predictiveAlgorithm):
-		print '\tMaking predictions for ' + predictiveAlgorithm.name + '...'
-		return predictiveAlgorithm.makePrediction(self.graph, self.navPath, self.navNumber)
-
-	def __addUnseenButKnownPatch(self):
-		# If patch is not seen, it can still be unknown for PFIS-V.
-		# In order to predict such a patch, we temporarily add it to the graph,
-		# and remove it as soon as the prediction is made.
-		if self.navPath.getDefaultNavigation(self.navNumber).isToUnknown():
-			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
-
-			if self.graph.containsNode(actualNavigation.methodFqn):
-				print "Exception: Unseen method already exists in graph: ", actualNavigation.methodFqn, self.navNumber
-
-			else:
-				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
-				if mostRecentSimilarNav is not None:
-					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
-
-	def __removeTemporarilyAddedNodeIfAny(self):
-		if self.navPath.getDefaultNavigation(self.navNumber).isToUnknown():
-			currentNav = self.navPath.getNavigation(self.navNumber)
-			additionalNode = currentNav.toFileNav.methodFqn
-			if self.graph.containsNode(additionalNode):
-				self.graph.removeNode(additionalNode)
 
 	def updateGraphByOneNavigation(self):
 
@@ -77,3 +56,30 @@ class Predictor(object):
 			# The actual patch navigated to is not present in graph but we make a prediction,
 			# so temporarily add the node in the graph, similar to earlier seen variant.
 			self.__addUnseenButKnownPatch()
+
+	def __addUnseenButKnownPatch(self):
+		# If patch is not seen, it can still be known for PFIS-V.
+		# So, we add that "unseen, yet known" patch to graph.
+
+		if self.navPath.ifNavToUnseenPatch(self.navNumber):
+			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
+
+			if self.graph.containsNode(actualNavigation.methodFqn):
+				print "Warning: Unseen method already exists in graph: ", actualNavigation.methodFqn, self.navNumber
+
+			else:
+				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
+				if mostRecentSimilarNav is not None:
+					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
+
+
+	def __removeTemporarilyAddedNodeIfAny(self):
+		if self.navPath.ifNavToUnseenPatch(self.navNumber):
+			currentNav = self.navPath.getNavigation(self.navNumber)
+			additionalNode = currentNav.toFileNav.methodFqn
+			# If graph contains unseen patch, it was because it was known from other variant.
+			# Remove this temporary unseen but known patch.
+			if self.graph.containsNode(additionalNode):
+				self.graph.removeNode(additionalNode)
+
+

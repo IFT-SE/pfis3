@@ -85,10 +85,10 @@ def main():
 	# Determine the algorithms to use
 	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords, goalWords)
 
-	graphAlgorithmsMapWithDefaultNavPath = xmlParser.getAlgorithms(navPathType="Default")
-	if len(graphAlgorithmsMapWithDefaultNavPath.keys()) > 0:
+	graphAlgorithmsMapForDefaultNavPath = xmlParser.getAlgorithms(navPathType="Default")
+	if len(graphAlgorithmsMapForDefaultNavPath.keys()) > 0:
 		navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
-		runAlgorithms(args, graphAlgorithmsMapWithDefaultNavPath, navPath)
+		runAlgorithms(args, graphAlgorithmsMapForDefaultNavPath, navPath)
 
 	#TODO: Collapse all navpaths into a single one for PFIS-V
 
@@ -105,11 +105,11 @@ def runAlgorithms(args, graphAlgorithmsMap, navPath):
 	# Create the PFIS graph (which also determines the navigations)
 	for graph in graphAlgorithmsMap.keys():
 		# Create a predictor instance for each graph type
-		predictor = Predictor(graph, navPath)
+		predictor = Predictor(graph, navPath, args['outputPath'], args['topPredictionsFolderPath'])
 
 		algorithms = graphAlgorithmsMap[graph]
 		# Make all predictions for the graph for all algorithms
-		results = predictor.makeAllPredictions(algorithms, args['outputPath'], args['topPredictionsFolderPath'])
+		results = predictor.makeAllPredictions(algorithms)
 
 		# Save each algorithms predictions to the a separate file in the output folder
 		savePredictionsToFiles(results)
