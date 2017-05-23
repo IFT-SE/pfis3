@@ -13,7 +13,7 @@ class PfisGraph(object):
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
                   "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', " \
-                  "'Changelog declaration', 'Output declaration') AND timestamp >= ? AND timestamp < ?"
+                  "'Changelog declaration', 'Changelog declaration scent', 'Output declaration') AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
                      "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
@@ -94,7 +94,8 @@ class PfisGraph(object):
             # FQN node.
             elif action in ('Constructor invocation scent',
                             'Method declaration scent',
-                            'Method invocation scent'):
+                            'Method invocation scent',
+                            'Changelog declaration scent'):
                 for word in self.__getWordNodes_splitNoStem(referrer):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
 
