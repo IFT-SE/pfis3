@@ -64,9 +64,9 @@ class PFISWithVariantHierarchy(PFIS):
 			return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
 
 		elif fromPatchType == NodeType.CHANGELOG:
-			variantPrediction = self.predictVariant(pfisGraph, fromPatchFqn)
+			variantPrediction = self.computeChangelogScent(pfisGraph, fromPatchFqn)
 
-			if variantPrediction is None: #CHangelog said "Not this variant, but something else!"
+			if variantPrediction == 0.0: #CHangelog said "Not this variant, but something else!"
 				if toVariant == fromVariant:
 					# Person went into that variant -- Between-variant MISS
 					return Prediction(navNumber, 888888, 0, 0,
@@ -90,42 +90,27 @@ class PFISWithVariantHierarchy(PFIS):
 								  navToPredict.toFileNav.timestamp)
 			else:
 				# Forage within the variant, so use normal scent following as in CHI'17 paper.
-				return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber, initializeVariants=False)
+				return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
 
-	def _predictWithinVariantNavigation(self, pfisGraph, navPath, navNumber, initializeVariants=False):
+	def _predictWithinVariantNavigation(self, pfisGraph, navPath, navNumber):
 		return PFIS.makePrediction(self, pfisGraph, navPath, navNumber)
 
-	def initialize(self, fromMethodFqn, navNumber, navPath, pfisGraph, initializeVariants=False):
-		PFIS.initialize(self, fromMethodFqn, navNumber, navPath, pfisGraph)
-		if initializeVariants:
-			self.__initializeVariants(pfisGraph, fromMethodFqn)
+	def computeChangelogScent(self, pfisGraph, fromChangelogFqn):
+		self.mapNodesToActivation = {fromChangelogFqn: 0.0}
+		self._initializeGoalWords(pfisGraph)
 
+		for _ in range(0, self.NUM_SPREAD):
+			for node in self.mapNodesToActivation.keys():
+				# Get scent computation nodes for "words in patches", or TF-IDF.
+				allNeighbors = pfisGraph.getNeighborsOfDesiredEdgeTypes(node, [EdgeType.CONTAINS])
 
-	def __initializeVariants(self, pfisGraph, fromMethodFqn):
-		similarPatches = pfisGraph.getNeighborsOfDesiredEdgeTypes(fromMethodFqn, [EdgeType.VARIANT_OF])
-		for node in similarPatches:
-			if node not in self.mapNodesToActivation.keys():
-				self.mapNodesToActivation[node] = 0.0
-			else:
-				self.mapNodesToActivation[node] = self.mapNodesToActivation[node] + 10.0
+				# Filter out other patches: this models "TF-IDF between goal words & changelog" single factor.
+				changelogScentNeighbors = [n for n in allNeighbors
+										   if n == fromChangelogFqn or pfisGraph.getNode(n)['type'] == NodeType.WORD]
+				for neighbor in changelogScentNeighbors:
+					if neighbor not in self.mapNodesToActivation.keys():
+						self.mapNodesToActivation[neighbor] = 0.0
+					self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
+													  self.mapNodesToActivation[node] * self.DECAY_FACTOR
 
-
-	def __removeWordsFromAbandonedChangelogs(self, pfisGraph, navPath, navNumber):
-		fromPatchFqn = navPath.getNavigation(navNumber).fromFileNav.methodFqn
-		fromNode = pfisGraph.getNode(fromPatchFqn)
-		if fromNode['type'] == NodeType.CHANGELOG:
-			words = pfisGraph.getNeighborsOfDesiredEdgeTypes(fromPatchFqn, [EdgeType.CONTAINS])
-			for word in words:
-				pfisGraph.removeEdge(fromPatchFqn, word)
-
-	def predictVariant(self, pfisGraph, fromPatchFqn):
-		if not self.langHelper.isChangelogFqn(fromPatchFqn):
-			raise Exception("Cannot compute within variant scent for patch type: ", fromPatchFqn)
-		else:
-			fromPatchCues = set(pfisGraph.getChangelogScent(fromPatchFqn))
-			goalWords = set(pfisGraph.getGoalWords())
-			common = fromPatchCues.intersection(goalWords)
-			if len(common) > 0:
-				return fromPatchFqn
-			else:
-				return None
+		return self.mapNodesToActivation[fromChangelogFqn]

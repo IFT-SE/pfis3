@@ -79,7 +79,8 @@ class PFISBase(PredictiveAlgorithm):
             # using the DECAY_HISTORY property
             self.__initializeHistory(pfisGraph, navPath, navNumber)
 
-        self.__initializeGoalWords(pfisGraph)
+        if self.goal:
+            self._initializeGoalWords(pfisGraph)
 
 
     def __initializeHistory(self, pfisGraph, navPath, navNumber):
@@ -102,12 +103,11 @@ class PFISBase(PredictiveAlgorithm):
 
             activation *= self.DECAY_HISTORY
 
-    def __initializeGoalWords(self, pfisGraph):
-        if self.goal:
-            for stemmedWord in pfisGraph.getGoalWords():
-                if pfisGraph.containsNode(stemmedWord):
-                    if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
-                        self.mapNodesToActivation[stemmedWord] = 1.0
+    def _initializeGoalWords(self, pfisGraph):
+        for stemmedWord in pfisGraph.getGoalWords():
+            if pfisGraph.containsNode(stemmedWord):
+                if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
+                    self.mapNodesToActivation[stemmedWord] = 1.0
 
 
     def __getMethodNodesFromGraph(self, pfisGraph, excludeNode=None):

@@ -10,6 +10,7 @@ from algorithmLSI import LSI
 from algorithmWorkingSet import WorkingSet
 from algorithmVariantOfLinks import VariantOf
 from algorithmGoalWordSimilarity import GoalWordSimilarity
+from algorithmPFISWithVariantHierarchy import PFISWithVariantHierarchy
 
 
 class AlgorithmFactory:
@@ -39,6 +40,7 @@ class AlgorithmFactory:
 			elif algClass == 'WorkingSet' : return self.__parseWorkingSet(node, suffix)
 			elif algClass == 'VariantOf' : return self.__parseVariantOf(node, suffix)
 			elif algClass == "GoalWordSimilarity" : return self.__parseGoalWordSimilarity(node, suffix)
+			elif algClass == "PFISWithVariantHierarchy": return  self.__parsePFISWithVariantHierarchy(node, suffix)
 			else:
 				raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
 
@@ -97,6 +99,32 @@ class AlgorithmFactory:
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
 		return PFIS(self.langHelper, algoName,
+			fileName, history=history, goal=goal,
+			decayFactor=decayFactor, decayVariants=decayVariants, decayHistory=decayHistory,
+			numSpread=numSpread,
+			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+
+	def __parsePFISWithVariantHierarchy(self, node, graphTypeSuffix):
+		# TODO: Figure out a better way to deal with default values. If they are
+		# not in the XML, we shoudln't have to create variables for them
+
+		history = False
+		goal = False
+		decayFactor = 0.85
+		decayHistory = 0.9
+		decayVariants = 0.85
+		numSpread = 2
+
+		topPredictionsOptions = self.getTopPredictionsAttributes(node)
+		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
+		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
+		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
+		if 'decayVariants' in node.attrib: decayVariants = float(node.attrib['decayVariants'])
+		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
+		if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
+		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
+
+		return PFISWithVariantHierarchy(self.langHelper, algoName,
 			fileName, history=history, goal=goal,
 			decayFactor=decayFactor, decayVariants=decayVariants, decayHistory=decayHistory,
 			numSpread=numSpread,
