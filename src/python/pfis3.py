@@ -12,7 +12,7 @@ def print_usage():
 	print "python pfis3.py -d <path to PFIG database> -s <path to stop words file>"
 	print "                -l <language> -p <path to project source folder> "
 	print "                -o <path to output folder> -x <xml options file>"
-	print "                -v <variants db for functions: optional>"
+	print "					-v <set if variants topology: optional, false by default>"
 	print "for language : say JAVA or JS"
 
 def parseArgs():
@@ -22,6 +22,7 @@ def parseArgs():
 		"stopWordsPath" : True,
 		"tempDbPath" : None,
 		"dbPath" : None,
+		"variantTopology": False,
 		"projectSrcFolderPath": None,
 		"language": None,
 		"xml" : None,
@@ -29,6 +30,10 @@ def parseArgs():
 	}
 
 	def assign_argument_value(argsMap, option, value):
+		if option=='-v':
+			arguments['variantTopology'] = True
+			return
+
 		optionKeyMap = {
 			"-s" : "stopWordsPath",
 			"-d" : "dbPath",
@@ -46,7 +51,7 @@ def parseArgs():
 		argsMap["tempDbPath"] = argsMap["dbPath"] + "_temp"
 
 	try:
-		opts, _ = getopt.getopt(sys.argv[1:], "d:s:l:p:o:x:n:")
+		opts, _ = getopt.getopt(sys.argv[1:], "vd:s:l:p:o:x:n:")
 	except getopt.GetoptError as err:
 		print str(err)
 		print("Invalid args passed to PFIS")
@@ -71,6 +76,8 @@ def main():
 	# Start by making a working copy of the database
 	workingDbCopy = args['tempDbPath']
 	copyDatabase(args['dbPath'], workingDbCopy)
+
+	variantTopology = args['variantTopology']
 	# Load the stop words file
 	stopWords = loadStopWords(args['stopWordsPath'])
 
@@ -83,7 +90,7 @@ def main():
 	langHelper.performDBPostProcessing(workingDbCopy)
 
 	# Determine the algorithms to use
-	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, stopWords, goalWords)
+	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, variantTopology, stopWords, goalWords)
 
 	graphAlgorithmsMapForDefaultNavPath = xmlParser.getAlgorithms(navPathType="Default")
 	if len(graphAlgorithmsMapForDefaultNavPath.keys()) > 0:
@@ -91,7 +98,6 @@ def main():
 		runAlgorithms(args, graphAlgorithmsMapForDefaultNavPath, navPath)
 
 	#TODO: Collapse all navpaths into a single one for PFIS-V
-
 	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="PFIS-V")
 	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
 		variantAwareNavPath = PFIS_V_NavPath(workingDbCopy, langHelper, projSrc)
@@ -99,7 +105,6 @@ def main():
 
 	# Exit gracefully
 	sys.exit(0)
-
 
 def runAlgorithms(args, graphAlgorithmsMap, navPath):
 	# Create the PFIS graph (which also determines the navigations)

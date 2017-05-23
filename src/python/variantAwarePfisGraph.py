@@ -3,7 +3,8 @@ from graphAttributes import EdgeType
 
 class VariantAwarePfisGraph(PfisGraph):
 	def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], goalWords=[], verbose=False):
-		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
+		variantTopology = True
+		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, variantTopology, stopWords, goalWords, verbose)
 
 	def updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType):
 		PfisGraph.updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType)

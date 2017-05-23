@@ -153,6 +153,7 @@ def runMode(args):
     s = args['stopWordsPath']
     x = args['xml']
     n = args['topPredictionsFolder']
+    v = args['variantTopology']
 
     # Gather all the database files in the directory
     db_fileNames = [f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f)) and f.endswith('.db')]
@@ -177,7 +178,7 @@ def runMode(args):
                 if not os.path.exists(topPredictionsFolderPath):
                     os.makedirs(topPredictionsFolderPath)
 
-        jobs.append(PFISJob(e, dbPath, p, l, s, dbOutputPath, x, topPredictionsFolderPath))
+        jobs.append(PFISJob(e, dbPath, p, l, s, v, dbOutputPath, x, topPredictionsFolderPath))
     
     print "runScript.py is running models..."
     print "\tNumber of simultaneous jobs = " + str(NUM_CHILD_PROCESSES)
@@ -635,6 +636,7 @@ def parseArgs():
         "executable" : None,
         "dbDirPath" : None,
         "stopWordsPath" : None,
+        "variantTopology": False,
         "language": None,
         "projectSrcFolderPath": None,
         "outputPath" : None,
@@ -659,11 +661,14 @@ def parseArgs():
         if option == '-r':
             arguments['useRatios'] = True
             return
-        
+        if option == '-v':
+            arguments['variantTopology'] = True
+            return
         optionKeyMap = {
             "-e" : "executable",
             "-d" : "dbDirPath",
             "-s" : "stopWordsPath",
+            "-v" : "variantTopology",
             "-l" : "language",
             "-p" : "projectSrcFolderPath",
             "-o" : "outputPath",
@@ -683,7 +688,7 @@ def parseArgs():
         arguments[key] = value
 
     try:
-        opts, _ = getopt.getopt(sys.argv[1:], "RCMFHAe:d:s:l:p:o:x:c:h:m:f:i:t:n:r:a:")
+        opts, _ = getopt.getopt(sys.argv[1:], "RCMFHAve:d:s:l:p:o:x:c:h:m:f:i:t:n:r:a:")
     except getopt.GetoptError as err:
         print str(err)
         print("Invalid args passed to runScript.py")
@@ -697,13 +702,14 @@ def parseArgs():
 
 class PFISJob(object):
     
-    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, dbOutputPath,
+    def __init__(self, executablePath, dbPath, projectSrcPath, language, stopWordsPath, variantTopology, dbOutputPath,
                  xmlPath, topPredictionsFolder):
         self.e = executablePath
         self.d = dbPath
         self.p = projectSrcPath
         self.l = language
         self.s = stopWordsPath
+        self.v = variantTopology
         self.o = dbOutputPath
         self.n = topPredictionsFolder
         self.x = xmlPath
@@ -725,6 +731,9 @@ class PFISJob(object):
 
         if self.n != None:
             args.extend(['-n', self.n])
+
+        if self.v == True:
+            args.extend(['-v'])
 
         self.process = subprocess.Popen(args, \
                                          stdout = stdoutLog, \
