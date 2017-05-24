@@ -57,8 +57,9 @@ class CodeStructure(PredictiveAlgorithm):
         while len(queue) > 0:
             
             currentNode = queue.popleft()
-            
-            for neighbor in pfisGraph.getNeighborsOfDesiredEdgeTypes(currentNode, self.edgeTypes):
+
+            neighbors = pfisGraph.getNeighborsOfDesiredEdgeTypes(currentNode, self.edgeTypes)
+            for neighbor in neighbors:
                 if neighbor not in self.nodeDistances:
                     self.nodeDistances[neighbor] = self.nodeDistances[currentNode] + 1
                     queue.append(neighbor)

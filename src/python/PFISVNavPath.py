@@ -6,15 +6,15 @@ class PFIS_V_NavPath(NavigationPath):
 		NavigationPath.__init__(self, dbFilePath, langHelper, projectFolderPath, verbose)
 
 		self._name = NavigationPath.PFIS_V
-		self.__variantAwareNavigations = []
-		self.__replaceNavsToUnknownToLastSeenVariant()
+		self._variantAwareNavigations = []
+		self._replaceNavsToUnknownToLastSeenVariant()
 		self._printVariantAwareNavigations()
 
 	# This method changes the way unknowns are handled for variant-aware algorithms
 	# If programmer navigates to "Unknown", but he/she has seen a variant of this unknown location,
 	# then the nav is not entirely unknown
 	# Here, we replace the to nav of "unknown" to the "to nav" of last seen variant of the same patch
-	def __replaceNavsToUnknownToLastSeenVariant(self):
+	def _replaceNavsToUnknownToLastSeenVariant(self):
 		for i in range(0, len(self._navigations)):
 			actualNav = self._navigations[i]
 			variantAwareNav = actualNav.clone()
@@ -26,7 +26,7 @@ class PFIS_V_NavPath(NavigationPath):
 					#If similar patch seen, then the actual patch is "known". So, put it back in nav path.
 					variantAwareNav.toFileNav.methodFqn = self._navigations[i + 1].fromFileNav.methodFqn
 
-			self.__variantAwareNavigations.append(variantAwareNav)
+			self._variantAwareNavigations.append(variantAwareNav)
 
 	def getPriorNavToSimilarPatchIfAny(self, unknownNavNumber):
 		actualLocNavigatedTo = self._navigations[unknownNavNumber + 1].fromFileNav
@@ -58,14 +58,14 @@ class PFIS_V_NavPath(NavigationPath):
 		return None
 
 	def getLength(self):
-		return len(self.__variantAwareNavigations)
+		return len(self._variantAwareNavigations)
 
 	def getNavigation(self, i):
-		return self.__variantAwareNavigations[i]
+		return self._variantAwareNavigations[i]
 
 	def _printVariantAwareNavigations(self):
 		print "--------------------------------------------"
-		for i in range(len(self.__variantAwareNavigations)):
-			navigation = self.__variantAwareNavigations[i]
+		for i in range(len(self._variantAwareNavigations)):
+			navigation = self._variantAwareNavigations[i]
 			print '\t' + str(i) + ':\t' + str(navigation)
 		print "--------------------------------------------"

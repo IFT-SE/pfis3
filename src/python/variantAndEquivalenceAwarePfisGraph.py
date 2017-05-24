@@ -105,6 +105,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		id = self.fqnToIdMap[nodeFqn]
 		self.fqnToIdMap.pop(nodeFqn)
 
+
 		# For changelog, there is an actual node added, so remove that node.
 		if self.langHelper.isChangelogFqn(nodeFqn):
 			self.idToPatchMap.pop(id)

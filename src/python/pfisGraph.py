@@ -414,21 +414,22 @@ class PfisGraph(object):
 
     def cloneNode(self, cloneTo, cloneFrom):
         #Create a node
+        nodeType = self.getNode(cloneFrom)['type']
+
         self.graph.add_node(cloneTo)
         clonedNode = self.getNode(cloneTo)
-        clonedNode['type'] = self.getNode(cloneFrom)['type']
+        clonedNode['type'] = nodeType
 
         #If source code or output patch, then also copy all their content and relationships
         if clonedNode['type'] in [NodeType.METHOD, NodeType.OUTPUT]:
-            self._copyPatchContent(cloneFrom, clonedNode)
+            self._copyPatchContent(cloneFrom, cloneTo, nodeType)
 
-    def _copyPatchContent(self, cloneFromFqn, clonedNode):
+    def _copyPatchContent(self, cloneFromFqn, cloneTo, nodeType):
         sourceNodeNeighbors = self.getAllNeighbors(cloneFromFqn)
         for neighborFqn in sourceNodeNeighbors:
-            neighborNode = self.getNode(neighborFqn)
             edgeTypes = self.getEdgeTypesBetween(cloneFromFqn, neighborFqn)
             for edgeType in edgeTypes:
-                self._addEdge(clonedNode, neighborFqn, clonedNode['type'], neighborNode['type'], edgeType)
+                self._addEdge(cloneTo, neighborFqn, nodeType, nodeType, edgeType)
 
     def removeNode(self, nodeFqn):
         self.graph.remove_node(nodeFqn)

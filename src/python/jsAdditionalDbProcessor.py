@@ -119,7 +119,6 @@ class JSAdditionalDbProcessor:
         conn.close()
 
     def process(self):
-
         print "Fixing offsets"
         self.fixOffsetsToBeginWith0(self.db)
 
