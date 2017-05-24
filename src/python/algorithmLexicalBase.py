@@ -43,8 +43,15 @@ class LexicalBase(PredictiveAlgorithm):
                 sortedMethods.append(self.lexicalHelper.corpus.methodFqns[i])
                 mapMethodsToScore[self.lexicalHelper.corpus.methodFqns[i]] = score
 
-            methodToPredictEqivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
-            value = mapMethodsToScore[methodToPredictEqivalent]
+            patchToPredictEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+            if patchToPredictEquivalent not in mapMethodsToScore.keys():
+                print "Warning: Cannot predict using TF-IDF: ", navNumber, methodToPredict
+                return Prediction(navNumber, 999999, len(sortedMethods), 0,
+                                    str(navToPredict.fromFileNav),
+                                   str(navToPredict.toFileNav),
+                                   navToPredict.toFileNav.timestamp)
+
+            value = mapMethodsToScore[patchToPredictEquivalent]
             firstIndex = self.getFirstIndex(sortedMethods, mapMethodsToScore, value)
             lastIndex = self.getLastIndex(sortedMethods, mapMethodsToScore, value)
             numTies = lastIndex - firstIndex + 1
@@ -70,7 +77,7 @@ class LexicalBase(PredictiveAlgorithm):
     
 class LexicalHelper(object):    
     METHOD_DECLARATION_SCENT_QUERY = "SELECT action, target, referrer " \
-        "FROM logger_log WHERE action = 'Method declaration scent' " \
+        "FROM logger_log WHERE action in ('Method declaration scent', 'Changelog declaration scent') " \
         "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp"
     
     def __init__(self, dbFilePath, langHelper):
@@ -119,9 +126,6 @@ class LexicalHelper(object):
     def getSimilarityBetween(self, model, patchFqn1, patchFqn2):
         similarities = self.getSimilarityMatrix(model, patchFqn1)
         index = self.corpus.getPosition(patchFqn2)
-        print patchFqn1, patchFqn2, similarities[index][1]
-        print self.corpus.getMethodContentsForFqn(patchFqn1)
-        print self.corpus.getMethodContentsForFqn(patchFqn2)
         return similarities[index][1]
 
 

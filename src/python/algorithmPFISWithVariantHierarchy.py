@@ -23,7 +23,7 @@ class PFISWithVariantHierarchy(PFIS):
 							  str(navToPredict.toFileNav),
 							  navToPredict.toFileNav.timestamp)
 
-		elif self._isBetweenVariantNavigation(navPath, navNumber):
+		elif pfisGraph.variantTopology and self._isBetweenVariantNavigation(navPath, navNumber):
 			prediction = self._predictBetweenVariantNavigation(pfisGraph, navPath, navNumber)
 			if prediction is None:
 				raise Exception("SS, BP: Investigate why, else this might be another case of unknown")
@@ -37,18 +37,10 @@ class PFISWithVariantHierarchy(PFIS):
 
 	def _isBetweenVariantNavigation(self, navPath, navNumber):
 		navToPredict = navPath.getNavigation(navNumber)
-
-		seenPatches = navPath.getPatchesUpto(navNumber)
-		alreadySeenVariants = set([self.langHelper.getVariantName(patch) for patch in seenPatches])
-
 		fromVariant = self.langHelper.getVariantName(navToPredict.fromFileNav.methodFqn)
 		toVariant = self.langHelper.getVariantName(navToPredict.toFileNav.methodFqn)
+		return fromVariant != toVariant
 
-		if fromVariant is None or toVariant is None: #Non-variant topology
-			return False
-		if fromVariant != toVariant and toVariant not in alreadySeenVariants:
-			return True
-		return False
 
 	def _predictBetweenVariantNavigation(self, pfisGraph, navPath, navNumber):
 		navToPredict = navPath.getNavigation(navNumber)
