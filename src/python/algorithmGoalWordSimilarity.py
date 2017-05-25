@@ -49,17 +49,11 @@ class GoalWordSimilarity(TFIDF):
                 topPredictions = self.getTopPredictions(sortedMethods, {})
 
             if similarityScore > 0.0:
-                rank = 1
-                print self.lexicalHelper.corpus.getMethodContentsForFqn(navToPatchFqn), similarityScore
-            else:
-                rank = 0
-            numTies = 1
-            return Prediction(navNumber, rank, len(sortedMethods), numTies,
+                return Prediction(navNumber, 1, 1, 1,
                               str(navToPredict.fromFileNav),
                               str(navToPredict.toFileNav),
                               navToPredict.toFileNav.timestamp,
                               topPredictions)
-
 
         return Prediction(navNumber, 999999, len(sortedMethods), 0,
                           str(navToPredict.fromFileNav),
