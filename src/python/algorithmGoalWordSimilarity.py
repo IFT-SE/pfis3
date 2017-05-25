@@ -1,5 +1,4 @@
 import sqlite3
-import gensim
 from algorithmTFIDF import TFIDF
 from predictions import Prediction
 
@@ -22,6 +21,13 @@ class GoalWordSimilarity(TFIDF):
 
         if not navToPredict.isToUnknown():
             navToPatchFqn = navToPredict.toFileNav.methodFqn
+
+            if self.langHelper.isOutputFqn(navToPatchFqn):
+                return Prediction(navNumber, 999999, len(sortedMethods), 0,
+                                  str(navToPredict.fromFileNav),
+                                  str(navToPredict.toFileNav),
+                                  navToPredict.toFileNav.timestamp)
+
 
             conn = sqlite3.connect(self.dbFilePath)
             conn.row_factory = sqlite3.Row
