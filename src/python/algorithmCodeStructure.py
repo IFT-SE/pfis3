@@ -21,7 +21,7 @@ class CodeStructure(PredictiveAlgorithm):
         
         if not navToPredict.isToUnknown() and pfisGraph.containsNode(methodToPredict):
             result = self.__breadthFirstSearch(pfisGraph, fromMethodFqn, methodToPredict) 
-            if result > 0:
+            if result is not None:
                 sortedRanks = sorted(self.nodeDistances, key = lambda node: self.nodeDistances[node])
                 sortedRanksMethodsOnly = self.getRanksForMethodsOnly(sortedRanks, pfisGraph)
                 
@@ -63,11 +63,18 @@ class CodeStructure(PredictiveAlgorithm):
                 if neighbor not in self.nodeDistances:
                     self.nodeDistances[neighbor] = self.nodeDistances[currentNode] + 1
                     queue.append(neighbor)
-                    
+
         del self.nodeDistances[fromNodeEquivalent]
-                    
+
+
         methodToPredictEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+
+        # Put back fromNode if fromNav and toNav are equivalent patches.
+        # The distance between them is 0 (they are exactly same, hence no distance)
+        if methodToPredictEquivalent == fromNodeEquivalent:
+            self.nodeDistances[methodToPredictEquivalent] = 0
+
         if methodToPredictEquivalent in self.nodeDistances:
             return self.nodeDistances[methodToPredictEquivalent]
         
-        return -1
+        return None
