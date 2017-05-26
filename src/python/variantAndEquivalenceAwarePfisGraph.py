@@ -19,6 +19,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 		self.idToPatchMap = {}
 		self.fqnToIdMap = {}
+		self.name = "Variant and equivalence aware: ", variantsDb
 
 	def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
 

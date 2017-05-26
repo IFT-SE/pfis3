@@ -36,6 +36,8 @@ class PfisGraph(object):
         self.VERBOSE_BUILD = verbose
         self.graph = nx.Graph()
 
+        self.name = "Variant unaware"
+
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
