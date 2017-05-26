@@ -5,10 +5,10 @@ class PFIS(PFISBase):
     DEBUG_NODE = 'L/hexcom/Current/js_v9/main.js;.init(b)'
 
     def __init__(self, langHelper, name, fileName, history=False, goal = False,
-                 decayFactor = 0.85, decayVariants=0.85, decayHistory = 0.9, numSpread = 2,
+                 decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, numSpread = 2,
                  includeTop = False, numTopPredictions=0, verbose = False):
-        PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayVariants, decayHistory, includeTop, numTopPredictions, verbose)
+        PFISBase.__init__(self, langHelper, name, fileName, history, goal,
+                          decayFactor, decaySimilarity, decayVariant, decayHistory, includeTop, numTopPredictions, verbose)
         self.NUM_SPREAD = numSpread
 
     def spreadActivation(self, pfisGraph):

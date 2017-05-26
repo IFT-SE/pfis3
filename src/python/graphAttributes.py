@@ -10,6 +10,7 @@ class NodeType(object):
     SPECIAL = 8 #Some Java packages weirdness!
     CHANGELOG = 9
     OUTPUT = 10
+    VARIANT = 11
 
     __targetNodes = {}
     __targetNodes["Extends"] = CLASS
@@ -77,7 +78,8 @@ class EdgeType(object):
     CALLS = 4
     ADJACENT = 5
     TYPE = 6
-    VARIANT_OF = 7
+    SIMILAR = 7
+    VARIANT_CONTAINS = 8
 
     @staticmethod
     def getAll():
@@ -89,11 +91,12 @@ class EdgeType(object):
             EdgeType.CALLS,
             EdgeType.ADJACENT,
             EdgeType.TYPE,
-            EdgeType.VARIANT_OF
+            EdgeType.SIMILAR,
+            EdgeType.VARIANT_CONTAINS
         ]
 
     @staticmethod
     def getStandardEdgeTypes():
         edges = EdgeType.getAll()
-        edges.remove(EdgeType.VARIANT_OF)
+        edges.remove(EdgeType.SIMILAR)
         return edges

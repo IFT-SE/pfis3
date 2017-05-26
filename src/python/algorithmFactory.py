@@ -86,23 +86,25 @@ class AlgorithmFactory:
 		goal = False
 		decayFactor = 0.85
 		decayHistory = 0.9
-		decayVariants = 0.85
+		decaySimilarity = 0.85
+		decayVariant = 0.85
 		numSpread = 2
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
 		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
 		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
-		if 'decayVariants' in node.attrib: decayVariants = float(node.attrib['decayVariants'])
+		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
+		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
 		if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
 		return PFIS(self.langHelper, algoName,
-			fileName, history=history, goal=goal,
-			decayFactor=decayFactor, decayVariants=decayVariants, decayHistory=decayHistory,
-			numSpread=numSpread,
-			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+		            fileName, history=history, goal=goal,
+		            decayFactor=decayFactor, decaySimilarity=decaySimilarity, decayHistory=decayHistory,
+		            numSpread=numSpread, decayVariant=decayVariant,
+		            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
 	def __parsePFISWithVariantHierarchy(self, node, graphTypeSuffix):
 		# TODO: Figure out a better way to deal with default values. If they are
@@ -112,43 +114,48 @@ class AlgorithmFactory:
 		goal = False
 		decayFactor = 0.85
 		decayHistory = 0.9
-		decayVariants = 0.85
+		decaySimilarity = 0.85
+		decayVariant = 0.85
 		numSpread = 2
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
 		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
 		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
-		if 'decayVariants' in node.attrib: decayVariants = float(node.attrib['decayVariants'])
+		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
 		if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
+		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
+
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
 		return PFISWithVariantHierarchy(self.langHelper, algoName,
-			fileName, history=history, goal=goal,
-			decayFactor=decayFactor, decayVariants=decayVariants, decayHistory=decayHistory,
-			numSpread=numSpread,
-			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+		                                fileName, history=history, goal=goal,
+		                                decayFactor=decayFactor, decaySimilarity=decaySimilarity, decayHistory=decayHistory,
+		                                decayVariant=decayVariant, numSpread=numSpread,
+		                                includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
 	def __parsePFISTouchOnce(self, node, graphTypeSuffix):
 		history = False
 		goal = False
 		decayFactor = 0.85
-		decayVariants = 0.85
+		decaySimilarity = 0.85
+		decayVariant = 0.85
 		decayHistory = 0.9
 
 		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
 		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
 		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
-		if 'decayVariants' in node.attrib: decayVariants = float(node.attrib['decayVariants'])
+		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
+		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
 		return PFISTouchOnce(self.langHelper, algoName,
 			fileName, history=history, goal=goal,
-			decayFactor=decayFactor, decayHistory=decayHistory, decayVariants=decayVariants,
+			decayFactor=decayFactor, decayHistory=decayHistory, decaySimilarity=decaySimilarity, decayVariant=decayVariant,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
 	def __parseRecency(self, node, graphTypeSuffix):

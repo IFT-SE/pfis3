@@ -104,7 +104,7 @@ class PfisGraph(object):
 
             elif action == 'Output declaration':
                 #TODO: Sruti, Souti: fill in actuals. This is a dummy for getting in the node in the graph.
-                self._addEdge(target, "hexcom", targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+                self.graph.add_node(target, {"type": NodeType.OUTPUT})
 
         c.close()
         
@@ -230,6 +230,15 @@ class PfisGraph(object):
                           referrerNodeType,
                           EdgeType.TYPE)
 
+        if self.variantTopology:
+            if self.langHelper.isNavigablePatch(target):
+                variantName = self.langHelper.getVariantName(target)
+                self._addEdge(target, variantName, targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_CONTAINS)
+            if self.langHelper.isNavigablePatch(referrer):
+                variantName = self.langHelper.getVariantName(referrer)
+                self._addEdge(referrer, variantName, referrerNodeType, NodeType.VARIANT, EdgeType.VARIANT_CONTAINS)
+
+
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
     
@@ -343,9 +352,9 @@ class PfisGraph(object):
             edge_data = self.graph.get_edge_data(edge[0], edge[1])
             if EdgeType.ADJACENT in edge_data["types"]\
                     or EdgeType.CALLS in edge_data["types"] \
-                    or EdgeType.VARIANT_OF in edge_data["types"]:
+                    or EdgeType.SIMILAR in edge_data["types"]:
                 topologyLinkEdges = topologyLinkEdges + 1
-            if EdgeType.VARIANT_OF in edge_data["types"]:
+            if EdgeType.SIMILAR in edge_data["types"]:
                 variantEdges = variantEdges+1
                 if edge[0] != edge[1] and 'changes.txt' in edge[0] and 'changes.txt' in edge[1]:
                     changelogEdges = changelogEdges + 1

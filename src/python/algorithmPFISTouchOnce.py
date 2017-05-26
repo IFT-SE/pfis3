@@ -4,9 +4,9 @@ from collections import deque
 class PFISTouchOnce(PFISBase):
         
     def __init__(self, langHelper, name, fileName, history=False, goal = False, \
-                 decayFactor = 0.85, decayVariants=0.85, decayHistory = 0.9, includeTop = False, numTopPredictions=0):
+                 decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, includeTop = False, numTopPredictions=0):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
-                          decayFactor, decayVariants, decayHistory, includeTop, numTopPredictions)
+                          decayFactor, decaySimilarity, decayVariant, decayHistory, includeTop, numTopPredictions)
 
     def spreadActivation(self, pfisGraph):
         queue = deque()
