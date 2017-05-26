@@ -5,12 +5,16 @@ from gensim import similarities
 from gensim.corpora.dictionary import Dictionary
 from gensim.corpora.textcorpus import TextCorpus
 from predictions import Prediction
+from graphAttributes import NodeType
 
 class LexicalBase(PredictiveAlgorithm):
     def __init__(self, langHelper, name, fileName, dbFilePath, includeTop = False, numTopPredictions=0):
         PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions)
         self.lexicalHelper = LexicalHelper(dbFilePath, langHelper)
-        
+
+    def _isLexicalPatch(self, fqn):
+        return not self.langHelper.isOutputFqn(fqn)
+
     def makePrediction(self, pfisGraph, navPath, navNumber):
         if navNumber < 1 or navNumber >= navPath.getLength():
             raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
@@ -23,50 +27,52 @@ class LexicalBase(PredictiveAlgorithm):
             endTimestamp = navToPredict.toFileNav.timestamp
             fromMethodFqn = navToPredict.fromFileNav.methodFqn
             methodToPredict = navToPredict.toFileNav.methodFqn
-            
-            # The reason we do the query from one extra backwards is because of
-            # the duplication nonsense in PFIG
-            # TODO: David to double check if this approach is feasible, do not
-            # delete the below yet
-#             if navPath.navigations[navNumber - 1].fromFileNav is not None:
-#                 startTimestamp = navPath.navigations[navNumber - 1].fromFileNav.timestamp
-            
-            self.lexicalHelper.addDocumentsToCorpus(startTimestamp, endTimestamp, pfisGraph)
-            model = self.getModel()
-            fromMethodFqnEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
-            sorted_sims = self.lexicalHelper.getSimilarityMatrix(model, fromMethodFqnEquivalent, True)
-            
-            mapMethodsToScore = {}
-            
-            for i in range(0, len(sorted_sims)):
-                _, score = sorted_sims[i]
-                sortedMethods.append(self.lexicalHelper.corpus.methodFqns[i])
-                mapMethodsToScore[self.lexicalHelper.corpus.methodFqns[i]] = score
 
-            patchToPredictEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
-            if patchToPredictEquivalent not in mapMethodsToScore.keys():
-                print "Warning: Cannot predict using TF-IDF: ", navNumber, methodToPredict
-                return Prediction(navNumber, 999999, len(sortedMethods), 0,
-                                    str(navToPredict.fromFileNav),
-                                   str(navToPredict.toFileNav),
-                                   navToPredict.toFileNav.timestamp)
+            if self._isLexicalPatch(fromMethodFqn) and self._isLexicalPatch(methodToPredict):
+                # The reason we do the query from one extra backwards is because of
+                # the duplication nonsense in PFIG
+                # TODO: David to double check if this approach is feasible, do not
+                # delete the below yet
+    #             if navPath.navigations[navNumber - 1].fromFileNav is not None:
+    #                 startTimestamp = navPath.navigations[navNumber - 1].fromFileNav.timestamp
 
-            value = mapMethodsToScore[patchToPredictEquivalent]
-            firstIndex = self.getFirstIndex(sortedMethods, mapMethodsToScore, value)
-            lastIndex = self.getLastIndex(sortedMethods, mapMethodsToScore, value)
-            numTies = lastIndex - firstIndex + 1
-            rankWithTies =  self.getRankConsideringTies(firstIndex + 1, numTies)
-            
-            topPredictions = []
-            if self.includeTop:
-                topPredictions = self.getTopPredictions(sortedMethods, mapMethodsToScore)
+                self.lexicalHelper.addDocumentsToCorpus(startTimestamp, endTimestamp, pfisGraph)
+                model = self.getModel()
+                fromMethodFqnEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
+                sorted_sims = self.lexicalHelper.getSimilarityMatrix(model, fromMethodFqnEquivalent, True)
 
-            return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
-                       str(navToPredict.fromFileNav), 
-                       str(navToPredict.toFileNav),
-                       navToPredict.toFileNav.timestamp,
-                       topPredictions)
+                mapMethodsToScore = {}
+
+                for i in range(0, len(sorted_sims)):
+                    _, score = sorted_sims[i]
+                    sortedMethods.append(self.lexicalHelper.corpus.methodFqns[i])
+                    mapMethodsToScore[self.lexicalHelper.corpus.methodFqns[i]] = score
+
+                patchToPredictEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+                if patchToPredictEquivalent not in mapMethodsToScore.keys():
+                    print "Warning: Cannot predict using TF-IDF: ", methodToPredict
+                    return Prediction(navNumber, 999999, len(sortedMethods), 0,
+                                        str(navToPredict.fromFileNav),
+                                       str(navToPredict.toFileNav),
+                                       navToPredict.toFileNav.timestamp)
+
+                value = mapMethodsToScore[patchToPredictEquivalent]
+                firstIndex = self.getFirstIndex(sortedMethods, mapMethodsToScore, value)
+                lastIndex = self.getLastIndex(sortedMethods, mapMethodsToScore, value)
+                numTies = lastIndex - firstIndex + 1
+                rankWithTies =  self.getRankConsideringTies(firstIndex + 1, numTies)
+
+                topPredictions = []
+                if self.includeTop:
+                    topPredictions = self.getTopPredictions(sortedMethods, mapMethodsToScore)
+
+                return Prediction(navNumber, rankWithTies, len(sortedMethods), numTies,
+                           str(navToPredict.fromFileNav),
+                           str(navToPredict.toFileNav),
+                           navToPredict.toFileNav.timestamp,
+                           topPredictions)
             
+
         return Prediction(navNumber, 999999, len(sortedMethods), 0,
                str(navToPredict.fromFileNav), 
                str(navToPredict.toFileNav),
