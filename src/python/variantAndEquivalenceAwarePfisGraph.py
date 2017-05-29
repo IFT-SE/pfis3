@@ -23,34 +23,29 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 	def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
 
-		self._updateEquivalenceInformationIfNeeded(node1)
-		self._updateEquivalenceInformationIfNeeded(node2)
+		self._updateEquivalenceInformation(node1)
+		self._updateEquivalenceInformation(node2)
 
 		node1Equivalent = self.getFqnOfEquivalentNode(node1)
 		node2Equivalent = self.getFqnOfEquivalentNode(node2)
 
 		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
-	def _updateEquivalenceInformationIfNeeded(self, node):
-		if self.langHelper.isNavigablePatch(node):
-			self.addPatchIfNotPresent(node)
+	def _updateEquivalenceInformation(self, node, setAsNonEquivalent=False):
+		if self.langHelper.isNavigablePatch(node) \
+				and self.getPatchByFqn(node) is None:
+			newPatch = self.getNewPatch(node, setAsNonEquivalent)
+			self.fqnToIdMap[node] = newPatch.uuid
+			if newPatch.uuid not in self.idToPatchMap.keys():
+				self.idToPatchMap[newPatch.uuid] = newPatch
 
-	def addPatchIfNotPresent(self, patchFqn):
-		# See patch for same FQN exists, else add
-		if self.getPatchByFqn(patchFqn) is not None:
-			return
-		newPatch = self.__getNewlyVisitedPatch(patchFqn)
-		#Update the patch details in fqn-id-node maps
-		if newPatch.uuid not in self.idToPatchMap.keys():
-			self.idToPatchMap[newPatch.uuid] = newPatch
-		self.fqnToIdMap[patchFqn] = newPatch.uuid
-
-	def __getNewlyVisitedPatch(self, patchFqn):
+	def getNewPatch(self, patchFqn, setAsNonEquivalent=False):
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
-			# If it is a method patch (not PFIGHeader), get the right patch UUID from the equivalence DB
-			if not self.langHelper.isPfigHeaderFqn(patchFqn):
-				self.__updatePatchUUIDFromEquivalenceDb(newPatch)
+
+			if not setAsNonEquivalent:
+				if not self.langHelper.isPfigHeaderFqn(patchFqn):
+					self.__updatePatchUUIDFromEquivalenceDb(newPatch)
 
 		elif self.langHelper.isChangelogFqn(patchFqn):
 			newPatch = ChangelogPatch(patchFqn)
@@ -92,12 +87,10 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 
 	def cloneNode(self, cloneTo, cloneFrom):
-		if self.langHelper.isMethodFqn(cloneTo) or self.langHelper.isOutputFqn(cloneTo):
-			self.fqnToIdMap[cloneTo] = self.fqnToIdMap[cloneFrom]
+		VariantAwarePfisGraph.cloneNode(self, cloneTo, cloneFrom)
 
-		if self.langHelper.isChangelogFqn(cloneTo):
-			VariantAwarePfisGraph.cloneNode(self, cloneTo, cloneFrom)
-			self._updateEquivalenceInformationIfNeeded(cloneTo)
+		# Do not add in actual equivalence information, for this temporarily created patch
+		self._updateEquivalenceInformation(cloneTo, setAsNonEquivalent=True)
 
 		return
 
