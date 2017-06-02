@@ -416,7 +416,7 @@ class PfisGraph(object):
                                        node1, node1Equiv, node2, node2Equiv))
 
     def getAllNeighbors(self, node):
-        edges = EdgeType.getStandardEdgeTypes()
+        edges = EdgeType.getAll()
         return self.getNeighborsOfDesiredEdgeTypes(node, edges)
 
     def getFqnOfEquivalentNode(self, methodFqn):

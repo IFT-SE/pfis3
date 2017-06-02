@@ -27,7 +27,3 @@ class VariantAwarePfisGraph(PfisGraph):
 			if node1 != node2 and self.graph.node[node2]['type'] == node1Type:
 				if self.langHelper.isVariantOf(node1, node2):
 					self._addEdge(node1, node2, node1Type, self.graph.node[node2]['type'], EdgeType.SIMILAR)
-
-	def getAllNeighbors(self, node):
-		edges = EdgeType.getAll()
-		return self.getNeighborsOfDesiredEdgeTypes(node, edges)

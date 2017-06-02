@@ -68,6 +68,21 @@ class NodeType(object):
 
         return None
 
+    @staticmethod
+    def locationTypes():
+        return [
+            NodeType.PACKAGE,
+            NodeType.FILE,
+            NodeType.CLASS,
+            NodeType.METHOD,
+            NodeType.VARIABLE,
+            NodeType.PRIMITIVE,
+            NodeType.PROJECT,
+            NodeType.SPECIAL,
+            NodeType.CHANGELOG,
+            NodeType.OUTPUT
+        ]
+
 
 class EdgeType(object):
     #TODO: Find a smarter way that this duplicate
@@ -94,12 +109,6 @@ class EdgeType(object):
             EdgeType.SIMILAR,
             EdgeType.IN_VARIANT
         ]
-
-    @staticmethod
-    def getStandardEdgeTypes():
-        edges = EdgeType.getAll()
-        edges.remove(EdgeType.SIMILAR)
-        return edges
 
     @staticmethod
     def getEdgesToClone():

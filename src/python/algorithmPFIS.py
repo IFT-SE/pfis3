@@ -1,4 +1,5 @@
 from algorithmPFISBase import PFISBase
+from graphAttributes import NodeType, EdgeType
 
 class PFIS(PFISBase):
 
@@ -11,7 +12,7 @@ class PFIS(PFISBase):
                           decayFactor, decaySimilarity, decayVariant, decayHistory, includeTop, numTopPredictions, verbose)
         self.NUM_SPREAD = numSpread
 
-    def spreadActivation(self, pfisGraph):
+    def spreadActivation1(self, pfisGraph):
         for i  in range(0, self.NUM_SPREAD):
             print "Spreading {} of {}".format(i+1, self.NUM_SPREAD)
             for node in self.mapNodesToActivation.keys():
@@ -36,6 +37,47 @@ class PFIS(PFISBase):
 
         if self.VERBOSE:
             self.printNodes(pfisGraph)
+
+    def spreadActivation(self, pfisGraph):
+        for i in range(0, self.NUM_SPREAD):
+            print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
+
+            for node in self.mapNodesToActivation.keys():
+                if pfisGraph.containsNode(node):
+                    if i%2 == 0:
+                        self.spread(pfisGraph, node, [NodeType.WORD, NodeType.VARIANT])
+                    else:
+                        self.spread(pfisGraph, node, NodeType.locationTypes())
+
+            if self.VERBOSE:
+                self.printNodes(pfisGraph)
+
+
+    def spread(self, pfisGraph, node, spreadToNodeTypes):
+        edgeWeight = 1.0
+
+        neighbors = pfisGraph.getAllNeighbors(node)
+        neighborsToSpread = [n for n in neighbors if pfisGraph.getNode(n)['type'] in spreadToNodeTypes]
+        if len(neighborsToSpread) > 0:
+            edgeWeight = 1.0 / len(neighbors)
+
+        for neighbor in neighborsToSpread:
+            edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
+            decay_factor = self.getDecayWeight(edge_types)
+
+            if neighbor not in self.mapNodesToActivation:
+                self.mapNodesToActivation[neighbor] = 0.0
+            originalWeight = self.mapNodesToActivation[neighbor]
+
+            updatedWeight = originalWeight + (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
+            self.mapNodesToActivation[neighbor] = updatedWeight
+
+            if self.VERBOSE:
+                print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor,
+                                                                   originalWeight,
+                                                                   self.mapNodesToActivation[node],
+                                                                   edgeWeight,
+                                                                   decay_factor, updatedWeight)
 
     def printNodes(self, pfisGraph):
         nodeList = pfisGraph.graph.nodes()
