@@ -79,7 +79,7 @@ class EdgeType(object):
     ADJACENT = 5
     TYPE = 6
     SIMILAR = 7
-    VARIANT_CONTAINS = 8
+    IN_VARIANT = 8
 
     @staticmethod
     def getAll():
@@ -92,11 +92,18 @@ class EdgeType(object):
             EdgeType.ADJACENT,
             EdgeType.TYPE,
             EdgeType.SIMILAR,
-            EdgeType.VARIANT_CONTAINS
+            EdgeType.IN_VARIANT
         ]
 
     @staticmethod
     def getStandardEdgeTypes():
         edges = EdgeType.getAll()
         edges.remove(EdgeType.SIMILAR)
+        return edges
+
+    @staticmethod
+    def getEdgesToClone():
+        edges = EdgeType.getAll()
+        edges.remove(EdgeType.SIMILAR)
+        edges.remove(EdgeType.IN_VARIANT)
         return edges

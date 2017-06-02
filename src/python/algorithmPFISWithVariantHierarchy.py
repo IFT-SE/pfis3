@@ -23,28 +23,9 @@ class PFISWithVariantHierarchy(PFIS):
 							  str(navToPredict.toFileNav),
 							  navToPredict.toFileNav.timestamp)
 
-		fromMethodFqn = navToPredict.fromFileNav.methodFqn
-		methodToPredict = navToPredict.toFileNav.methodFqn
+		return self._predictNavigationConsideringHierarchy(pfisGraph, navPath, navNumber)
 
-		if pfisGraph.variantTopology and self._isBetweenVariantNavigation(fromMethodFqn, methodToPredict):
-			prediction = self._predictBetweenVariantNavigation(pfisGraph, navPath, navNumber)
-			if prediction is None:
-				raise Exception("SS, BP: Investigate why, else this might be another case of unknown")
-			return prediction
-
-		else:
-			prediction = self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
-			if prediction is None:
-				raise Exception("SS, BP: Investigate why, else this might be another case of unknown")
-			return prediction
-
-	def _isBetweenVariantNavigation(self, fromFqn, toFqn):
-		fromVariant = self.langHelper.getVariantName(fromFqn)
-		toVariant = self.langHelper.getVariantName(toFqn)
-		return fromVariant != toVariant
-
-
-	def _predictBetweenVariantNavigation(self, pfisGraph, navPath, navNumber):
+	def _predictNavigationConsideringHierarchy(self, pfisGraph, navPath, navNumber):
 		navToPredict = navPath.getNavigation(navNumber)
 		fromPatchFqn = navToPredict.fromFileNav.methodFqn
 		toPatchFqn = navToPredict.toFileNav.methodFqn
@@ -55,20 +36,35 @@ class PFISWithVariantHierarchy(PFIS):
 		fromPatchType = pfisGraph.getNode(fromPatchFqn)['type']
 
 		if fromPatchType in [NodeType.METHOD, NodeType.OUTPUT]:
-			return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
+			return self._predictPatchesWithoutConsideringHierarchy(pfisGraph, navPath, navNumber)
 
 		elif fromPatchType == NodeType.CHANGELOG:
 			self.activatePatchWithGoalWordSimilarity(pfisGraph, fromPatchFqn, True)
-			variantPrediction = self.mapNodesToActivation[fromPatchFqn]
+			changelogGoalWordActivation = self.mapNodesToActivation[fromPatchFqn]
 
-			if variantPrediction == 0.0: #Changelog said "Not this variant, but something else!"
-				if toVariant == fromVariant:
-					# Person went into that variant -- Between-variant MISS
+			if changelogGoalWordActivation == 0.0:
+				if fromVariant != toVariant:
+					return self._predictPatchesWithoutConsideringHierarchy(pfisGraph, navPath, navNumber)
+
+				if fromVariant == toVariant:
+					# Person went into that variant, even when changelog was irrelevant to goal words. Prediction MISS.
+					print "Predicted won't enter variant, but programmer entered! MISS: 888888."
 					return Prediction(navNumber, 888888, 0, 0,
 								  str(navToPredict.fromFileNav),
 								  str(navToPredict.toFileNav),
 								  navToPredict.toFileNav.timestamp)
-			return self._predictWithinVariantNavigation(pfisGraph, navPath, navNumber)
 
-	def _predictWithinVariantNavigation(self, pfisGraph, navPath, navNumber):
+			if changelogGoalWordActivation > 0.0:
+				if fromVariant == toVariant:
+					return self._predictPatchesWithoutConsideringHierarchy(pfisGraph, navPath, navNumber)
+
+				if fromVariant != toVariant:
+					print "Predicted should enter variant, but programmer went elsewhere! MISS: 888888."
+					return Prediction(navNumber, 888888, 0, 0,
+									  str(navToPredict.fromFileNav),
+									  str(navToPredict.toFileNav),
+									  navToPredict.toFileNav.timestamp)
+
+
+	def _predictPatchesWithoutConsideringHierarchy(self, pfisGraph, navPath, navNumber):
 		return PFIS.makePrediction(self, pfisGraph, navPath, navNumber)

@@ -235,10 +235,10 @@ class PfisGraph(object):
         if self.variantTopology:
             if self.langHelper.isNavigablePatch(target):
                 variantName = self.langHelper.getVariantName(target)
-                self._addEdge(target, variantName, targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_CONTAINS)
+                self._addEdge(target, variantName, targetNodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
             if self.langHelper.isNavigablePatch(referrer):
                 variantName = self.langHelper.getVariantName(referrer)
-                self._addEdge(referrer, variantName, referrerNodeType, NodeType.VARIANT, EdgeType.VARIANT_CONTAINS)
+                self._addEdge(referrer, variantName, referrerNodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
 
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
@@ -401,6 +401,11 @@ class PfisGraph(object):
 
         return validNeighbors
 
+    def getNeighborsExcludingContainingVariant(self, node):
+        edgeTypes = EdgeType.getAll()
+        edgeTypes.remove(EdgeType.IN_VARIANT)
+        return self.getNeighborsOfDesiredEdgeTypes(node, edgeTypes)
+
     def getEdgeTypesBetween(self, node1, node2):
         node1Equiv = self.getFqnOfEquivalentNode(node1)
         node2Equiv = self.getFqnOfEquivalentNode(node2)
@@ -435,8 +440,11 @@ class PfisGraph(object):
         if clonedNode['type'] in [NodeType.METHOD, NodeType.OUTPUT]:
             self._copyPatchContent(cloneFrom, cloneTo, nodeType)
 
+        if self.variantTopology:
+            self._addEdge(cloneTo, self.langHelper.getVariantName(cloneTo), nodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
+
     def _copyPatchContent(self, cloneFromFqn, cloneTo, nodeType):
-        sourceNodeNeighbors = self.getAllNeighbors(cloneFromFqn)
+        sourceNodeNeighbors = self.getNeighborsOfDesiredEdgeTypes(cloneFromFqn, EdgeType.getEdgesToClone())
         for neighborFqn in sourceNodeNeighbors:
             edgeTypes = self.getEdgeTypesBetween(cloneFromFqn, neighborFqn)
             for edgeType in edgeTypes:

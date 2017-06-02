@@ -11,7 +11,11 @@ class GraphFactory:
 		self.goalWords = goalWords
 		self.variantTopology = variantTopology
 
-	def getGraph(self, graphType, variantsDb):
+	def getGraph(self, algorithmsNode):
+		nodeAttrib = algorithmsNode.attrib
+		if 'graphType' in nodeAttrib:
+			graphType = nodeAttrib["graphType"]
+
 		if graphType == None:
 			graphType = "PfisGraph"
 
@@ -22,6 +26,14 @@ class GraphFactory:
 			return VariantAwarePfisGraph(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords, self.goalWords)
 
 		if graphType.lower() == "VariantAndEquivalenceAwarePfisGraph".lower():
+			if 'variantsDb' in nodeAttrib:
+				variantsDb = nodeAttrib["variantsDb"]
+
 			if variantsDb is None:
 				raise Exception("Missing attrib: variantsDb for graphType VariantAndEquivalenceAwarePfisGraph in XML config file.")
-			return VariantAndEquivalenceAwarePfisGraph(self.dbPath, self.langHelper, self.projSrcPath, variantsDb, self.stopWords, self.goalWords)
+
+			divorcedUntilMarried = False
+			if 'divorcedUntilMarried' in nodeAttrib and nodeAttrib["divorcedUntilMarried"].lower() == 'true':
+				divorcedUntilMarried = True
+
+			return VariantAndEquivalenceAwarePfisGraph(self.dbPath, self.langHelper, self.projSrcPath, variantsDb, divorcedUntilMarried, self.stopWords, self.goalWords)

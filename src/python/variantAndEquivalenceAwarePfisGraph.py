@@ -13,13 +13,18 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
                             'where vf.method = ? and start <= ? and end >=?'
 
 
-	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, stopWords=[], goalWords=[], verbose=False):
+	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, divorcedUntilMarried=False, stopWords=[], goalWords=[], verbose=False):
 		VariantAwarePfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
 		self.variantsDb = variantsDb
 
 		self.idToPatchMap = {}
 		self.fqnToIdMap = {}
-		self.name = "Variant and equivalence aware: ", variantsDb
+		self.divorcedUntilMarried = divorcedUntilMarried
+
+		self.name = "Variant and equivalence aware: " + variantsDb
+		if divorcedUntilMarried:
+			self.name = self.name + "(DUM)"
+
 
 	def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
 
@@ -31,19 +36,19 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
-	def _updateEquivalenceInformation(self, node, setAsNonEquivalent=False):
+	def _updateEquivalenceInformation(self, node):
 		if self.langHelper.isNavigablePatch(node) \
 				and self.getPatchByFqn(node) is None:
-			newPatch = self.getNewPatch(node, setAsNonEquivalent)
+			newPatch = self.getNewPatch(node)
 			self.fqnToIdMap[node] = newPatch.uuid
 			if newPatch.uuid not in self.idToPatchMap.keys():
 				self.idToPatchMap[newPatch.uuid] = newPatch
 
-	def getNewPatch(self, patchFqn, setAsNonEquivalent=False):
+	def getNewPatch(self, patchFqn, tempNode = False):
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
 
-			if not setAsNonEquivalent:
+			if not tempNode:
 				if not self.langHelper.isPfigHeaderFqn(patchFqn):
 					self.__updatePatchUUIDFromEquivalenceDb(newPatch)
 
@@ -85,14 +90,27 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		patchRow = self.__getPatchRow(newPatch.fqn)
 		newPatch.uuid = patchRow[4]
 
-
 	def cloneNode(self, cloneTo, cloneFrom):
+		if self.divorcedUntilMarried:
+			self._cloneDivorceUntilMarried(cloneTo, cloneFrom)
+		else:
+			self._cloneMarriedUntilDivorced(cloneTo, cloneFrom)
+
+	def _cloneMarriedUntilDivorced(self, cloneTo, cloneFrom):
+		if self.langHelper.isChangelogFqn(cloneTo):
+			VariantAwarePfisGraph.cloneNode(self, cloneTo, cloneFrom)
+			tempPatch = self.getNewPatch(cloneTo)
+			self.idToPatchMap[tempPatch.uuid] = tempPatch
+			self.fqnToIdMap[cloneTo] = tempPatch.uuid
+		else:
+			self.fqnToIdMap[cloneTo] = self.fqnToIdMap[cloneFrom]
+
+	def _cloneDivorceUntilMarried(self, cloneTo, cloneFrom):
 		VariantAwarePfisGraph.cloneNode(self, cloneTo, cloneFrom)
+		tempPatch = self.getNewPatch(cloneTo, tempNode=True)
+		self.idToPatchMap[tempPatch.uuid] = tempPatch
+		self.fqnToIdMap[cloneTo] = tempPatch.uuid
 
-		# Do not add in actual equivalence information, for this temporarily created patch
-		self._updateEquivalenceInformation(cloneTo, setAsNonEquivalent=True)
-
-		return
 
 	def removeNode(self, nodeFqn):
 		# Output and method patches are treated as equivalent to last seen, so just update the maps.

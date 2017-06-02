@@ -38,14 +38,7 @@ class XMLOptionsParser(object):
 
 
     def __getGraph(self, algorithmsNode):
-        graphType = None
-        variantsDb = None
-        if 'graphType' in algorithmsNode.attrib:
-            graphType = algorithmsNode.attrib["graphType"]
-        if 'variantsDb' in algorithmsNode.attrib:
-            variantsDb = algorithmsNode.attrib["variantsDb"]
-
-        return self.graphFactory.getGraph(graphType, variantsDb)
+        return self.graphFactory.getGraph(algorithmsNode)
 
     def __getAlgorithms(self, algorithmsNode):
         algorithms = []

@@ -14,14 +14,12 @@ class VariantAwarePfisGraph(PfisGraph):
 			self._addEdgesToOtherVariants(referrer, referrerNodeType)
 			self._addEdgesToOtherVariants(target, targetNodeType)
 
-		if self.variantTopology:
-			if self.langHelper.isNavigablePatch(target):
-				variantName = self.langHelper.getVariantName(target)
-				self._addEdge(target, variantName, targetNodeType, NodeType.VARIANT, EdgeType.VARIANT_CONTAINS)
-			if self.langHelper.isNavigablePatch(referrer):
-				variantName = self.langHelper.getVariantName(referrer)
-				self._addEdge(referrer, variantName, referrerNodeType, NodeType.VARIANT, EdgeType.VARIANT_CONTAINS)
+	def cloneNode(self, cloneTo, cloneFrom):
+		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
 
+		# Add SIMILAR edges between newly created node and its variants.
+		nodeType = self.getNode(cloneTo)['type']
+		self._addEdgesToOtherVariants(cloneTo, nodeType)
 
 	def _addEdgesToOtherVariants(self, node1, node1Type):
 		nodes = self.graph.nodes()
@@ -33,10 +31,3 @@ class VariantAwarePfisGraph(PfisGraph):
 	def getAllNeighbors(self, node):
 		edges = EdgeType.getAll()
 		return self.getNeighborsOfDesiredEdgeTypes(node, edges)
-
-	def cloneNode(self, cloneTo, cloneFrom):
-		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
-
-		# Add SIMILAR edges between newly created node and its variants.
-		nodeType = self.getNode(cloneTo)['type']
-		self._addEdgesToOtherVariants(cloneTo, nodeType)

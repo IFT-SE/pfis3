@@ -16,7 +16,7 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_SIMILARITY = decaySimilarity
 		self.DECAY_VARIANT = decayVariant
 		self.mapNodesToActivation = None
-		self.VERBOSE = False
+		self.VERBOSE = True
 
 		self.GOAL_WORD_ACTIVATION = 1.0
 
@@ -24,6 +24,7 @@ class PFISBase(PredictiveAlgorithm):
 		raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
 	def makePrediction(self, pfisGraph, navPath, navNumber):
+		print "Predict #{}: {}".format(navNumber, navPath.getNavigation(navNumber))
 		if navNumber < 1 or navNumber >= navPath.getLength():
 			raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 
@@ -59,11 +60,13 @@ class PFISBase(PredictiveAlgorithm):
 			if self.includeTop:
 				topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
 
+			print "Predicted rank: ", ranking["rankWithTies"]
 			return Prediction(navNumber, ranking["rankWithTies"], len(sortedMethods), ranking["numTies"],
 			                  str(navToPredict.fromFileNav),
 			                  str(navToPredict.toFileNav),
 			                  navToPredict.toFileNav.timestamp,
 			                  topPredictions)
+
 		else:
 			raise Exception("Node not in activation list: ", toMethodEquivalent)
 
@@ -145,7 +148,7 @@ class PFISBase(PredictiveAlgorithm):
 		def getEdgeWeightForType(edgeType):
 			if edgeType == EdgeType.SIMILAR:
 				return self.DECAY_SIMILARITY
-			elif edgeType == EdgeType.VARIANT_CONTAINS:
+			elif edgeType == EdgeType.IN_VARIANT:
 				return self.DECAY_VARIANT
 			elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.CONTAINS]:
 				return self.DECAY_FACTOR
