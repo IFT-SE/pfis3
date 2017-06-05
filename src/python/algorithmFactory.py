@@ -12,7 +12,6 @@ from algorithmVariantOfLinks import VariantOf
 from algorithmGoalWordSimilarity import GoalWordSimilarity
 from algorithmPFISWithVariantHierarchy import PFISWithVariantHierarchy
 
-
 class AlgorithmFactory:
 	def __init__(self, langHelper, dbPath):
 		self.langHelper = langHelper
@@ -28,19 +27,14 @@ class AlgorithmFactory:
 		if node.attrib['enabled'] == 'true':
 			algClass = node.attrib['class']
 
-			if algClass == 'Adjacency' : return self.__parseAdjacency(node, suffix)
-			elif algClass == 'CallDepth' : return self.__parseCallDepth(node, suffix)
-			elif algClass == 'Frequency' : return self.__parseFrequency(node, suffix)
-			elif algClass == 'PFIS' : return self.__parsePFIS(node, suffix)
-			elif algClass == 'PFISTouchOnce' : return self.__parsePFISTouchOnce(node, suffix)
-			elif algClass == 'Recency' : return self.__parseRecency(node, suffix)
-			elif algClass == 'SourceTopology' : return self.__parseSourceTopology(node, suffix)
-			elif algClass == 'TFIDF' : return self.__parseTFIDF(node, suffix)
+			if 'PFIS' in algClass:
+				return self.__parsePFIS(node, suffix, algClass)
+			elif algClass in ['Adjacency', 'CallDepth', "Frequency", "Recency", "SourceTopology", "VariantOf"]:
+				return self.__parseSingleFactors(node, suffix, algClass)
+			elif algClass in ['TFIDF', "GoalWordSimilarity"]:
+				return self.__parseTextSimilaritySingleFactorModels(node, suffix, algClass)
 			elif algClass == 'LSI' : return self.__parseLSI(node, suffix)
 			elif algClass == 'WorkingSet' : return self.__parseWorkingSet(node, suffix)
-			elif algClass == 'VariantOf' : return self.__parseVariantOf(node, suffix)
-			elif algClass == "GoalWordSimilarity" : return self.__parseGoalWordSimilarity(node, suffix)
-			elif algClass == "PFISWithVariantHierarchy": return  self.__parsePFISWithVariantHierarchy(node, suffix)
 			else:
 				raise RuntimeError('parseAlgorithm: Unknown algorithm class: ' + algClass)
 
@@ -53,34 +47,27 @@ class AlgorithmFactory:
 			algoName = algoName + "__" + graphTypeSuffix
 		return (fileName + ".txt", algoName)
 
-	def __parseVariantOf(self, node, graphTypeSuffix):
+	def __parseSingleFactors(self, node, graphTypeSuffix, className):
+		nameClassMap = {
+			"VariantOf": VariantOf,
+			"Adjacency": Adjacency,
+			"CallDepth": CallDepth,
+			"Frequency": Frequency,
+			"Recency": Recency,
+			"SourceTopology": SourceTopology
+		}
+
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-		return VariantOf(self.langHelper, algoName,
+		return nameClassMap[className](self.langHelper, algoName,
 						 fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parseAdjacency(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-		return Adjacency(self.langHelper, algoName,
-			fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+	def __parsePFIS(self, node, graphTypeSuffix, className):
 
-	def __parseCallDepth(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-		return CallDepth(self.langHelper, algoName,
-			fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
-
-	def __parseFrequency(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-
-		return Frequency(self.langHelper, algoName,
-			fileName, includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
-
-	def __parsePFIS(self, node, graphTypeSuffix):
-		# TODO: Figure out a better way to deal with default values. If they are
-		# not in the XML, we shoudln't have to create variables for them
+		nameClassMap = {
+			"PFIS": PFIS,
+			"PFISWithVariantHierarchy": PFISWithVariantHierarchy
+		}
 
 		history = False
 		goal = False
@@ -88,7 +75,6 @@ class AlgorithmFactory:
 		decayHistory = 0.9
 		decaySimilarity = 0.85
 		decayVariant = 0.85
-		numSpread = 2
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
@@ -97,96 +83,33 @@ class AlgorithmFactory:
 		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
 		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
-		if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
-		return PFIS(self.langHelper, algoName,
+		if algoName == "PFISTouchOnce":
+			return PFISTouchOnce(self.langHelper, algoName,
+				fileName, history=history, goal=goal,
+				decayFactor=decayFactor, decayHistory=decayHistory, decaySimilarity=decaySimilarity, decayVariant=decayVariant,
+				includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
+		else:
+			numSpread = 2
+			if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
+
+			return nameClassMap[className](self.langHelper, algoName,
 		            fileName, history=history, goal=goal,
 		            decayFactor=decayFactor, decaySimilarity=decaySimilarity, decayHistory=decayHistory,
 		            numSpread=numSpread, decayVariant=decayVariant,
 		            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
-	def __parsePFISWithVariantHierarchy(self, node, graphTypeSuffix):
-		# TODO: Figure out a better way to deal with default values. If they are
-		# not in the XML, we shoudln't have to create variables for them
-
-		history = False
-		goal = False
-		decayFactor = 0.85
-		decayHistory = 0.9
-		decaySimilarity = 0.85
-		decayVariant = 0.85
-		numSpread = 2
-
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
-		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
-		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
-		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
-		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
-		if 'numSpread' in node.attrib: numSpread = int(node.attrib['numSpread'])
-		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
-
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-
-		return PFISWithVariantHierarchy(self.langHelper, algoName,
-		                                fileName, history=history, goal=goal,
-		                                decayFactor=decayFactor, decaySimilarity=decaySimilarity, decayHistory=decayHistory,
-		                                decayVariant=decayVariant, numSpread=numSpread,
-		                                includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
-
-	def __parsePFISTouchOnce(self, node, graphTypeSuffix):
-		history = False
-		goal = False
-		decayFactor = 0.85
-		decaySimilarity = 0.85
-		decayVariant = 0.85
-		decayHistory = 0.9
-
-		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
-		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
-		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
-		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
-		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
-		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
+	def __parseTextSimilaritySingleFactorModels(self, node, graphTypeSuffix, className):
+		algoClassMap = {
+			"TFIDF": TFIDF,
+			"GoalWordSimilarity": GoalWordSimilarity
+		}
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
-		return PFISTouchOnce(self.langHelper, algoName,
-			fileName, history=history, goal=goal,
-			decayFactor=decayFactor, decayHistory=decayHistory, decaySimilarity=decaySimilarity, decayVariant=decayVariant,
-			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
-
-	def __parseRecency(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-
-		return Recency(self.langHelper, algoName, fileName,
-			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
-
-	def __parseSourceTopology(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-
-		return SourceTopology(self.langHelper, algoName,
-			fileName, includeTop=topPredictionsOptions[0],
-			numTopPredictions=topPredictionsOptions[1])
-
-	def __parseTFIDF(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-
-		return TFIDF(self.langHelper, algoName,
-			fileName, dbFilePath=self.tempDbPath,
-			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
-
-	def __parseGoalWordSimilarity(self, node, graphTypeSuffix):
-		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
-
-		return GoalWordSimilarity(self.langHelper, algoName,
+		return algoClassMap[className](self.langHelper, algoName,
 			fileName, dbFilePath=self.tempDbPath,
 			includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
