@@ -17,6 +17,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		VariantAwarePfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
 		self.variantsDb = variantsDb
 
+		#TODO: This is a hack. Should go off when output equivalence is moved to common equivalence DB
+		self.variantsOutputDb = os.path.join(os.path.dirname(self.variantsDb), 'variants-output.db')
+
 		self.idToPatchMap = {}
 		self.fqnToIdMap = {}
 		self.divorcedUntilMarried = divorcedUntilMarried
@@ -41,6 +44,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 				and self.getPatchByFqn(node) is None:
 			newPatch = self.getNewPatch(node)
 			self.fqnToIdMap[node] = newPatch.uuid
+
 			if newPatch.uuid not in self.idToPatchMap.keys():
 				self.idToPatchMap[newPatch.uuid] = newPatch
 
@@ -55,13 +59,22 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		elif self.langHelper.isChangelogFqn(patchFqn):
 			newPatch = ChangelogPatch(patchFqn)
 
-		#TODO: Sruti, Souti: account for equivalence
 		elif self.langHelper.isOutputFqn(patchFqn):
 			newPatch = OutputPatch(patchFqn)
-
+			if not tempNode:
+				self.__updateEquivalenceForOutput(newPatch, patchFqn)
 		else:
 			raise Exception("Not a patch fqn:", patchFqn)
 		return newPatch
+
+	def __updateEquivalenceForOutput(self, newPatch, patchFqn):
+		#TODO: Sruti, Souti: cleanup this getOutputContent, put output equivalence info in the equivalence DBs.
+		newPatchContent = self.__getOutputContent(patchFqn)
+		newPatch.content = newPatchContent
+
+		for _, patch in self.idToPatchMap.items():
+			if patch.patchType == PatchType.OUTPUT and patch.content == newPatchContent:
+				newPatch.uuid = patch.uuid
 
 	def getPatchByFqn(self, fqn):
 		if fqn in self.fqnToIdMap.keys():
@@ -145,7 +158,22 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		c.execute(self.FETCH_PATCH_FOR_FQN_QUERY, [pathRelativeToVariant, variantNum, variantNum])
 		patchRow = c.fetchone()
 
+		c.close()
 		conn.close()
 
 		return patchRow
+
+	def __getOutputContent(self, patchFqn):
+		variant_name = self.langHelper.getVariantName(patchFqn)
+		conn = sqlite3.connect(self.variantsOutputDb)
+		c = conn.cursor()
+
+		c.execute('SELECT output FROM variant_output WHERE variant=?', [variant_name])
+
+		content = c.fetchone()[0]
+
+		c.close()
+		conn.close()
+
+		return content
 

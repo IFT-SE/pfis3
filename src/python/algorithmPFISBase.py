@@ -46,16 +46,16 @@ class PFISBase(PredictiveAlgorithm):
 			print self.name
 
 		fromMethodEquivalentFqn = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
-		toMethodEquivalent = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
+		toMethodEquivalentFqn = pfisGraph.getFqnOfEquivalentNode(methodToPredict)
 
-		if fromMethodEquivalentFqn == toMethodEquivalent and navPath.ifNavToUnseenPatch(navNumber):
-			excludeMethod = None
-		else:
+		if fromMethodEquivalentFqn != toMethodEquivalentFqn:
 			excludeMethod = fromMethodEquivalentFqn
+		else:
+			excludeMethod = None
 
 		sortedMethods = self.__getMethodNodesFromGraph(pfisGraph, excludeMethod)
-		if toMethodEquivalent in sortedMethods:
-			ranking = self.getRankForMethod(toMethodEquivalent, sortedMethods, self.mapNodesToActivation)
+		if toMethodEquivalentFqn in sortedMethods:
+			ranking = self.getRankForMethod(toMethodEquivalentFqn, sortedMethods, self.mapNodesToActivation)
 			topPredictions = []
 			if self.includeTop:
 				topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
@@ -68,7 +68,7 @@ class PFISBase(PredictiveAlgorithm):
 			                  topPredictions)
 
 		else:
-			raise Exception("Node not in activation list: ", toMethodEquivalent)
+			raise Exception("Node not in activation list: ", toMethodEquivalentFqn)
 
 	def initialize(self, fromMethodFqn, navNumber, navPath, pfisGraph):
 		# Reset the graph

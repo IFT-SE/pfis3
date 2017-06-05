@@ -11,11 +11,14 @@ class Patch(object):
         self.length = -1
         self.uuid = uuid.uuid1()
         self.variantInfo = None
+        self.patchType = None
+
 
 class MethodPatch(Patch):
 
     def __init__(self, fqn):
         Patch.__init__(self, fqn)
+        self.patchType = PatchType.SOURCE
 
     def isOffsetInMethod(self, offset):
         endOffset = self.startOffset + self.length
@@ -32,10 +35,13 @@ class MethodPatch(Patch):
 class ChangelogPatch(Patch):
     def __init__(self, fqn):
         Patch.__init__(self, fqn)
+        self.patchType = PatchType.CHANGELOG
 
 class OutputPatch(Patch):
     def __init__(self, fqn):
         Patch.__init__(self, fqn)
+        self.content = None
+        self.patchType = PatchType.OUTPUT
 
 class PatchType(object):
     SOURCE = 'source_code'

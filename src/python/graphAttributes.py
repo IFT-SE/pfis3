@@ -11,6 +11,7 @@ class NodeType(object):
     CHANGELOG = 9
     OUTPUT = 10
     VARIANT = 11
+    OUTPUT_INFO_FEATURE = 12
 
     __targetNodes = {}
     __targetNodes["Extends"] = CLASS
@@ -26,6 +27,7 @@ class NodeType(object):
     __targetNodes["Changelog declaration scent"] = CHANGELOG
     __targetNodes["Changelog declaration"] = CHANGELOG
     __targetNodes["Output declaration"] = OUTPUT
+    __targetNodes["Output declaration scent"] = OUTPUT
 
     __referrerNodes = {}
     __referrerNodes["Extends"] = CLASS
@@ -37,6 +39,7 @@ class NodeType(object):
     __referrerNodes["Variable declaration"] = VARIABLE
     __referrerNodes["Changelog declaration"] = CHANGELOG
     __referrerNodes["Output declaration"] = OUTPUT
+    __referrerNodes["Output declaration scent"] = OUTPUT_INFO_FEATURE
 
     @staticmethod
     def getTargetNodeType(action, target):

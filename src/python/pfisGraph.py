@@ -13,7 +13,8 @@ class PfisGraph(object):
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
                   "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', " \
-                  "'Changelog declaration', 'Changelog declaration scent', 'Output declaration') AND timestamp >= ? AND timestamp < ?"
+                  "'Changelog declaration', 'Changelog declaration scent', 'Output declaration', 'Output declaration scent') " \
+                  "AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
                      "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
@@ -80,7 +81,7 @@ class PfisGraph(object):
             if action in ('Package', 'Imports', 'Extends', 'Implements',
                           'Method declaration', 'Constructor invocation',
                           'Method invocation', 'Variable declaration',
-                          'Variable type', 'Changelog declaration'):
+                          'Variable type', 'Changelog declaration', 'Output declaration'):
                 for word in self.__getWordNodes_splitNoStem(target):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
         
@@ -104,9 +105,13 @@ class PfisGraph(object):
                 for word in self.getWordNodes_splitCamelAndStem(referrer):
                     self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
 
-            elif action == 'Output declaration':
-                #TODO: Sruti, Souti: fill in actuals. This is a dummy for getting in the node in the graph.
-                self.graph.add_node(target, {"type": NodeType.OUTPUT})
+            elif action == 'Output declaration scent':
+                for word in self.__getWordNodes_splitNoStem(referrer):
+                    self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
+
+                for word in self.getWordNodes_splitCamelAndStem(referrer):
+                    self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
+
 
         c.close()
         
