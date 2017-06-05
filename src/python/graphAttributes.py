@@ -83,7 +83,8 @@ class NodeType(object):
             NodeType.PROJECT,
             NodeType.SPECIAL,
             NodeType.CHANGELOG,
-            NodeType.OUTPUT
+            NodeType.OUTPUT,
+            NodeType.VARIANT
         ]
 
 
