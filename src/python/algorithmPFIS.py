@@ -12,8 +12,7 @@ class PFIS(PFISBase):
                           decayFactor, decaySimilarity, decayVariant, decayHistory, includeTop, numTopPredictions, verbose)
         self.NUM_SPREAD = numSpread
 
-    def spreadActivation0(self, pfisGraph):
-        # PFIS3, or CHI'17.
+    def spreadActivation(self, pfisGraph):
         for i  in range(0, self.NUM_SPREAD):
             print "Spreading {} of {}".format(i+1, self.NUM_SPREAD)
             for node in self.mapNodesToActivation.keys():
@@ -39,39 +38,6 @@ class PFIS(PFISBase):
         if self.VERBOSE:
             self.printNodes(pfisGraph)
 
-    def spreadActivation1(self, pfisGraph):
-        # Patch is a patch is a patch.
-        for i in range(0, self.NUM_SPREAD):
-            print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
-
-            for node in self.mapNodesToActivation.keys():
-                if pfisGraph.containsNode(node):
-                    if i%2 == 0:
-                        self.spread(pfisGraph, node, [NodeType.WORD])
-                    else:
-                        self.spread(pfisGraph, node, NodeType.locationTypes())
-
-            if self.VERBOSE:
-                self.printNodes(pfisGraph)
-
-    def spreadActivation(self, pfisGraph):
-        # Hierarchy, with spread to variant and back.
-        for i in range(0, 3):
-            print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
-
-            for node in self.mapNodesToActivation.keys():
-                if pfisGraph.containsNode(node):
-                    if i % 3 == 0:
-                        self.spread(pfisGraph, node, [NodeType.WORD])
-                    elif i%3 == 1:
-                        self.spread(pfisGraph, node, [NodeType.VARIANT])
-                    elif i%3 == 2:
-                        locations = NodeType.locationTypes()
-                        locations.remove(NodeType.VARIANT)
-                        self.spread(pfisGraph, node, locations)
-
-            if self.VERBOSE:
-                self.printNodes(pfisGraph)
 
     def spread(self, pfisGraph, node, spreadToNodeTypes):
         edgeWeight = 1.0

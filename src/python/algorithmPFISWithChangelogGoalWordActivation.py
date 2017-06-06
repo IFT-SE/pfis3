@@ -3,7 +3,7 @@ from predictions import Prediction
 from pfisGraph import EdgeType, NodeType
 
 
-class PFISWithVariantHierarchy(PFIS):
+class PFISWithChangelogGoalWordActivation(PFIS):
 
 	def __init__(self, langHelper, name, fileName, history=False, goal=False, \
 	             decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, numSpread=2,

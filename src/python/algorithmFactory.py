@@ -10,7 +10,8 @@ from algorithmLSI import LSI
 from algorithmWorkingSet import WorkingSet
 from algorithmVariantOfLinks import VariantOf
 from algorithmGoalWordSimilarity import GoalWordSimilarity
-from algorithmPFISWithVariantHierarchy import PFISWithVariantHierarchy
+from algorithmPFISWithChangelogGoalWordActivation import PFISWithChangelogGoalWordActivation
+from spreadingTrials import *
 
 class AlgorithmFactory:
 	def __init__(self, langHelper, dbPath):
@@ -27,7 +28,7 @@ class AlgorithmFactory:
 		if node.attrib['enabled'] == 'true':
 			algClass = node.attrib['class']
 
-			if 'PFIS' in algClass:
+			if 'PFIS'.lower() in algClass.lower():
 				return self.__parsePFIS(node, suffix, algClass)
 			elif algClass in ['Adjacency', 'CallDepth', "Frequency", "Recency", "SourceTopology", "VariantOf"]:
 				return self.__parseSingleFactors(node, suffix, algClass)
@@ -66,7 +67,9 @@ class AlgorithmFactory:
 
 		nameClassMap = {
 			"PFIS": PFIS,
-			"PFISWithVariantHierarchy": PFISWithVariantHierarchy
+			"PFISWithChangelogGoalWordActivation": PFISWithChangelogGoalWordActivation,
+			"PfisSpreadToAllPatches": PfisSpreadToAllPatches,
+			"PfisSpreadWordVariantPatches": PfisSpreadWordVariantPatches
 		}
 
 		history = False
