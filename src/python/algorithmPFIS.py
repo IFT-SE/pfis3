@@ -7,9 +7,9 @@ class PFIS(PFISBase):
 
     def __init__(self, langHelper, name, fileName, history=False, goal = False,
                  decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, numSpread = 2,
-                 includeTop = False, numTopPredictions=0, verbose = False):
+                 changelogGoalActivation=False, includeTop = False, numTopPredictions=0, verbose = False):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal,
-                          decayFactor, decaySimilarity, decayVariant, decayHistory, includeTop, numTopPredictions, verbose)
+                          decayFactor, decaySimilarity, decayVariant, decayHistory, changelogGoalActivation, includeTop, numTopPredictions, verbose)
         self.NUM_SPREAD = numSpread
 
     def spreadActivation(self, pfisGraph):

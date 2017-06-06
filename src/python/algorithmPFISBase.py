@@ -6,9 +6,10 @@ from pfisGraph import NodeType
 
 class PFISBase(PredictiveAlgorithm):
 	def __init__(self, langHelper, name, fileName, history=False, goal=False, \
-	             decayFactor=0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory=0.9,
+	             decayFactor=0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory=0.9, changelogGoalActivation=False,
 	             includeTop=False, numTopPredictions=0, verbose=False):
 		PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions, verbose)
+		self.changeLogGoalWordActivation = changelogGoalActivation
 		self.history = history
 		self.goal = goal
 		self.DECAY_FACTOR = decayFactor
@@ -86,6 +87,9 @@ class PFISBase(PredictiveAlgorithm):
 		if self.goal:
 			self._initializeGoalWords(pfisGraph)
 
+		if self.changeLogGoalWordActivation:
+			self.__initializeChangelogsWithGoalwordsActivation(pfisGraph)
+
 	def __initializeHistory(self, pfisGraph, navPath, navNumber):
 		activation = 1.0
 		# Stop before the first navigation
@@ -105,11 +109,21 @@ class PFISBase(PredictiveAlgorithm):
 
 			activation *= self.DECAY_HISTORY
 
-	def _initializeGoalWords(self, pfisGraph):
+	def _initializeGoalWords(self, pfisGraph, reset=False):
+		if reset == False:
+			goalWordWeight = self.GOAL_WORD_ACTIVATION
+			print "Initialize Goal Words with: ", goalWordWeight
+		else:
+			goalWordWeight = 0.0
+			print "Resetting goalwords activation to ", goalWordWeight
+
 		for stemmedWord in pfisGraph.getGoalWords():
 			if pfisGraph.containsNode(stemmedWord):
 				if pfisGraph.getNode(stemmedWord)['type'] == NodeType.WORD:
-					self.mapNodesToActivation[stemmedWord] = self.GOAL_WORD_ACTIVATION
+					self.mapNodesToActivation[stemmedWord] = goalWordWeight
+					if self.VERBOSE:
+						print "Goal word: {}: {}".format(stemmedWord, goalWordWeight)
+
 
 	def __getMethodNodesFromGraph(self, pfisGraph, excludeNode=None):
 		activatedMethodNodes = []
@@ -126,6 +140,32 @@ class PFISBase(PredictiveAlgorithm):
 			sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method],
 			                     reverse=True)
 		return sortedNodes
+
+	def __initializeChangelogsWithGoalwordsActivation(self, pfisGraph):
+		if not self.goal:
+			print "Activating Changelogs with GoalWords..."
+			self._initializeGoalWords(pfisGraph)
+
+		goalWords = [word for word in pfisGraph.getGoalWords()
+		                 if pfisGraph.containsNode(word) and pfisGraph.getNode(word)['type'] == NodeType.WORD]
+
+		for node in self.mapNodesToActivation.keys():
+			if pfisGraph.getNode(node)['type'] == NodeType.WORD and node in goalWords:
+				patchesContainingWord = pfisGraph.getNeighborsOfDesiredEdgeTypes(node, [EdgeType.CONTAINS])
+				changelogsContainingWord = [p for p in patchesContainingWord if pfisGraph.getNode(p)['type'] == NodeType.CHANGELOG]
+
+				for changelog in changelogsContainingWord:
+					if changelog not in self.mapNodesToActivation.keys():
+						self.mapNodesToActivation[changelog] = 0.0
+
+					initialValue = self.mapNodesToActivation[changelog]
+					self.mapNodesToActivation[changelog] = initialValue + self.GOAL_WORD_ACTIVATION * self.DECAY_FACTOR
+
+					if self.VERBOSE:
+						print 'Goalword {} to {}: {} + ({}*{}) = {}'.format(node, changelog,
+						                                                   initialValue, self.mapNodesToActivation[node], self.DECAY_FACTOR, self.mapNodesToActivation[changelog])
+
+		self._initializeGoalWords(pfisGraph, reset=True)
 
 	def activatePatchWithGoalWordSimilarity(self, pfisGraph, patchFqn, resetHistory = False):
 		if resetHistory:

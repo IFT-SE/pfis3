@@ -74,6 +74,7 @@ class AlgorithmFactory:
 
 		history = False
 		goal = False
+		changelogGoalActivation = False
 		decayFactor = 0.85
 		decayHistory = 0.9
 		decaySimilarity = 0.85
@@ -81,17 +82,18 @@ class AlgorithmFactory:
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
 		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
-		if 'goal' in node.attrib and node.attrib['goal'] == 'true': goal = True
+		if 'goal' in node.attrib and node.attrib['goal'].lower() == 'true': goal = True
 		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
 		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])
 		if 'decayVariant' in node.attrib: decayVariant = float(node.attrib['decayVariant'])
 		if 'decayHistory' in node.attrib: decayHistory = float(node.attrib['decayHistory'])
+		if 'changelogGoalActivation' in node.attrib and node.attrib['changelogGoalActivation'].lower() == 'true': changelogGoalActivation = True
 		fileName, algoName = self.getSuffixedNames(node, graphTypeSuffix)
 
 		if algoName == "PFISTouchOnce":
 			return PFISTouchOnce(self.langHelper, algoName,
 				fileName, history=history, goal=goal,
-				decayFactor=decayFactor, decayHistory=decayHistory, decaySimilarity=decaySimilarity, decayVariant=decayVariant,
+				decayFactor=decayFactor, decayHistory=decayHistory, decaySimilarity=decaySimilarity, decayVariant=decayVariant, changelogGoalActivation=changelogGoalActivation,
 				includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 		else:
 			numSpread = 2
@@ -100,7 +102,7 @@ class AlgorithmFactory:
 			return nameClassMap[className](self.langHelper, algoName,
 		            fileName, history=history, goal=goal,
 		            decayFactor=decayFactor, decaySimilarity=decaySimilarity, decayHistory=decayHistory,
-		            numSpread=numSpread, decayVariant=decayVariant,
+		            numSpread=numSpread, decayVariant=decayVariant, changelogGoalActivation = changelogGoalActivation,
 		            includeTop=topPredictionsOptions[0], numTopPredictions=topPredictionsOptions[1])
 
 	def __parseTextSimilaritySingleFactorModels(self, node, graphTypeSuffix, className):
