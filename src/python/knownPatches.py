@@ -78,9 +78,8 @@ class KnownPatches(object):
 			# Don't do index computations
 			return patches[0]
 
-		elif self.langHelper.getPatchType(norm) == PatchType.SOURCE:
+		else:
 			surroundingMethods = [method for method in patches if method.isOffsetInMethod(offset)]
-
 			if surroundingMethods is not None and len(surroundingMethods) > 0:
 				sortedSurroundingMethods = sorted(surroundingMethods, key=lambda method:method.startOffset, reverse=True)
 				return sortedSurroundingMethods[0]

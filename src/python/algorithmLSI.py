@@ -9,4 +9,4 @@ class LSI(LexicalBase):
         
     def getModel(self):
         # Initialize the model using the corpus
-        return models.LsiModel(self.corpus, num_topics=self.numTopics)
+        return models.LsiModel(self.lexicalHelper.corpus, num_topics=self.numTopics)

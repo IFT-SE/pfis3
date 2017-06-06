@@ -12,11 +12,13 @@ class GraphFactory:
 		self.variantTopology = variantTopology
 
 	def getGraph(self, algorithmsNode):
+		graphType = None
+
 		nodeAttrib = algorithmsNode.attrib
 		if 'graphType' in nodeAttrib:
 			graphType = nodeAttrib["graphType"]
 
-		if graphType == None:
+		if graphType is None:
 			graphType = "PfisGraph"
 
 		if graphType.lower() == "PfisGraph".lower():
@@ -26,6 +28,7 @@ class GraphFactory:
 			return VariantAwarePfisGraph(self.dbPath, self.langHelper, self.projSrcPath, self.stopWords, self.goalWords)
 
 		if graphType.lower() == "VariantAndEquivalenceAwarePfisGraph".lower():
+			variantsDb = None
 			if 'variantsDb' in nodeAttrib:
 				variantsDb = nodeAttrib["variantsDb"]
 

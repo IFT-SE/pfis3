@@ -65,9 +65,6 @@ class NavigationPath(object):
         c.close()
 
 
-    def _isPatchDeclaration(self, action):
-        return action in ['Method declaration', 'Changelog declaration', 'Output declaration']
-
     def __findMethodsForFileNavigations(self, conn):
         # Here we map the file paths and offsets in the fileNavigations list to
         # FQNs of methods. This is done by querying for all the Method
@@ -102,7 +99,7 @@ class NavigationPath(object):
             for row in c:
                 action, target, referrer = row['action'], row['target'], row['referrer']
 
-                if self._isPatchDeclaration(action):
+                if action in ['Method declaration', 'Changelog declaration', 'Output declaration']:
                     self.knownPatches.addFilePatch(referrer)
 
                 elif action == 'Method declaration offset':

@@ -24,8 +24,8 @@ class AlgorithmFactory:
 			or 'fileName' not in node.attrib or 'enabled' not in node.attrib:
 			raise RuntimeError('parseAlgorithm: Missing required attributes in algorithm elements')
 
-		print "Parsing algorithm: " + node.attrib['name']
-		if node.attrib['enabled'] == 'true':
+		print "Parsing algorithm: " + node.attrib['name'] + node.attrib['enabled']
+		if node.attrib['enabled'].lower() == 'true':
 			algClass = node.attrib['class']
 
 			if 'PFIS'.lower() in algClass.lower():
