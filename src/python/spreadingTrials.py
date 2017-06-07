@@ -17,9 +17,9 @@ class PfisSpreadToAllPatches(PFIS):
             for node in self.mapNodesToActivation.keys():
                 if pfisGraph.containsNode(node):
                     if i % 2 == 0:
-                        self.spread(pfisGraph, node, [NodeType.WORD])
+                        self.spreadToNodesOfType(pfisGraph, node, [NodeType.WORD])
                     else:
-                        self.spread(pfisGraph, node, NodeType.locationTypes())
+                        self.spreadToNodesOfType(pfisGraph, node, NodeType.locationTypes())
 
             if self.VERBOSE:
                 self.printNodes(pfisGraph)
@@ -40,13 +40,13 @@ class PfisSpreadWordVariantPatches(PFIS):
             for node in self.mapNodesToActivation.keys():
                 if pfisGraph.containsNode(node):
                     if i % 3 == 0:
-                        self.spread(pfisGraph, node, [NodeType.WORD])
+                        self.spreadToNodesOfType(pfisGraph, node, [NodeType.WORD])
                     elif i % 3 == 1:
-                        self.spread(pfisGraph, node, [NodeType.VARIANT])
+                        self.spreadToNodesOfType(pfisGraph, node, [NodeType.VARIANT])
                     elif i % 3 == 2:
                         locations = NodeType.locationTypes()
                         locations.remove(NodeType.VARIANT)
-                        self.spread(pfisGraph, node, locations)
+                        self.spreadToNodesOfType(pfisGraph, node, locations)
 
             if self.VERBOSE:
                 self.printNodes(pfisGraph)

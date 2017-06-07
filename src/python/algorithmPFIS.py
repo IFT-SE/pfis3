@@ -35,11 +35,11 @@ class PFIS(PFISBase):
                     if self.VERBOSE:
                         print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor, originalWeight, self.mapNodesToActivation[node], edgeWeight, decay_factor, updatedWeight)
 
-        if self.VERBOSE:
-            self.printNodes(pfisGraph)
+        # if self.VERBOSE:
+        #     self.printNodes(pfisGraph)
 
 
-    def spread(self, pfisGraph, node, spreadToNodeTypes):
+    def spreadToNodesOfType(self, pfisGraph, node, spreadToNodeTypes):
         edgeWeight = 1.0
 
         neighbors = pfisGraph.getAllNeighbors(node)
@@ -64,7 +64,6 @@ class PFIS(PFISBase):
                                                                    self.mapNodesToActivation[node],
                                                                    edgeWeight,
                                                                    decay_factor, updatedWeight)
-
     def printNodes(self, pfisGraph):
         nodeList = pfisGraph.graph.nodes()
         print "Nodes currently present in the graph along with their weights are:"
