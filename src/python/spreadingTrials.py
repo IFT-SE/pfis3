@@ -1,7 +1,7 @@
 from algorithmPFIS import PFIS
 from graphAttributes import NodeType
 
-class PfisSpreadToAllPatches(PFIS):
+class PfisSpreadWordAllPatches(PFIS):
     def __init__(self, langHelper, name, fileName, history=False, goal=False,
                  decayFactor=0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory=0.9, numSpread=2, changelogGoalActivation=False,
                  includeTop=False, numTopPredictions=0, verbose=False):
@@ -13,7 +13,6 @@ class PfisSpreadToAllPatches(PFIS):
         # Patch is a patch is a patch.
         for i in range(0, self.NUM_SPREAD):
             print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
-
             for node in self.mapNodesToActivation.keys():
                 if pfisGraph.containsNode(node):
                     if i % 2 == 0:
@@ -22,7 +21,7 @@ class PfisSpreadToAllPatches(PFIS):
                         self.spreadToNodesOfType(pfisGraph, node, NodeType.locationTypes())
 
             if self.VERBOSE:
-                self.printNodes(pfisGraph)
+                self.printScores()
 
 class PfisSpreadWordVariantPatches(PFIS):
     def __init__(self, langHelper, name, fileName, history=False, goal=False,
@@ -34,7 +33,7 @@ class PfisSpreadWordVariantPatches(PFIS):
 
     def spreadActivation(self, pfisGraph):
         # Hierarchy, with spread to variant and back.
-        for i in range(0, 3):
+        for i in range(0, self.NUM_SPREAD):
             print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
 
             for node in self.mapNodesToActivation.keys():
@@ -49,4 +48,4 @@ class PfisSpreadWordVariantPatches(PFIS):
                         self.spreadToNodesOfType(pfisGraph, node, locations)
 
             if self.VERBOSE:
-                self.printNodes(pfisGraph)
+                self.printScores()

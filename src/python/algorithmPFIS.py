@@ -35,26 +35,25 @@ class PFIS(PFISBase):
                     if self.VERBOSE:
                         print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor, originalWeight, self.mapNodesToActivation[node], edgeWeight, decay_factor, updatedWeight)
 
-        # if self.VERBOSE:
-        #     self.printNodes(pfisGraph)
+        if self.VERBOSE:
+            self.printScores()
 
 
     def spreadToNodesOfType(self, pfisGraph, node, spreadToNodeTypes):
         edgeWeight = 1.0
-
         neighbors = pfisGraph.getAllNeighbors(node)
-        neighborsToSpread = [n for n in neighbors if pfisGraph.getNode(n)['type'] in spreadToNodeTypes]
-        if len(neighborsToSpread) > 0:
+        if len(neighbors) > 0:
             edgeWeight = 1.0 / len(neighbors)
 
+        neighborsToSpread = [n for n in neighbors if pfisGraph.getNode(n)['type'] in spreadToNodeTypes]
         for neighbor in neighborsToSpread:
             edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
             decay_factor = self.getDecayWeight(edge_types)
 
             if neighbor not in self.mapNodesToActivation:
                 self.mapNodesToActivation[neighbor] = 0.0
-            originalWeight = self.mapNodesToActivation[neighbor]
 
+            originalWeight = self.mapNodesToActivation[neighbor]
             updatedWeight = originalWeight + (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
             self.mapNodesToActivation[neighbor] = updatedWeight
 
@@ -64,14 +63,7 @@ class PFIS(PFISBase):
                                                                    self.mapNodesToActivation[node],
                                                                    edgeWeight,
                                                                    decay_factor, updatedWeight)
-    def printNodes(self, pfisGraph):
-        nodeList = pfisGraph.graph.nodes()
-        print "Nodes currently present in the graph along with their weights are:"
-
+    def printScores(self):
+        nodeList = self.mapNodesToActivation.keys()
         for node in nodeList:
-            if  node in  self.mapNodesToActivation:
                 print "(",node, " : ", self.mapNodesToActivation[node],")"
-            else:
-                print "(",node,")"
-
-        print "Total number of nodes currently in the graph are: ", len(nodeList)
