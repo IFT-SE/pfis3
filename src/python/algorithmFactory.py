@@ -68,8 +68,7 @@ class AlgorithmFactory:
 		nameClassMap = {
 			"PFIS": PFIS,
 			"PFISWithChangelogGoalWordActivation": PFISWithChangelogGoalWordActivation,
-			"PfisSpreadWordAllPatches": PfisSpreadWordAllPatches,
-			"PfisSpreadWordVariantPatches": PfisSpreadWordVariantPatches
+			"PfisSpreadWordsContainersMethods": PfisSpreadWordsContainersMethods
 		}
 
 		history = False

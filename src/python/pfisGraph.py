@@ -424,6 +424,10 @@ class PfisGraph(object):
         edges = EdgeType.getAll()
         return self.getNeighborsOfDesiredEdgeTypes(node, edges)
 
+    def getNeighborsWithNodeTypes(self, node, spreadToNodeTypes):
+        allNeighbors = self.getAllNeighbors(node)
+        return [n for n in allNeighbors if self.getNode(n)['type'] in spreadToNodeTypes]
+
     def getFqnOfEquivalentNode(self, methodFqn):
         return methodFqn
 

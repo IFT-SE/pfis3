@@ -3,8 +3,6 @@ from graphAttributes import NodeType, EdgeType
 
 class PFIS(PFISBase):
 
-    DEBUG_NODE = 'L/hexcom/Current/js_v9/main.js;.init(b)'
-
     def __init__(self, langHelper, name, fileName, history=False, goal = False,
                  decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, numSpread = 2,
                  changelogGoalActivation=False, includeTop = False, numTopPredictions=0, verbose = False):
@@ -13,39 +11,30 @@ class PFIS(PFISBase):
         self.NUM_SPREAD = numSpread
 
     def spreadActivation(self, pfisGraph):
-        for i  in range(0, self.NUM_SPREAD):
-            print "Spreading {} of {}".format(i+1, self.NUM_SPREAD)
+        spread2Nodes = set(NodeType.getAll())
+        spread2Nodes.difference([NodeType.WORD])
+        spread2Nodes.difference(NodeType.predictable())
+
+        for i in range(0, self.NUM_SPREAD):
+            print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
             for node in self.mapNodesToActivation.keys():
-                if not pfisGraph.containsNode(node):
-                    continue
-
-                neighbors = pfisGraph.getAllNeighbors(node)
-                edgeWeight = 1.0/len(neighbors)
-
-                for neighbor in neighbors:
-                    if neighbor not in self.mapNodesToActivation:
-                        self.mapNodesToActivation[neighbor] = 0.0
-
-                    originalWeight = self.mapNodesToActivation[neighbor]
-                    edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
-                    decay_factor = self.getDecayWeight(edge_types)
-                    updatedWeight = originalWeight + (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
-                    self.mapNodesToActivation[neighbor] = updatedWeight
-
-                    if self.VERBOSE:
-                        print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor, originalWeight, self.mapNodesToActivation[node], edgeWeight, decay_factor, updatedWeight)
-
+                if pfisGraph.containsNode(node):
+                    if i % 3 == 0:
+                        self.spreadToNodesOfType(pfisGraph, node, [NodeType.WORD])
+                    elif i % 3 == 1:
+                        self.spreadToNodesOfType(pfisGraph, node, spread2Nodes)
+                    else:
+                        self.spreadToNodesOfType(pfisGraph, node, NodeType.predictable())
         if self.VERBOSE:
             self.printScores()
 
-
     def spreadToNodesOfType(self, pfisGraph, node, spreadToNodeTypes):
         edgeWeight = 1.0
-        neighbors = pfisGraph.getAllNeighbors(node)
-        if len(neighbors) > 0:
-            edgeWeight = 1.0 / len(neighbors)
+        neighborsToSpread = pfisGraph.getNeighborsWithNodeTypes(node, spreadToNodeTypes)
 
-        neighborsToSpread = [n for n in neighbors if pfisGraph.getNode(n)['type'] in spreadToNodeTypes]
+        if len(neighborsToSpread) > 0:
+            edgeWeight = 1.0 / len(neighborsToSpread)
+
         for neighbor in neighborsToSpread:
             edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
             decay_factor = self.getDecayWeight(edge_types)
@@ -61,8 +50,7 @@ class PFIS(PFISBase):
                 print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor,
                                                                    originalWeight,
                                                                    self.mapNodesToActivation[node],
-                                                                   edgeWeight,
-                                                                   decay_factor, updatedWeight)
+                                                                   edgeWeight, decay_factor, updatedWeight)
     def printScores(self):
         nodeList = self.mapNodesToActivation.keys()
         for node in nodeList:

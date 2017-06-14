@@ -72,7 +72,7 @@ class NodeType(object):
         return None
 
     @staticmethod
-    def locationTypes():
+    def getAll():
         return [
             NodeType.PACKAGE,
             NodeType.FILE,
@@ -81,11 +81,17 @@ class NodeType(object):
             NodeType.VARIABLE,
             NodeType.PRIMITIVE,
             NodeType.PROJECT,
+            NodeType.WORD,
             NodeType.SPECIAL,
             NodeType.CHANGELOG,
             NodeType.OUTPUT,
             NodeType.VARIANT
         ]
+
+    @staticmethod
+    def predictable():
+        return [NodeType.METHOD, NodeType.CHANGELOG, NodeType.OUTPUT]
+
 
 
 class EdgeType(object):
