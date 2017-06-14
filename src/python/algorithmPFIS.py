@@ -24,9 +24,7 @@ class PFIS(PFISBase):
             nonWordOrPatchNodes,
             patchNodes
             ]
-
-
-    def spreadActivation(self, pfisGraph):
+    def spreadActivation(self, pfisGraph, fromMethodFqn=None):
 
         # This is to spread activation to nodes in parallel, rather than one at a time.
         # The latter has inconsistent order and that affects the spreading of weights.
@@ -43,15 +41,13 @@ class PFIS(PFISBase):
 
             for node in self.mapNodesToActivation.keys():
                 if pfisGraph.containsNode(node):
-                    currentNodeWeight = self.mapNodesToActivation[node]
-                    self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, spreadToNodes, accumulator)
+                    self.spreadToNodesOfType(pfisGraph, node, spreadToNodes, self.mapNodesToActivation, accumulator)
 
             self.mapNodesToActivation.update(accumulator)
-
         if self.VERBOSE:
             self.printScores(self.mapNodesToActivation, pfisGraph)
 
-    def spreadToNodesOfType(self, pfisGraph, node, initialNodeWeight, spreadToNodeTypes, accumulator):
+    def spreadToNodesOfType(self, pfisGraph, node, spreadToNodeTypes, mapNodesToActivation, accumulator):
         edgeWeight = 1.0
         neighborsToSpread = pfisGraph.getNeighborsWithNodeTypes(node, spreadToNodeTypes)
 
@@ -62,17 +58,20 @@ class PFIS(PFISBase):
             edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
             decay_factor = self.getDecayWeight(edge_types)
 
-            if neighbor not in self.mapNodesToActivation:
-                accumulator[neighbor] = 0.0
+            if neighbor not in accumulator:
+                if neighbor in self.mapNodesToActivation.keys():
+                    accumulator[neighbor] = self.mapNodesToActivation[neighbor]
+                else:
+                    accumulator[neighbor] = 0.0
 
             neighborWeightBeforeSpread = accumulator[neighbor]
-            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (initialNodeWeight * edgeWeight * decay_factor)
+            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (mapNodesToActivation[node] * edgeWeight * decay_factor)
             accumulator[neighbor] = neighborWeightAfterSpreading
 
             if self.VERBOSE:
                 print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor,
                                                                    neighborWeightBeforeSpread,
-                                                                   initialNodeWeight, edgeWeight, decay_factor,
+                                                                   mapNodesToActivation[node], edgeWeight, decay_factor,
                                                                    neighborWeightAfterSpreading)
     def printScores(self, activationMap, graph):
         print "Patch weights: "

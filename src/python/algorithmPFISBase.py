@@ -21,7 +21,7 @@ class PFISBase(PredictiveAlgorithm):
 
 		self.GOAL_WORD_ACTIVATION = 1.0
 
-	def spreadActivation(self, pfisGraph):
+	def spreadActivation(self, pfisGraph, fromMethodFqn):
 		raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
 	def makePrediction(self, pfisGraph, navPath, navNumber):
@@ -41,7 +41,7 @@ class PFISBase(PredictiveAlgorithm):
 		methodToPredict = navToPredict.toFileNav.methodFqn
 		self.initialize(fromMethodFqn, navNumber, navPath, pfisGraph)
 
-		self.spreadActivation(pfisGraph)
+		self.spreadActivation(pfisGraph, fromMethodFqn)
 
 		if self.mapNodesToActivation == None:
 			print "Map was empty!!!!!!!!"
