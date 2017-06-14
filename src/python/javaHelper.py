@@ -6,7 +6,8 @@ class JavaHelper(AbstractLanguageHelper):
         fileExtension = ".java"
         normalizedPathRegex = r".*src\/(.*)\.java"
         packageRegex = r"(.*)/[a-zA-Z0-9]+"
-        AbstractLanguageHelper.__init__(self, fileExtension, normalizedPathRegex, packageRegex)
+        language = "JAVA"
+        AbstractLanguageHelper.__init__(self, language, fileExtension, normalizedPathRegex, packageRegex)
 
 
     def normalize(self, s):

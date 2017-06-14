@@ -14,6 +14,7 @@ class VariantAwarePfisGraph(PfisGraph):
 			self._addEdgesToOtherVariants(referrer, referrerNodeType)
 			self._addEdgesToOtherVariants(target, targetNodeType)
 
+
 	def cloneNode(self, cloneTo, cloneFrom):
 		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
 
@@ -24,6 +25,7 @@ class VariantAwarePfisGraph(PfisGraph):
 	def _addEdgesToOtherVariants(self, node1, node1Type):
 		nodes = self.graph.nodes()
 		for node2 in nodes:
-			if node1 != node2 and self.graph.node[node2]['type'] == node1Type:
+			node2Type = self.graph.node[node2]['type']
+			if node1 != node2 and node2Type == node1Type:
 				if self.langHelper.isVariantOf(node1, node2):
-					self._addEdge(node1, node2, node1Type, self.graph.node[node2]['type'], EdgeType.SIMILAR)
+					self._addEdge(node1, node2, node1Type, node2Type, EdgeType.SIMILAR)

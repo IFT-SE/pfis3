@@ -46,8 +46,8 @@ class PfisGraph(object):
 
         print 'Updating PFIS Graph...'
 
-        self.__addScentNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
         self.__addTopologyNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
+        self.__addScentNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
         self.__addAdjacencyNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
 
         print 'Done updating PFIS Graph.'
@@ -71,7 +71,7 @@ class PfisGraph(object):
                 self.langHelper.fixSlashes(row['referrer'])
             
             # Note that these can return None if the relation is undefined
-            targetNodeType = NodeType.getTargetNodeType(action, target)
+            targetNodeType = NodeType.getTargetNodeType(action, target, self.langHelper)
             referrerNodeType = NodeType.getReferrerNodeType(action, referrer, self.langHelper)
 
             # Case 1: target and referrer contain either FQNs or file paths, so
@@ -131,7 +131,7 @@ class PfisGraph(object):
             action, target, referrer, = \
                 row['action'], self.langHelper.fixSlashes(row['target']), self.langHelper.fixSlashes(row['referrer'])
 
-            targetNodeType = NodeType.getTargetNodeType(action, target)
+            targetNodeType = NodeType.getTargetNodeType(action, target, self.langHelper)
             referrerNodeType = NodeType.getReferrerNodeType(action, referrer, self.langHelper)
 
             self.updateTopology(action, target, referrer, targetNodeType, referrerNodeType)

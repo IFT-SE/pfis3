@@ -57,7 +57,7 @@ class NavigationPath(object):
         for row in c:
             timestamp, filePath, offset = str(iso8601.parse_date(row['timestamp'])), row['target'], int(row['referrer'])
             if prevFilePath != filePath or prevOffset != offset: #This is for a Java PFIG bug / peculiarity -- duplicate navs to same offset in Java DB
-                    patchType = self.langHelper.getPatchType(filePath)
+                    patchType = self.langHelper.getPatchTypeForFile(filePath)
                     if patchType != None:
                         self.__fileNavigations.append(FileNavigation(timestamp, filePath, offset, patchType))
             prevFilePath = filePath

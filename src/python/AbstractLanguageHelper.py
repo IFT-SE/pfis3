@@ -9,7 +9,8 @@ class AbstractLanguageHelper:
     REGEX_PROJECT = re.compile(r"\/(.*)\/src/.*")
 
 
-    def __init__(self, fileExtension, normalizedPathRegex, packageRegex):
+    def __init__(self, language, fileExtension, normalizedPathRegex, packageRegex):
+        self.Language = language
         self.FileExtension = fileExtension
         self.REGEX_NORM_PATH = re.compile(normalizedPathRegex)
         self.REGEX_PACKAGE = re.compile(packageRegex)
@@ -25,7 +26,7 @@ class AbstractLanguageHelper:
     def getOuterClass(self, loc):
         raise Exception("Get outer class : Not implemented")
 
-    def getPatchType(self, filePath):
+    def getPatchTypeForFile(self, filePath):
         if self.hasLanguageExtension(filePath):
             return PatchType.SOURCE
 

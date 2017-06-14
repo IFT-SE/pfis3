@@ -73,7 +73,7 @@ class KnownPatches(object):
 			return None
 		patches = self.files[norm]
 
-		if self.langHelper.getPatchType(norm) in [PatchType.CHANGELOG, PatchType.OUTPUT]:
+		if self.langHelper.getPatchTypeForFile(norm) in [PatchType.CHANGELOG, PatchType.OUTPUT]:
 			# There is only one patch in these files, so just return it.
 			# Don't do index computations
 			return patches[0]

@@ -41,8 +41,21 @@ class NodeType(object):
     __referrerNodes["Output declaration"] = OUTPUT
     __referrerNodes["Output declaration scent"] = OUTPUT_INFO_FEATURE
 
+
+    __targetNodeOverrides = {"JS": {}}
+    __targetNodeOverrides["JS"]["Method declaration"] = FILE
+    __referrerNodeOverrides = {}
+
     @staticmethod
-    def getTargetNodeType(action, target):
+    def getLanguageOverride(overrides, language, action):
+        if language in overrides.keys():
+            langOverrides = overrides[language]
+            if action in langOverrides.keys():
+                return langOverrides[action]
+        return None
+
+    @staticmethod
+    def getTargetNodeType(action, target, langHelper):
         if action == 'Variable declaration' or action == 'Method invocation':
             if target.find(';.') == -1:
                 return NodeType.CLASS
@@ -50,8 +63,10 @@ class NodeType(object):
                 return NodeType.METHOD
 
         if action in NodeType.__targetNodes:
-            return NodeType.__targetNodes[action]
-
+            targetNodeType = NodeType.getLanguageOverride(NodeType.__targetNodeOverrides, langHelper.Language, action)
+            if targetNodeType is None:
+                targetNodeType = NodeType.__targetNodes[action]
+            return targetNodeType
         return None
 
     @staticmethod

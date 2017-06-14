@@ -13,14 +13,16 @@ class PFIS(PFISBase):
     def getSpreadingOrder(self):
         # This method returns what nodes to spread to, for each spreading round.
 
+        wordNodes = [NodeType.WORD]
+        patchNodes = NodeType.predictable()
         nonWordOrPatchNodes = set(NodeType.getAll())
         nonWordOrPatchNodes = nonWordOrPatchNodes.difference([NodeType.WORD])
         nonWordOrPatchNodes = nonWordOrPatchNodes.difference(NodeType.predictable())
 
         return [
-            NodeType.WORD,
+            wordNodes,
             nonWordOrPatchNodes,
-            NodeType.predictable()
+            patchNodes
             ]
 
 
