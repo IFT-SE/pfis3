@@ -12,23 +12,31 @@ class PFIS(PFISBase):
 
     def spreadActivation(self, pfisGraph):
         spread2Nodes = set(NodeType.getAll())
-        spread2Nodes.difference([NodeType.WORD])
-        spread2Nodes.difference(NodeType.predictable())
+        spread2Nodes = spread2Nodes.difference([NodeType.WORD])
+        spread2Nodes = spread2Nodes.difference(NodeType.predictable())
+
+        accumulator = {}
+        accumulator.update(self.mapNodesToActivation)
 
         for i in range(0, self.NUM_SPREAD):
             print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
-            for node in self.mapNodesToActivation.keys():
-                if pfisGraph.containsNode(node):
-                    if i % 3 == 0:
-                        self.spreadToNodesOfType(pfisGraph, node, [NodeType.WORD])
-                    elif i % 3 == 1:
-                        self.spreadToNodesOfType(pfisGraph, node, spread2Nodes)
-                    else:
-                        self.spreadToNodesOfType(pfisGraph, node, NodeType.predictable())
-        if self.VERBOSE:
-            self.printScores()
 
-    def spreadToNodesOfType(self, pfisGraph, node, spreadToNodeTypes):
+            for node in self.mapNodesToActivation.keys():
+
+                if pfisGraph.containsNode(node):
+                    currentNodeWeight = self.mapNodesToActivation[node]
+                    if i % 3 == 0:
+                        self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, [NodeType.WORD], accumulator)
+                    elif i % 3 == 1:
+                        self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, spread2Nodes, accumulator)
+                    else:
+                        self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, NodeType.predictable(), accumulator)
+            self.mapNodesToActivation.update(accumulator)
+
+        if self.VERBOSE:
+            self.printScores(self.mapNodesToActivation, pfisGraph)
+
+    def spreadToNodesOfType(self, pfisGraph, node, initialNodeWeight, spreadToNodeTypes, accumulator):
         edgeWeight = 1.0
         neighborsToSpread = pfisGraph.getNeighborsWithNodeTypes(node, spreadToNodeTypes)
 
@@ -40,18 +48,19 @@ class PFIS(PFISBase):
             decay_factor = self.getDecayWeight(edge_types)
 
             if neighbor not in self.mapNodesToActivation:
-                self.mapNodesToActivation[neighbor] = 0.0
+                accumulator[neighbor] = 0.0
 
-            originalWeight = self.mapNodesToActivation[neighbor]
-            updatedWeight = originalWeight + (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
-            self.mapNodesToActivation[neighbor] = updatedWeight
+            neighborWeightBeforeSpread = accumulator[neighbor]
+            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (initialNodeWeight * edgeWeight * decay_factor)
+            accumulator[neighbor] = neighborWeightAfterSpreading
 
             if self.VERBOSE:
                 print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor,
-                                                                   originalWeight,
-                                                                   self.mapNodesToActivation[node],
-                                                                   edgeWeight, decay_factor, updatedWeight)
-    def printScores(self):
-        nodeList = self.mapNodesToActivation.keys()
-        for node in nodeList:
-                print "(",node, " : ", self.mapNodesToActivation[node],")"
+                                                                   neighborWeightBeforeSpread,
+                                                                   initialNodeWeight, edgeWeight, decay_factor,
+                                                                   neighborWeightAfterSpreading)
+    def printScores(self, activationMap, graph):
+        print "Patch weights: "
+        for node in activationMap.keys():
+            if graph.getNode(node)['type'] in NodeType.predictable():
+                print node, " : ", activationMap[node]
