@@ -10,29 +10,40 @@ class PFIS(PFISBase):
                           decayFactor, decaySimilarity, decayVariant, decayHistory, changelogGoalActivation, includeTop, numTopPredictions, verbose)
         self.NUM_SPREAD = numSpread
 
+    def getSpreadingOrder(self):
+        # This method returns what nodes to spread to, for each spreading round.
+
+        nonWordOrPatchNodes = set(NodeType.getAll())
+        nonWordOrPatchNodes = nonWordOrPatchNodes.difference([NodeType.WORD])
+        nonWordOrPatchNodes = nonWordOrPatchNodes.difference(NodeType.predictable())
+
+        return [
+            NodeType.WORD,
+            nonWordOrPatchNodes,
+            NodeType.predictable()
+            ]
+
+
     def spreadActivation(self, pfisGraph):
-        spread2Nodes = set(NodeType.getAll())
-        spread2Nodes = spread2Nodes.difference([NodeType.WORD])
-        spread2Nodes = spread2Nodes.difference(NodeType.predictable())
 
         # This is to spread activation to nodes in parallel, rather than one at a time.
         # The latter has inconsistent order and that affects the spreading of weights.
+        # self.mapNodesToActivation keeps the activation to be used for spreading,
+        # while accumulator the weights as they get spread.
+
         accumulator = {}
         accumulator.update(self.mapNodesToActivation)
 
         for i in range(0, self.NUM_SPREAD):
             print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
 
-            for node in self.mapNodesToActivation.keys():
+            spreadToNodes = self.getSpreadingOrder()[i % 3]
 
+            for node in self.mapNodesToActivation.keys():
                 if pfisGraph.containsNode(node):
                     currentNodeWeight = self.mapNodesToActivation[node]
-                    if i % 3 == 0:
-                        self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, [NodeType.WORD], accumulator)
-                    elif i % 3 == 1:
-                        self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, spread2Nodes, accumulator)
-                    else:
-                        self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, NodeType.predictable(), accumulator)
+                    self.spreadToNodesOfType(pfisGraph, node, currentNodeWeight, spreadToNodes, accumulator)
+
             self.mapNodesToActivation.update(accumulator)
 
         if self.VERBOSE:
