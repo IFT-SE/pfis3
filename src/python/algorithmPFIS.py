@@ -15,6 +15,8 @@ class PFIS(PFISBase):
         spread2Nodes = spread2Nodes.difference([NodeType.WORD])
         spread2Nodes = spread2Nodes.difference(NodeType.predictable())
 
+        # This is to spread activation to nodes in parallel, rather than one at a time.
+        # The latter has inconsistent order and that affects the spreading of weights.
         accumulator = {}
         accumulator.update(self.mapNodesToActivation)
 
