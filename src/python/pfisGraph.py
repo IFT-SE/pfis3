@@ -199,12 +199,13 @@ class PfisGraph(object):
                           referrerNodeType,
                           EdgeType.IMPLEMENTS)
         elif action == 'Method declaration':
-            # target = CLASS, referrer = METHOD
+            # target = CLASS / FILE (for JS), referrer = METHOD
             # Link the class to the method it declares
             self._addEdge(target, referrer,
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.CONTAINS)
+
         elif action == 'Method invocation':
             # target = METHOD, referrer = METHOD
             # Link the calling method to the called method
@@ -238,12 +239,10 @@ class PfisGraph(object):
                           EdgeType.TYPE)
 
         if self.variantTopology:
-            if self.langHelper.isNavigablePatch(target):
-                variantName = self.langHelper.getVariantName(target)
-                self._addEdge(target, variantName, targetNodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
-            if self.langHelper.isNavigablePatch(referrer):
-                variantName = self.langHelper.getVariantName(referrer)
-                self._addEdge(referrer, variantName, referrerNodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
+            if action in ["Method declaration", "Changelog declaration", "Output declaration"]:
+                self._addEdge(target, self.langHelper.getVariantName(referrer),
+                              targetNodeType, NodeType.VARIANT,
+                              EdgeType.IN_VARIANT)
 
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
@@ -289,8 +288,8 @@ class PfisGraph(object):
         self.graph.node[node1]['type'] = node1Type
         self.graph.node[node2]['type'] = node2Type
 
-        if self.VERBOSE_BUILD:
-            print "\tAdding edge from", node1, "to", node2, "of type", edgeType
+        # if self.VERBOSE_BUILD:
+        print "\tAdding edge from {0} ({1}) to {2} ({3}) of type {4}".format(node1, node1Type, node2, node2Type, edgeType)
 
 
     def _stopWord(self, word):
