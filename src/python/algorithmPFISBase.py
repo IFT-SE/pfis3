@@ -17,7 +17,7 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_SIMILARITY = decaySimilarity
 		self.DECAY_VARIANT = decayVariant
 		self.mapNodesToActivation = None
-		self.VERBOSE = True
+		self.VERBOSE = False
 
 		self.GOAL_WORD_ACTIVATION = 1.0
 
@@ -25,7 +25,6 @@ class PFISBase(PredictiveAlgorithm):
 		raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
 	def makePrediction(self, pfisGraph, navPath, navNumber):
-		print "-----------------------------------\n", self.name
 		print "Predict #{}: {}".format(navNumber, navPath.getNavigation(navNumber))
 		if navNumber < 1 or navNumber >= navPath.getLength():
 			raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')

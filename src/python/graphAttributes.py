@@ -107,7 +107,19 @@ class NodeType(object):
     def predictable():
         return [NodeType.METHOD, NodeType.CHANGELOG, NodeType.OUTPUT]
 
+    @staticmethod
+    def getDeclarationAction(nodeType):
+        return {
+            NodeType.METHOD: "Method declaration",
+            NodeType.OUTPUT: "Output declaration",
+            NodeType.CHANGELOG: "Changelog declaration"
+        }[nodeType]
 
+    @staticmethod
+    def getNodeTypesToClone():
+        nodeTypes = NodeType.predictable()
+        nodeTypes.extend([NodeType.WORD, NodeType.OUTPUT_INFO_FEATURE])
+        return nodeTypes
 
 class EdgeType(object):
     #TODO: Find a smarter way that this duplicate
@@ -134,10 +146,3 @@ class EdgeType(object):
             EdgeType.SIMILAR,
             EdgeType.IN_VARIANT
         ]
-
-    @staticmethod
-    def getEdgesToClone():
-        edges = EdgeType.getAll()
-        edges.remove(EdgeType.SIMILAR)
-        edges.remove(EdgeType.IN_VARIANT)
-        return edges

@@ -73,51 +73,52 @@ class PfisGraph(object):
             # Note that these can return None if the relation is undefined
             targetNodeType = NodeType.getTargetNodeType(action, target, self.langHelper)
             referrerNodeType = NodeType.getReferrerNodeType(action, referrer, self.langHelper)
-
-            # Case 1: target and referrer contain either FQNs or file paths, so
-            # create a  node for every target and referrer. Each of these nodes then
-            # gets an edge to each of the words within the FQN or path, excluding
-            # stop words. These words are not stemmed.
-            if action in ('Package', 'Imports', 'Extends', 'Implements',
-                          'Method declaration', 'Constructor invocation',
-                          'Method invocation', 'Variable declaration',
-                          'Variable type', 'Changelog declaration', 'Output declaration'):
-                for word in self.__getWordNodes_splitNoStem(target):
-                    self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
-        
-                for word in self.__getWordNodes_splitNoStem(referrer):
-                    self._addEdge(referrer, word, referrerNodeType, NodeType.WORD, EdgeType.CONTAINS)
-        
-            # Case 2: These actions have code content within them. In this case we
-            # want to add an edge from the FQN node in target to the code content in
-            # referrer. The FQNs should already exist because of step 1. Words are
-            # added in two ways. In the first pass, the complete word is added,
-            # camelCase intact without stemming. In the second pass, the camel case
-            # is split, the resulting words are stemmed and those are added to the
-            # FQN node.
-            elif action in ('Constructor invocation scent',
-                            'Method declaration scent',
-                            'Method invocation scent',
-                            'Changelog declaration scent'):
-                for word in self.__getWordNodes_splitNoStem(referrer):
-                    self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
-
-                for word in self.getWordNodes_splitCamelAndStem(referrer):
-                    self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
-
-            elif action == 'Output declaration scent':
-                for word in self.__getWordNodes_splitNoStem(referrer):
-                    self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
-
-                for word in self.getWordNodes_splitCamelAndStem(referrer):
-                    self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
-
+            self.updateScent(action, target, referrer, targetNodeType, referrerNodeType)
 
         c.close()
         
         print '\tDone adding scent-related nodes.'
         self.__printGraphStats()
-        
+
+    def updateScent(self, action, target, referrer, targetNodeType, referrerNodeType):
+        # Case 1: target and referrer contain either FQNs or file paths, so
+        # create a  node for every target and referrer. Each of these nodes then
+        # gets an edge to each of the words within the FQN or path, excluding
+        # stop words. These words are not stemmed.
+        if action in ('Package', 'Imports', 'Extends', 'Implements',
+                      'Method declaration', 'Constructor invocation',
+                      'Method invocation', 'Variable declaration',
+                      'Variable type', 'Changelog declaration', 'Output declaration'):
+            for word in self.__getWordNodes_splitNoStem(target):
+                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+
+            for word in self.__getWordNodes_splitNoStem(referrer):
+                self._addEdge(referrer, word, referrerNodeType, NodeType.WORD, EdgeType.CONTAINS)
+
+        # Case 2: These actions have code content within them. In this case we
+        # want to add an edge from the FQN node in target to the code content in
+        # referrer. The FQNs should already exist because of step 1. Words are
+        # added in two ways. In the first pass, the complete word is added,
+        # camelCase intact without stemming. In the second pass, the camel case
+        # is split, the resulting words are stemmed and those are added to the
+        # FQN node.
+        elif action in ('Constructor invocation scent',
+                        'Method declaration scent',
+                        'Method invocation scent',
+                        'Changelog declaration scent'):
+            for word in self.__getWordNodes_splitNoStem(referrer):
+                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+
+            for word in self.getWordNodes_splitCamelAndStem(referrer):
+                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+
+        elif action == 'Output declaration scent':
+            for word in self.__getWordNodes_splitNoStem(referrer):
+                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
+
+            for word in self.getWordNodes_splitCamelAndStem(referrer):
+                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
+
     def __addTopologyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         # Build the graph according to the code structure recorded by PFIG. See
         # each section of the build for details.
@@ -279,7 +280,7 @@ class PfisGraph(object):
     # Helper methods for building the graph                                        #
     #==============================================================================#
     
-    def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
+    def _addE_addEdge(self, node1, node2, node1Type, node2Type, edgeType):
         if self.graph.has_edge(node1, node2) and edgeType not in self.graph.edge[node1][node2]['types']:
             self.graph.edge[node1][node2]['types'].append(edgeType)
         else:
@@ -288,8 +289,8 @@ class PfisGraph(object):
         self.graph.node[node1]['type'] = node1Type
         self.graph.node[node2]['type'] = node2Type
 
-        # if self.VERBOSE_BUILD:
-        print "\tAdding edge from {0} ({1}) to {2} ({3}) of type {4}".format(node1, node1Type, node2, node2Type, edgeType)
+        if self.VERBOSE_BUILD:
+            print "\tAdding edge from {0} ({1}) to {2} ({3}) of type {4}".format(node1, node1Type, node2, node2Type, edgeType)
 
 
     def _stopWord(self, word):
@@ -437,34 +438,37 @@ class PfisGraph(object):
         return self.graph.node[nodeName]
 
     def cloneNode(self, cloneTo, cloneFrom):
-        #Create a node
+        #Invoke a patch declaration action for the new patch
+        #Update topology and scent for that declaration action for the new patch.
         nodeType = self.getNode(cloneFrom)['type']
+        action = NodeType.getDeclarationAction(nodeType)
 
-        self.graph.add_node(cloneTo)
-        clonedNode = self.getNode(cloneTo)
-        clonedNode['type'] = nodeType
+        if action == "Method declaration":
+            target = self.langHelper.getOuterClass(cloneTo) + ";"
+        else:
+            target = cloneTo
+        referrer = cloneTo
+
+        self.updateTopology(action, target, referrer,
+                            NodeType.getTargetNodeType(action, target, self.langHelper),
+                            NodeType.getReferrerNodeType(action, referrer, self.langHelper))
+        self.updateScent(action, target, referrer,
+                            NodeType.getTargetNodeType(action, target, self.langHelper),
+                            NodeType.getReferrerNodeType(action, referrer, self.langHelper))
 
         #If source code or output patch, then also copy all their content and relationships
-        if clonedNode['type'] in [NodeType.METHOD, NodeType.OUTPUT]:
+        if nodeType in [NodeType.METHOD, NodeType.OUTPUT]:
             self._copyPatchContent(cloneFrom, cloneTo, nodeType)
 
-        if self.variantTopology:
-            self._addEdge(cloneTo, self.langHelper.getVariantName(cloneTo), nodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
-
     def _copyPatchContent(self, cloneFromFqn, cloneTo, nodeType):
-        sourceNodeNeighbors = self.getNeighborsOfDesiredEdgeTypes(cloneFromFqn, EdgeType.getEdgesToClone())
+        sourceNodeNeighbors = self.getNeighborsWithNodeTypes(cloneFromFqn, NodeType.getNodeTypesToClone())
         for neighborFqn in sourceNodeNeighbors:
             edgeTypes = self.getEdgeTypesBetween(cloneFromFqn, neighborFqn)
             for edgeType in edgeTypes:
-                self._addEdge(cloneTo, neighborFqn, nodeType, nodeType, edgeType)
+                self.dge(cloneTo, neighborFqn, nodeType, nodeType, edgeType)
 
     def removeNode(self, nodeFqn):
         self.graph.remove_node(nodeFqn)
-
-    def removeEdge(self, node1, node2):
-        if self.graph.has_edge(node1, node2):
-            self.graph.remove_edge(node1, node2)
-            print "removed edge: ", node1, node2
 
     def getChangelogScent(self, fqn):
         conn = sqlite3.connect(self.dbFilePath)

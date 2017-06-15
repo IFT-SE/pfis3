@@ -38,16 +38,16 @@ class Predictor(object):
 		return results
 
 	def updateGraphByOneNavigation(self):
-
 		if self.navPath.getNavPathType() == NavigationPath.PFIS_V:
 			self.__removeTemporarilyAddedNodeIfAny()
 
 		newEndTimestamp = 0
-
 		if self.navNumber < self.navPath.getLength() - 1:
 			self.navNumber += 1
 			newEndTimestamp = self.navPath.getNavigation(self.navNumber).toFileNav.timestamp
 
+		print "-----------------------------"
+		print "Updating graph... ".format(self.navNumber-1, self.navNumber)
 		self.graph.updateGraphByOneNavigation(self.endTimeStamp, newEndTimestamp)
 
 		self.endTimeStamp = newEndTimestamp
@@ -70,6 +70,7 @@ class Predictor(object):
 			else:
 				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
 				if mostRecentSimilarNav is not None:
+					print "Adding temporary node for prediction: ", actualNavigation.methodFqn
 					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
 
@@ -77,9 +78,11 @@ class Predictor(object):
 		if self.navPath.ifNavToUnseenPatch(self.navNumber):
 			currentNav = self.navPath.getNavigation(self.navNumber)
 			additionalNode = currentNav.toFileNav.methodFqn
+
 			# If graph contains unseen patch, it was because it was known from other variant.
 			# Remove this temporary unseen but known patch.
 			if self.graph.containsNode(additionalNode):
+				print "Removing temporary node: ", additionalNode
 				self.graph.removeNode(additionalNode)
 
 

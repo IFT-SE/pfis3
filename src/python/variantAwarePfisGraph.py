@@ -14,14 +14,6 @@ class VariantAwarePfisGraph(PfisGraph):
 			self._addEdgesToOtherVariants(referrer, referrerNodeType)
 			self._addEdgesToOtherVariants(target, targetNodeType)
 
-
-	def cloneNode(self, cloneTo, cloneFrom):
-		PfisGraph.cloneNode(self, cloneTo, cloneFrom)
-
-		# Add SIMILAR edges between newly created node and its variants.
-		nodeType = self.getNode(cloneTo)['type']
-		self._addEdgesToOtherVariants(cloneTo, nodeType)
-
 	def _addEdgesToOtherVariants(self, node1, node1Type):
 		nodes = self.graph.nodes()
 		for node2 in nodes:

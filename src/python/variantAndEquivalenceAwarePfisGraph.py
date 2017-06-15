@@ -51,10 +51,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 	def getNewPatch(self, patchFqn, tempNode = False):
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
-
 			if not tempNode:
 				if not self.langHelper.isPfigHeaderFqn(patchFqn):
-					self.__updatePatchUUIDFromEquivalenceDb(newPatch)
+					newPatch.uuid = self.__getEquivalenceUUIDFromDB(newPatch.fqn)
 
 		elif self.langHelper.isChangelogFqn(patchFqn):
 			newPatch = ChangelogPatch(patchFqn)
@@ -99,30 +98,29 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		equivalentNode = self.getFqnOfEquivalentNode(nodeName)
 		return self.graph.node[equivalentNode]
 
-	def __updatePatchUUIDFromEquivalenceDb(self, newPatch):
-		patchRow = self.__getPatchRow(newPatch.fqn)
-		newPatch.uuid = patchRow[4]
-
 	def cloneNode(self, cloneTo, cloneFrom):
-		if self.divorcedUntilMarried:
-			self._cloneDivorceUntilMarried(cloneTo, cloneFrom)
-		else:
-			self._cloneMarriedUntilDivorced(cloneTo, cloneFrom)
+		def _cloneAsEquivalent(to, fromNode):
+			#Set the equivalence first because graph manipulation is based on equivalent FQN.
+			self.fqnToIdMap[to] = self.fqnToIdMap[fromNode]
+			VariantAwarePfisGraph.cloneNode(self, to, fromNode)
 
-	def _cloneMarriedUntilDivorced(self, cloneTo, cloneFrom):
-		if self.langHelper.isChangelogFqn(cloneTo):
-			VariantAwarePfisGraph.cloneNode(self, cloneTo, cloneFrom)
-			tempPatch = self.getNewPatch(cloneTo)
+		def _cloneAsNonEquivalent(toNode, fromNode):
+			#Set the equivalence first because graph manipulation is based on equivalent FQN.
+			tempPatch = self.getNewPatch(toNode, tempNode=True)
 			self.idToPatchMap[tempPatch.uuid] = tempPatch
-			self.fqnToIdMap[cloneTo] = tempPatch.uuid
-		else:
-			self.fqnToIdMap[cloneTo] = self.fqnToIdMap[cloneFrom]
+			self.fqnToIdMap[toNode] = tempPatch.uuid
+			VariantAwarePfisGraph.cloneNode(self, toNode, fromNode)
 
-	def _cloneDivorceUntilMarried(self, cloneTo, cloneFrom):
-		VariantAwarePfisGraph.cloneNode(self, cloneTo, cloneFrom)
-		tempPatch = self.getNewPatch(cloneTo, tempNode=True)
-		self.idToPatchMap[tempPatch.uuid] = tempPatch
-		self.fqnToIdMap[cloneTo] = tempPatch.uuid
+		# Changelog patches are never equivalent, so always create from and to as non-equivalent.
+		if self.langHelper.isChangelogFqn(cloneTo):
+			_cloneAsNonEquivalent(cloneTo, cloneFrom)
+
+		# For output or source code patches, clone cloneTo as equivalent to cloneFrom or not, based on config.
+		elif self.langHelper.isOutputFqn(cloneTo) or self.langHelper.isMethodFqn(cloneTo):
+			if self.divorcedUntilMarried:
+				_cloneAsEquivalent(cloneTo, cloneFrom)
+			else:
+				_cloneAsEquivalent(cloneTo, cloneFrom)
 
 
 	def removeNode(self, nodeFqn):
@@ -130,14 +128,12 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		id = self.fqnToIdMap[nodeFqn]
 		self.fqnToIdMap.pop(nodeFqn)
 
-
 		# For changelog, there is an actual node added, so remove that node.
 		if self.langHelper.isChangelogFqn(nodeFqn):
 			self.idToPatchMap.pop(id)
 			VariantAwarePfisGraph.removeNode(self, nodeFqn)
 
-	def __getPatchRow(self, fqn):
-		
+	def __getEquivalenceUUIDFromDB(self, fqn):
 		if self.langHelper.isMethodFqn(fqn):
 			pathRelativeToVariant = self.langHelper.getPathRelativeToVariant(fqn)
 			variantName = self.langHelper.getVariantName(fqn)
@@ -161,7 +157,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		c.close()
 		conn.close()
 
-		return patchRow
+		return patchRow[4] #UUID
 
 	def __getOutputContent(self, patchFqn):
 		variant_name = self.langHelper.getVariantName(patchFqn)
