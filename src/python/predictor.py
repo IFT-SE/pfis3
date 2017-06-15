@@ -70,7 +70,7 @@ class Predictor(object):
 			else:
 				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
 				if mostRecentSimilarNav is not None:
-					print "Adding temporary node for prediction: ", actualNavigation.methodFqn
+					print "Clone temporary node {} from {}".format(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
 
