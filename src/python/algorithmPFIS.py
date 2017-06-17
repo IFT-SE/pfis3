@@ -17,7 +17,6 @@ class PFIS(PFISBase):
         # This is traditional PFIS code, like CHI'10.
 
         toSpreadList = self.mapNodesToActivation.keys()
-
         for i in range(0, self.NUM_SPREAD):
             accumulator = {}
             print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
@@ -58,7 +57,7 @@ class PFIS(PFISBase):
                                                                    mapNodesToActivation[node], edgeWeight, decay_factor,
                                                                    neighborWeightAfterSpreading)
     def printScores(self, activationMap, graph):
-        print "Patch weights: "
+        print "Patch weights for {}: ", self.name
         for node in activationMap.keys():
             if graph.getNode(node)['type'] in NodeType.predictable():
                 print node, " : ", activationMap[node]

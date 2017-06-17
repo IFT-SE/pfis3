@@ -18,12 +18,14 @@ class PFIS3(PFIS):
                     for neighbor in neighbors:
                         edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
                         decay_factor = self.getDecayWeight(edge_types)
+
+                        if neighbor not in self.mapNodesToActivation.keys():
+                            self.mapNodesToActivation[neighbor] = 0.0
+
                         self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
                                                               (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
             if self.VERBOSE:
                 self.printScores(self.mapNodesToActivation, pfisGraph)
-
-
 
 class PFISSpreadWordOthersPatches(PFIS):
     def getSpreadingOrder(self):

@@ -1,7 +1,6 @@
 from algorithmAdjacency import Adjacency
 from algorithmCallDepth import CallDepth
 from algorithmFrequency import Frequency
-from algorithmPFIS import PFIS
 from algorithmPFISTouchOnce import PFISTouchOnce
 from algorithmRecency import Recency
 from algorithmSourceTopology import SourceTopology
@@ -10,7 +9,6 @@ from algorithmLSI import LSI
 from algorithmWorkingSet import WorkingSet
 from algorithmVariantOfLinks import VariantOf
 from algorithmGoalWordSimilarity import GoalWordSimilarity
-from algorithmPFISWithChangelogGoalWordActivation import PFISWithChangelogGoalWordActivation
 from spreadingTrials import *
 
 class AlgorithmFactory:
@@ -67,8 +65,7 @@ class AlgorithmFactory:
 
 		nameClassMap = {
 			"PFIS": PFIS,
-			"PFISWithChangelogGoalWordActivation": PFISWithChangelogGoalWordActivation,
-			"PFISStartFromCurrentNode": PFISStartFromCurrentNode
+			"PFIS3": PFIS3
 		}
 
 		history = False

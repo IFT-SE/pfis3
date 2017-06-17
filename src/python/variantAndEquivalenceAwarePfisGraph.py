@@ -2,7 +2,7 @@ from variantAwarePfisGraph import VariantAwarePfisGraph
 from patches import *
 import os
 import sqlite3
-import re
+from graphAttributes import EdgeType
 
 class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
@@ -36,6 +36,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 		node1Equivalent = self.getFqnOfEquivalentNode(node1)
 		node2Equivalent = self.getFqnOfEquivalentNode(node2)
+
+		if node1Equivalent == node2Equivalent: #Happens for equivalent nodes: do not add self loops.
+			return
 
 		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 

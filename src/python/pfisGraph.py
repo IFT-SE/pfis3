@@ -280,7 +280,7 @@ class PfisGraph(object):
     # Helper methods for building the graph                                        #
     #==============================================================================#
     
-    def _addE_addEdge(self, node1, node2, node1Type, node2Type, edgeType):
+    def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
         if self.graph.has_edge(node1, node2) and edgeType not in self.graph.edge[node1][node2]['types']:
             self.graph.edge[node1][node2]['types'].append(edgeType)
         else:
@@ -465,7 +465,7 @@ class PfisGraph(object):
         for neighborFqn in sourceNodeNeighbors:
             edgeTypes = self.getEdgeTypesBetween(cloneFromFqn, neighborFqn)
             for edgeType in edgeTypes:
-                self.dge(cloneTo, neighborFqn, nodeType, nodeType, edgeType)
+                self._addEdge(cloneTo, neighborFqn, nodeType, nodeType, edgeType)
 
     def removeNode(self, nodeFqn):
         self.graph.remove_node(nodeFqn)
