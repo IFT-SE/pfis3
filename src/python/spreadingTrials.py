@@ -2,65 +2,79 @@ from algorithmPFIS import PFIS
 from graphAttributes import NodeType
 
 class PFIS3(PFIS):
-     def spreadActivation(self, pfisGraph,  fromMethodFqn=None):
-        # PFIS3 and CHI'17 PFIS-V do not spread in parallel.
-        # Instead the order in which they spread are decide by order yielded by dictionary.keys()
-         for i in range(0, self.NUM_SPREAD):
-            print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
-            for node in self.mapNodesToActivation.keys():
-                if pfisGraph.containsNode(node):
-                    neighbors = pfisGraph.getAllNeighbors(node)
+	def __init__(self, langHelper, name, fileName, history=False, goal = False,
+				 decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, numSpread = 2,
+				 changelogGoalActivation=False, includeTop = False, numTopPredictions=0, verbose = False):
+		PFIS.__init__(self, langHelper, name, fileName, history, goal,
+				 decayFactor, decaySimilarity, decayVariant, decayHistory, numSpread,
+				 changelogGoalActivation, includeTop, numTopPredictions, verbose)
 
-                    edgeWeight = 1.0
-                    if len(neighbors) > 0:
-                        edgeWeight = 1/len(neighbors)
+	def spreadActivation(self, pfisGraph,  fromMethodFqn=None):
+		# PFIS3 and CHI'17 PFIS-V do not spread in parallel.
+		# Instead the order in which they spread are decide by order yielded by dictionary.keys()
+		 for i in range(0, self.NUM_SPREAD):
+			print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
+			for node in self.mapNodesToActivation.keys():
+				if pfisGraph.containsNode(node):
+					neighbors = pfisGraph.getAllNeighbors(node)
 
-                    for neighbor in neighbors:
-                        edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
-                        decay_factor = self.getDecayWeight(edge_types)
+					edgeWeight = 1.0
+					if len(neighbors) > 0:
+						edgeWeight = 1/len(neighbors)
 
-                        if neighbor not in self.mapNodesToActivation.keys():
-                            self.mapNodesToActivation[neighbor] = 0.0
+					for neighbor in neighbors:
+						edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
+						decay_factor = self.getDecayWeight(edge_types)
 
-                        self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
-                                                              (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
-            if self.VERBOSE:
-                self.printScores(self.mapNodesToActivation, pfisGraph)
+						if neighbor not in self.mapNodesToActivation.keys():
+							self.mapNodesToActivation[neighbor] = 0.0
+
+						self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
+															  (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
+			if self.VERBOSE:
+				self.printScores(self.mapNodesToActivation, pfisGraph)
 
 class PFISSpreadWordOthersPatches(PFIS):
-    def getSpreadingOrder(self):
-        # This method returns what nodes to spread to, for each spreading round.
+	def __init__(self, langHelper, name, fileName, history=False, goal = False,
+				 decayFactor = 0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory = 0.9, numSpread = 2,
+				 changelogGoalActivation=False, includeTop = False, numTopPredictions=0, verbose = False):
+		PFIS.__init__(self, langHelper, name, fileName, history, goal,
+				 decayFactor, decaySimilarity, decayVariant, decayHistory, numSpread,
+				 changelogGoalActivation, includeTop, numTopPredictions, verbose)
 
-        wordNodes = [NodeType.WORD]
-        patchNodes = NodeType.predictable()
-        nonWordOrPatchNodes = set(NodeType.getAll())
-        nonWordOrPatchNodes = nonWordOrPatchNodes.difference([NodeType.WORD])
-        nonWordOrPatchNodes = nonWordOrPatchNodes.difference(NodeType.predictable())
+	def getSpreadingOrder(self):
+		# This method returns what nodes to spread to, for each spreading round.
 
-        return [
-            wordNodes,
-            nonWordOrPatchNodes,
-            patchNodes
-            ]
-    def spreadActivation(self, pfisGraph, fromMethodFqn=None):
+		wordNodes = [NodeType.WORD]
+		patchNodes = NodeType.predictable()
+		nonWordOrPatchNodes = set(NodeType.getAll())
+		nonWordOrPatchNodes = nonWordOrPatchNodes.difference([NodeType.WORD])
+		nonWordOrPatchNodes = nonWordOrPatchNodes.difference(NodeType.predictable())
 
-        # This is to spread activation to nodes in parallel, rather than one at a time.
-        # The latter has inconsistent order and that affects the spreading of weights.
-        # self.mapNodesToActivation keeps the activation to be used for spreading,
-        # while accumulator the weights as they get spread.
+		return [
+			wordNodes,
+			nonWordOrPatchNodes,
+			patchNodes
+			]
+	def spreadActivation(self, pfisGraph, fromMethodFqn=None):
 
-        accumulator = {}
-        accumulator.update(self.mapNodesToActivation)
+		# This is to spread activation to nodes in parallel, rather than one at a time.
+		# The latter has inconsistent order and that affects the spreading of weights.
+		# self.mapNodesToActivation keeps the activation to be used for spreading,
+		# while accumulator the weights as they get spread.
 
-        for i in range(0, self.NUM_SPREAD):
-            print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
+		accumulator = {}
+		accumulator.update(self.mapNodesToActivation)
 
-            spreadToNodes = self.getSpreadingOrder()[i % 3]
+		for i in range(0, self.NUM_SPREAD):
+			print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
 
-            for node in self.mapNodesToActivation.keys():
-                if pfisGraph.containsNode(node):
-                    self.spreadToNodesOfType(pfisGraph, node, spreadToNodes, self.mapNodesToActivation, accumulator)
+			spreadToNodes = self.getSpreadingOrder()[i % 3]
 
-            self.mapNodesToActivation.update(accumulator)
-        if self.VERBOSE:
-            self.printScores(self.mapNodesToActivation, pfisGraph)
+			for node in self.mapNodesToActivation.keys():
+				if pfisGraph.containsNode(node):
+					self.spreadToNodesOfType(pfisGraph, node, spreadToNodes, self.mapNodesToActivation, accumulator)
+
+			self.mapNodesToActivation.update(accumulator)
+		if self.VERBOSE:
+			self.printScores(self.mapNodesToActivation, pfisGraph)
