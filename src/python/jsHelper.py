@@ -12,14 +12,16 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
 	CHANGELOG_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/changes\.txt')
 	OUTPUT_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/index\.html\.output')
-	METHOD_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/.*?([a-z|A-Z]+).js.*?;.(.*?)\(.*')
+	METHOD_FQN_REGEX = re.compile(r'L/hexcom/([^/]*)/([^/]*/)?([a-z|A-Z]+.js).*?\;.(.*?)\(.*')
+	#Groups are: Variant, folder+"/" if any, folder name in groups[1], file name, method name
 
 	PATCH_HIERARCHY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
+		# re.compile(r'L/hexcom/([^/]*)/([^/]*/)?(.*)\.(js|txt|html.output);(\..*)?')
 
 	def __init__(self):
 		fileExtension = ".js"
 		normalizedPathRegex = r"(.*)\.[js|txt|output]"
-		packageRegex = r"(.*?)\/"
+		packageRegex = r"(.*?)/[^/]*\.js.*"
 		language = "JS"
 		AbstractLanguageHelper.__init__(self, language, fileExtension, normalizedPathRegex, packageRegex)
 
@@ -32,7 +34,6 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		m = self.REGEX_NORM_ECLIPSE.match(string)
 		if m:
 			return m.groups()[0]
-
 		filepath = self.fixSlashes(string)
 		hasMatch = self.REGEX_NORM_PATH.match(filepath)
 		if hasMatch:
@@ -82,11 +83,13 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def _checkMethodSimilarity(self, fqn1, fqn2):
 		# Check if fqns are from different variants, folder paths and method names.
 		# Method names could have different parameters, but they are still similar.
-		match1 = self.METHOD_FQN_REGEX.match(fqn1).groups()
-		match2 = self.METHOD_FQN_REGEX.match(fqn2).groups()
+		groups1 = self.METHOD_FQN_REGEX.match(fqn1).groups()
+		groups2 = self.METHOD_FQN_REGEX.match(fqn2).groups()
 
 		# Same FQN and method names, but different variant names
-		return match1[0] != match2[0] and match1[1] == match2[1] and match1[2] == match2[2]
+		differentVariants = groups1[0] != groups2[0]
+		sameFqnRelativeToVariant = all([groups1[i] == groups2[i] for i in range(1, len(groups1))])
+		return differentVariants and sameFqnRelativeToVariant
 
 	def _checkSimilarityForNonMethodNodes(self, fqn1, fqn2):
 		SIMILARITY_REGEX = re.compile('L/hexcom/(.*?)(/.*)*/(.*)')
@@ -123,3 +126,22 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		elif self.isMethodFqn(node) or self.isChangelogFqn(node) or self.isOutputFqn(node):
 			return True
 		return False
+
+	def package(self, s):
+		variantName = self.getVariantName(s)
+		packageName = AbstractLanguageHelper.package(self, s)
+		if packageName.endswith(variantName):
+			return None
+		return packageName
+
+	def splitFqn(self, fqn):
+		if self.isOutputFqn(fqn) or self.isChangelogFqn(fqn):
+			return [self.getVariantName(fqn), fqn]
+		elif self.isMethodFqn(fqn):
+			items = [self.getVariantName(fqn), self.fileFqn(fqn), fqn]
+			if self.package(fqn) is not None:
+				items.append(self.package(fqn))
+			return items
+
+	def fileFqn(self, fqn):
+		return self.getOuterClass(fqn) + ";"

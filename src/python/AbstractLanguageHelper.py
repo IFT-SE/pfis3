@@ -36,7 +36,7 @@ class AbstractLanguageHelper:
         #     org/gjt/sp/jedit/gui/statusbar
         m = self.REGEX_PACKAGE.match(self.normalize(s))
         if m:
-            return m.group(1)
+            return m.groups()[0]
         return ''
 
     def project(self, s):
@@ -108,3 +108,6 @@ class AbstractLanguageHelper:
 
     def isNavigablePatch(self, fqn):
         return self.isMethodFqn(fqn)
+
+    def splitFqn(self, fqn):
+        return fqn
