@@ -233,17 +233,31 @@ class PfisGraph(object):
             # target = VARIABLE, referrer = CLASS/PRIMITIVE
             # Link the variable to its type
             # TODO: Might have to add variant edges
-
             self._addEdge(target, referrer,
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.TYPE)
 
         if self.variantTopology:
-            if action in ["Method declaration", "Changelog declaration", "Output declaration"]:
-                self._addEdge(target, self.langHelper.getVariantName(referrer),
+            # TODO: this is a hack because Java and JS have different hierarchies
+            # and  JS has varying hierarchies for file containers.
+            if action in ["Changelog declaration", "Output declaration", "Method declaration"]:
+                variant = self.langHelper.getVariantName(referrer)
+                package = self.langHelper.package(referrer)
+
+                if package is None:#Add edge from patch to variant
+                    # Package is the folder inside variant where a file lives.
+                    self._addEdge(target, variant,
                               targetNodeType, NodeType.VARIANT,
                               EdgeType.IN_VARIANT)
+                else:
+                    self._addEdge(target, package,
+                              targetNodeType, NodeType.PACKAGE,
+                              EdgeType.CONTAINS)
+                    self._addEdge(package, variant,
+                              NodeType.PACKAGE, NodeType.VARIANT,
+                              EdgeType.IN_VARIANT)
+
 
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
@@ -485,3 +499,6 @@ class PfisGraph(object):
         words = self.__getWordNodes_splitNoStem(contents)
         words.extend(self.getWordNodes_splitCamelAndStem(contents))
         return words
+
+    def getNodeLevel(self, fqn):
+        return NodeType.getLevel(self.getNode(fqn)['type'])

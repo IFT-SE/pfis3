@@ -38,6 +38,7 @@ class PFISBase(PredictiveAlgorithm):
 
 		fromMethodFqn = navToPredict.fromFileNav.methodFqn
 		methodToPredict = navToPredict.toFileNav.methodFqn
+
 		self.initialize(fromMethodFqn, navNumber, navPath, pfisGraph)
 
 		self.spreadActivation(pfisGraph, fromMethodFqn)
@@ -75,8 +76,7 @@ class PFISBase(PredictiveAlgorithm):
 
 		if not self.history:
 			# If there is no history, only activate the fromMethodNode
-			fromPatchEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
-			self.mapNodesToActivation[fromPatchEquivalent] = 1.0
+			self.setPatchActivation(pfisGraph, fromMethodFqn, 1.0)
 		else:
 			# If there is history, activate nodes in reverse navigation order
 			# using the DECAY_HISTORY property
@@ -88,23 +88,19 @@ class PFISBase(PredictiveAlgorithm):
 		if self.changeLogGoalWordActivation:
 			self.__initializeChangelogsWithGoalwordsActivation(pfisGraph)
 
+	def setPatchActivation(self, pfisGraph, fromMethodFqn, value):
+		fromPatchEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
+		if fromPatchEquivalent not in self.mapNodesToActivation.keys():
+			if self.VERBOSE:
+				print "{0} : {1}".format(fromPatchEquivalent, value)
+			self.mapNodesToActivation[fromPatchEquivalent] = value
+
 	def __initializeHistory(self, pfisGraph, navPath, navNumber):
 		activation = 1.0
 		# Stop before the first navigation
-		for i in range(navNumber, 0, -1):
-			nav = navPath.getNavigation(i)
-
-			method = nav.fromFileNav.methodFqn
-			if pfisGraph.containsNode(method):
-				if self.langHelper.isNavigablePatch(method):
-					if method not in self.mapNodesToActivation:
-						# TODO consider making history additive:
-						# if a location is visited more than once, sum up its
-						# weights. This approach also accounts for frequency
-						self.mapNodesToActivation[method] = activation
-						if self.VERBOSE:
-							print "History: ", method, " ", activation
-
+		for visitedPatch in [navPath.getNavigation(i).fromFileNav.methodFqn for i in range(navNumber, 0, -1)]:
+			if pfisGraph.containsNode(visitedPatch):
+				self.setPatchActivation(pfisGraph, visitedPatch, activation)
 			activation *= self.DECAY_HISTORY
 
 	def _initializeGoalWords(self, pfisGraph, reset=False):

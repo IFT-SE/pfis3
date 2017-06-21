@@ -10,6 +10,7 @@ from algorithmWorkingSet import WorkingSet
 from algorithmVariantOfLinks import VariantOf
 from algorithmGoalWordSimilarity import GoalWordSimilarity
 from spreadingTrials import *
+from algorithmPFISHierarchy import PFISHierarchy
 
 class AlgorithmFactory:
 	def __init__(self, langHelper, dbPath):
@@ -65,7 +66,8 @@ class AlgorithmFactory:
 
 		nameClassMap = {
 			"PFIS": PFIS,
-			"PFIS3": PFIS3
+			"PFIS3": PFIS3,
+			"PFISHierarchy": PFISHierarchy
 		}
 
 		history = False

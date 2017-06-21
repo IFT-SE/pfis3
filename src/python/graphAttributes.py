@@ -13,6 +13,17 @@ class NodeType(object):
     VARIANT = 11
     OUTPUT_INFO_FEATURE = 12
 
+    Levels = {
+        METHOD: 5,
+        CLASS: 4,
+        FILE: 3,
+        PACKAGE: 2,
+        CHANGELOG: 2,
+        OUTPUT: 2,
+        VARIANT: 1,
+        PROJECT: 0
+    }
+
     __targetNodes = {}
     __targetNodes["Extends"] = CLASS
     __targetNodes["Implements"] = CLASS
@@ -45,6 +56,13 @@ class NodeType(object):
     __targetNodeOverrides = {"JS": {}}
     __targetNodeOverrides["JS"]["Method declaration"] = FILE
     __referrerNodeOverrides = {}
+
+    @staticmethod
+    def getLevel(nodeType):
+        if nodeType in NodeType.Levels:
+            return NodeType.Levels[nodeType]
+        else:
+            return None
 
     @staticmethod
     def getLanguageOverride(overrides, language, action):

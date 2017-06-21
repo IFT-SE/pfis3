@@ -57,7 +57,7 @@ class PFIS(PFISBase):
                                                                    mapNodesToActivation[node], edgeWeight, decay_factor,
                                                                    neighborWeightAfterSpreading)
     def printScores(self, activationMap, graph):
-        print "Patch weights for {}: ", self.name
+        print "Patch weights for {}".format(self.name)
         for node in activationMap.keys():
             if graph.getNode(node)['type'] in NodeType.predictable():
                 print node, " : ", activationMap[node]
