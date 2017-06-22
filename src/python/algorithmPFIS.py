@@ -15,24 +15,26 @@ class PFIS(PFISBase):
         # This one spreads weights to all neighbors of nodes, but in parallel.
         # This is to prevent double counting the first round spreading during the second spreading round and so on.
         # This is traditional PFIS code, like CHI'10.
-
-        toSpreadList = self.mapNodesToActivation.keys()
         for i in range(0, self.NUM_SPREAD):
-            accumulator = {}
             print "Spreading {} of {}".format(i + 1, self.NUM_SPREAD)
-            for node in toSpreadList:
-                if pfisGraph.containsNode(node):
-                    self.spreadToNodesOfType(pfisGraph, node, NodeType.getAll(), self.mapNodesToActivation, accumulator)
+            accumulator= {}
+            for node in self.mapNodesToActivation.keys():
+                if i%2 == 0:
+                    # if pfisGraph.containsNode(node):
+                    # Non-word to word types
+                    wordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] == NodeType.WORD]
+                    self.spreadTo(pfisGraph, node, wordNeighbors, self.mapNodesToActivation, accumulator)
+                else:
+                    # Word / non-word to non-word types
+                    nonWordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] != NodeType.WORD]
+                    self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator)
 
             self.mapNodesToActivation.update(accumulator)
-            toSpreadList = accumulator.keys()
-
         if self.VERBOSE:
             self.printScores(self.mapNodesToActivation, pfisGraph)
 
-    def spreadToNodesOfType(self, pfisGraph, node, spreadToNodeTypes, mapNodesToActivation, accumulator):
+    def spreadTo(self, pfisGraph, node, neighborsToSpread, priorSpreadResultant, accumulator):
         edgeWeight = 1.0
-        neighborsToSpread = pfisGraph.getNeighborsWithNodeTypes(node, spreadToNodeTypes)
 
         if len(neighborsToSpread) > 0:
             edgeWeight = 1.0 / len(neighborsToSpread)
@@ -48,14 +50,16 @@ class PFIS(PFISBase):
                     accumulator[neighbor] = 0.0
 
             neighborWeightBeforeSpread = accumulator[neighbor]
-            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (mapNodesToActivation[node] * edgeWeight * decay_factor)
+            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (priorSpreadResultant[node] * edgeWeight * decay_factor)
             accumulator[neighbor] = neighborWeightAfterSpreading
 
             if self.VERBOSE:
                 print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, node, neighbor,
                                                                    neighborWeightBeforeSpread,
-                                                                   mapNodesToActivation[node], edgeWeight, decay_factor,
+                                                                   priorSpreadResultant[node], edgeWeight, decay_factor,
                                                                    neighborWeightAfterSpreading)
+
+
     def printScores(self, activationMap, graph):
         print "Patch weights for {}".format(self.name)
         for node in activationMap.keys():

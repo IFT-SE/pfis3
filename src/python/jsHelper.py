@@ -12,7 +12,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
 	CHANGELOG_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/changes\.txt')
 	OUTPUT_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/index\.html\.output')
-	METHOD_FQN_REGEX = re.compile(r'L/hexcom/([^/]*)/([^/]*/)?([a-z|A-Z]+.js).*?\;.(.*?)\(.*')
+	METHOD_FQN_REGEX = re.compile(r'L/hexcom/([^/]*)/([^/]*/)?(.*\.js).*;\.(.*?)\(.*')
 	#Groups are: Variant, folder+"/" if any, folder name in groups[1], file name, method name
 
 	PATCH_HIERARCHY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
@@ -130,9 +130,11 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def package(self, s):
 		variantName = self.getVariantName(s)
 		packageName = AbstractLanguageHelper.package(self, s)
-		if packageName.endswith(variantName):
+		if packageName == '':
 			return None
-		return packageName
+		elif packageName.endswith(variantName):
+			return None
+		return 'L'+ packageName
 
 	def splitFqn(self, fqn):
 		if self.isOutputFqn(fqn) or self.isChangelogFqn(fqn):

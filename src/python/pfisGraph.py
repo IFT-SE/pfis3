@@ -34,11 +34,9 @@ class PfisGraph(object):
         self.variantTopology = variantTopology
         self.stopWords = stopWords
         self.goalWords = goalWords
-        self.VERBOSE_BUILD = verbose
+        self.VERBOSE_BUILD = True
         self.graph = nx.Graph()
-
         self.name = "Variant unaware"
-
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
@@ -150,6 +148,7 @@ class PfisGraph(object):
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.CONTAINS)
+
             # Link the package to the root 'Packages' node
             self._addEdge('Packages', referrer,
                           NodeType.SPECIAL,
@@ -214,6 +213,7 @@ class PfisGraph(object):
                           targetNodeType,
                           referrerNodeType,
                           EdgeType.CALLS)
+
             # Link the called method to its class
             fqn = self.__getClassFQN(referrer)
             self._addEdge(fqn, referrer,
@@ -247,18 +247,14 @@ class PfisGraph(object):
 
                 if package is None:#Add edge from patch to variant
                     # Package is the folder inside variant where a file lives.
-                    self._addEdge(target, variant,
-                              targetNodeType, NodeType.VARIANT,
-                              EdgeType.IN_VARIANT)
+                    self._addEdge(target, variant, targetNodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
+                    self.updateScent(action, target, variant, targetNodeType, NodeType.VARIANT)
                 else:
-                    self._addEdge(target, package,
-                              targetNodeType, NodeType.PACKAGE,
-                              EdgeType.CONTAINS)
-                    self._addEdge(package, variant,
-                              NodeType.PACKAGE, NodeType.VARIANT,
-                              EdgeType.IN_VARIANT)
+                    self._addEdge(target, package, targetNodeType, NodeType.PACKAGE, EdgeType.CONTAINS)
+                    self.updateScent(action, target, package, targetNodeType,NodeType.PACKAGE)
 
-
+                    self._addEdge(package, variant, NodeType.PACKAGE, NodeType.VARIANT, EdgeType.IN_VARIANT)
+                    self.updateScent(action, package, variant, NodeType.PACKAGE, NodeType.VARIANT)
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
@@ -295,6 +291,9 @@ class PfisGraph(object):
     #==============================================================================#
     
     def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
+        if node1 is None or node1.strip()=='' or node2 is None or node2.strip()=='':
+            return
+
         if self.graph.has_edge(node1, node2) and edgeType not in self.graph.edge[node1][node2]['types']:
             self.graph.edge[node1][node2]['types'].append(edgeType)
         else:
@@ -308,9 +307,7 @@ class PfisGraph(object):
 
 
     def _stopWord(self, word):
-        if word.lower() in self.stopWords:
-            return True
-        elif word.isdigit():
+        if word.lower().strip() in self.stopWords:
             return True
         else:
             return False
@@ -353,7 +350,6 @@ class PfisGraph(object):
     
     def __getClassFQN(self, s):
         normalized = self.langHelper.normalize(s)
-        
         if normalized != '':
             return 'L' + normalized + ';'
         else:

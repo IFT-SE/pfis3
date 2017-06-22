@@ -73,7 +73,7 @@ class PFISSpreadWordOthersPatches(PFIS):
 
 			for node in self.mapNodesToActivation.keys():
 				if pfisGraph.containsNode(node):
-					self.spreadToNodesOfType(pfisGraph, node, spreadToNodes, self.mapNodesToActivation, accumulator)
+					self.spreadTo(pfisGraph, node, spreadToNodes, self.mapNodesToActivation, accumulator)
 
 			self.mapNodesToActivation.update(accumulator)
 		if self.VERBOSE:

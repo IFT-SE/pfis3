@@ -6,8 +6,8 @@ from pfisGraph import NodeType
 
 class PFISBase(PredictiveAlgorithm):
 	def __init__(self, langHelper, name, fileName, history=False, goal=False, \
-	             decayFactor=0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory=0.9, changelogGoalActivation=False,
-	             includeTop=False, numTopPredictions=0, verbose=False):
+				 decayFactor=0.85, decaySimilarity=0.85, decayVariant=0.85, decayHistory=0.9, changelogGoalActivation=False,
+				 includeTop=False, numTopPredictions=0, verbose=False):
 		PredictiveAlgorithm.__init__(self, langHelper, name, fileName, includeTop, numTopPredictions, verbose)
 		self.changeLogGoalWordActivation = changelogGoalActivation
 		self.history = history
@@ -32,9 +32,9 @@ class PFISBase(PredictiveAlgorithm):
 		navToPredict = navPath.getNavigation(navNumber)
 		if navToPredict.isToUnknown():
 			return Prediction(navNumber, 999999, 0, 0,
-			                  str(navToPredict.fromFileNav),
-			                  str(navToPredict.toFileNav),
-			                  navToPredict.toFileNav.timestamp)
+							  str(navToPredict.fromFileNav),
+							  str(navToPredict.toFileNav),
+							  navToPredict.toFileNav.timestamp)
 
 		fromMethodFqn = navToPredict.fromFileNav.methodFqn
 		methodToPredict = navToPredict.toFileNav.methodFqn
@@ -62,10 +62,10 @@ class PFISBase(PredictiveAlgorithm):
 				topPredictions = self.getTopPredictions(sortedMethods, self.mapNodesToActivation)
 
 			return Prediction(navNumber, ranking["rankWithTies"], len(sortedMethods), ranking["numTies"],
-			                  str(navToPredict.fromFileNav),
-			                  str(navToPredict.toFileNav),
-			                  navToPredict.toFileNav.timestamp,
-			                  topPredictions)
+							  str(navToPredict.fromFileNav),
+							  str(navToPredict.toFileNav),
+							  navToPredict.toFileNav.timestamp,
+							  topPredictions)
 
 		else:
 			raise Exception("Node not in activation list: ", toMethodEquivalentFqn)
@@ -91,9 +91,10 @@ class PFISBase(PredictiveAlgorithm):
 	def setPatchActivation(self, pfisGraph, fromMethodFqn, value):
 		fromPatchEquivalent = pfisGraph.getFqnOfEquivalentNode(fromMethodFqn)
 		if fromPatchEquivalent not in self.mapNodesToActivation.keys():
+			self.mapNodesToActivation[fromPatchEquivalent] = value
 			if self.VERBOSE:
 				print "{0} : {1}".format(fromPatchEquivalent, value)
-			self.mapNodesToActivation[fromPatchEquivalent] = value
+
 
 	def __initializeHistory(self, pfisGraph, navPath, navNumber):
 		activation = 1.0
@@ -101,6 +102,8 @@ class PFISBase(PredictiveAlgorithm):
 		for visitedPatch in [navPath.getNavigation(i).fromFileNav.methodFqn for i in range(navNumber, 0, -1)]:
 			if pfisGraph.containsNode(visitedPatch):
 				self.setPatchActivation(pfisGraph, visitedPatch, activation)
+			else:
+				print "Not in graph, cannot activate: ", visitedPatch
 			activation *= self.DECAY_HISTORY
 
 	def _initializeGoalWords(self, pfisGraph, reset=False):
@@ -132,7 +135,7 @@ class PFISBase(PredictiveAlgorithm):
 					activatedMethodNodes.append(node)
 
 			sortedNodes = sorted(activatedMethodNodes, key=lambda method: self.mapNodesToActivation[method],
-			                     reverse=True)
+								 reverse=True)
 		return sortedNodes
 
 	def __initializeChangelogsWithGoalwordsActivation(self, pfisGraph):
@@ -141,7 +144,7 @@ class PFISBase(PredictiveAlgorithm):
 			self._initializeGoalWords(pfisGraph)
 
 		goalWords = [word for word in pfisGraph.getGoalWords()
-		                 if pfisGraph.containsNode(word) and pfisGraph.getNode(word)['type'] == NodeType.WORD]
+						 if pfisGraph.containsNode(word) and pfisGraph.getNode(word)['type'] == NodeType.WORD]
 
 		for node in self.mapNodesToActivation.keys():
 			if pfisGraph.getNode(node)['type'] == NodeType.WORD and node in goalWords:
@@ -150,14 +153,15 @@ class PFISBase(PredictiveAlgorithm):
 
 				for changelog in changelogsContainingWord:
 					if changelog not in self.mapNodesToActivation.keys():
-						self.mapNodesToActivation[changelog] = 0.0
+						self.setPatchActivation(pfisGraph, changelog, 0.0)
 
 					initialValue = self.mapNodesToActivation[changelog]
-					self.mapNodesToActivation[changelog] = initialValue + self.GOAL_WORD_ACTIVATION * self.DECAY_FACTOR
+					value = initialValue + self.GOAL_WORD_ACTIVATION * self.DECAY_FACTOR
+					self.setPatchActivation(pfisGraph, changelog, value)
 
 					if self.VERBOSE:
 						print 'Goalword {} to {}: {} + ({}*{}) = {}'.format(node, changelog,
-						                                                   initialValue, self.mapNodesToActivation[node], self.DECAY_FACTOR, self.mapNodesToActivation[changelog])
+																		   initialValue, self.mapNodesToActivation[node], self.DECAY_FACTOR, self.mapNodesToActivation[changelog])
 
 		self._initializeGoalWords(pfisGraph, reset=True)
 
@@ -169,14 +173,14 @@ class PFISBase(PredictiveAlgorithm):
 			self.mapNodesToActivation[patchFqn] = 0.0
 
 		goalWords = [word for word in pfisGraph.getGoalWords()
-		                 if pfisGraph.containsNode(word) and pfisGraph.getNode(word)['type'] == NodeType.WORD]
+						 if pfisGraph.containsNode(word) and pfisGraph.getNode(word)['type'] == NodeType.WORD]
 
 		patchNeighbors = pfisGraph.getNeighborsOfDesiredEdgeTypes(patchFqn, [EdgeType.CONTAINS])
 
 		for word in goalWords:
 			if word in patchNeighbors:
 				self.mapNodesToActivation[patchFqn] = self.mapNodesToActivation[patchFqn] + \
-			                                      self.GOAL_WORD_ACTIVATION * self.DECAY_FACTOR
+												  self.GOAL_WORD_ACTIVATION * self.DECAY_FACTOR
 
 	def getDecayWeight(self, edgeTypes):
 		def getEdgeWeightForType(edgeType):
