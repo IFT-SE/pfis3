@@ -15,7 +15,7 @@ class PFISHierarchy(PFIS):
 			PFIS.setPatchActivation(self, pfisGraph, nodeFqn, value)
 
 	def getEntireHierarchy(self, patchFqn, pfisGraph):
-		return self.langHelper.splitFqn(patchFqn)
+		return self.langHelper.getPatchHierarchy(patchFqn)
 
 	def spreadActivation(self, pfisGraph,  fromMethodFqn=None):
 		for i in range(0, self.NUM_SPREAD):

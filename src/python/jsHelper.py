@@ -137,13 +137,16 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			return None
 		return 'L'+ packageName
 
-	def splitFqn(self, fqn):
+	def getPatchHierarchy(self, fqn):
+		#Returns top-most to leaf node.
 		if self.isOutputFqn(fqn) or self.isChangelogFqn(fqn):
 			return [self.getVariantName(fqn), fqn]
 		elif self.isMethodFqn(fqn):
-			items = [self.getVariantName(fqn), self.fileFqn(fqn), fqn]
+			items = [self.getVariantName(fqn)]
 			if self.package(fqn) is not None:
 				items.append(self.package(fqn))
+			items.append(self.fileFqn(fqn))
+			items.append(fqn)
 			return items
 
 	def fileFqn(self, fqn):

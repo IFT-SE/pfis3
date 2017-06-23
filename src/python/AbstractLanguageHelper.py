@@ -111,5 +111,5 @@ class AbstractLanguageHelper:
     def isNavigablePatch(self, fqn):
         return self.isMethodFqn(fqn)
 
-    def splitFqn(self, fqn):
+    def getPatchHierarchy(self, fqn):
         return fqn
