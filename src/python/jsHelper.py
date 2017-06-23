@@ -10,6 +10,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	JS_STD_LIB = 'LJS_Std_lib;.'
 	REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+).*")
 
+	FILE_FQN_REGEX = re.compile(r'L/hexcom/([^/]*)/([^/]*/)?(.*);$')
 	CHANGELOG_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/changes\.txt')
 	OUTPUT_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/index\.html\.output')
 	METHOD_FQN_REGEX = re.compile(r'L/hexcom/([^/]*)/([^/]*/)?(.*\.js).*;\.(.*?)\(.*')
@@ -92,13 +93,13 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		return differentVariants and sameFqnRelativeToVariant
 
 	def _checkSimilarityForNonMethodNodes(self, fqn1, fqn2):
-		SIMILARITY_REGEX = re.compile('L/hexcom/(.*?)(/.*)*/(.*)')
+		SIMILARITY_REGEX = re.compile('L/hexcom/(.*?)/(.*)')
 		match1 = SIMILARITY_REGEX.match(fqn1)
 		match2 = SIMILARITY_REGEX.match(fqn2)
 		if match1 is not None and match2 is not None:
 			groups1 = match1.groups()
 			groups2 = match2.groups()
-			return groups1[0] != groups2[0] and groups1[2] == groups2[2]
+			return groups1[0] != groups2[0] and groups1[1] == groups2[1]
 		return False
 
 	def getPatchTypeForFile(self, filePath):
@@ -147,3 +148,6 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
 	def fileFqn(self, fqn):
 		return self.getOuterClass(fqn) + ";"
+
+	def isFileFqn(self, fileFqn):
+		return self.FILE_FQN_REGEX.match(fileFqn) is not None

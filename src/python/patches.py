@@ -47,6 +47,13 @@ class PatchType(object):
     SOURCE = 'source_code'
     CHANGELOG = 'change_log'
     OUTPUT = 'output'
+    FILE = 'file'
+
+class FilePatch(Patch):
+    def __init__(self, fqn):
+        Patch.__init__(self, fqn)
+        self.patchType = PatchType.FILE
+
 
 class VariantInfo(object):
     def __init__(self, methodPath, startVariant, endVariant):

@@ -26,6 +26,12 @@ class Predictor(object):
 		totalPredictions = self.navPath.getLength() - 1
 
 		for _ in range(1, totalPredictions + 1):
+
+			if self.navNumber == 45:
+				self.graph.VERBOSE_BUILD = True
+			else:
+				self.graph.VERBOSE_BUILD = False
+
 			self.updateGraphByOneNavigation()
 
 			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)

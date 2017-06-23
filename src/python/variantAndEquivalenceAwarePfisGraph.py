@@ -43,13 +43,19 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
 	def _updateEquivalenceInformation(self, node):
-		if self.langHelper.isNavigablePatch(node) \
-				and self.getPatchByFqn(node) is None:
+		newPatch = None
+		if self.langHelper.isNavigablePatch(node) and self.getPatchByFqn(node) is None:
 			newPatch = self.getNewPatch(node)
-			self.fqnToIdMap[node] = newPatch.uuid
+		elif self.langHelper.isFileFqn(node):
+			newPatch = self.getNewFilePatch(node)
 
+		if newPatch is not None:
+			self.fqnToIdMap[node] = newPatch.uuid
 			if newPatch.uuid not in self.idToPatchMap.keys():
 				self.idToPatchMap[newPatch.uuid] = newPatch
+
+	def getNewFilePatch(self, filefqn):
+		return FilePatch(filefqn)
 
 	def getNewPatch(self, patchFqn, tempNode = False):
 		if self.langHelper.isMethodFqn(patchFqn):

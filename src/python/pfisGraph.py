@@ -34,7 +34,7 @@ class PfisGraph(object):
         self.variantTopology = variantTopology
         self.stopWords = stopWords
         self.goalWords = goalWords
-        self.VERBOSE_BUILD = True
+        self.VERBOSE_BUILD = False
         self.graph = nx.Graph()
         self.name = "Variant unaware"
 
@@ -86,7 +86,7 @@ class PfisGraph(object):
         if action in ('Package', 'Imports', 'Extends', 'Implements',
                       'Method declaration', 'Constructor invocation',
                       'Method invocation', 'Variable declaration',
-                      'Variable type', 'Changelog declaration', 'Output declaration'):
+                      'Variable type', 'Changelog declaration', 'Output declaration', 'Variant'):
             for word in self.__getWordNodes_splitNoStem(target):
                 self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
 
@@ -149,17 +149,19 @@ class PfisGraph(object):
                           referrerNodeType,
                           EdgeType.CONTAINS)
 
-            # Link the package to the root 'Packages' node
-            self._addEdge('Packages', referrer,
-                          NodeType.SPECIAL,
-                          referrerNodeType,
-                          EdgeType.CONTAINS)
-            # Link the file to its class FQN
-            fqn = self.__getClassFQN(target)
-            self._addEdge(target, fqn,
-                          targetNodeType,
-                          NodeType.CLASS,
-                          EdgeType.CONTAINS)
+            if self.langHelper.Language == "JAVA":
+                # Link the package to the root 'Packages' node
+                self._addEdge('Packages', referrer,
+                              NodeType.SPECIAL,
+                              referrerNodeType,
+                              EdgeType.CONTAINS)
+                # Link the file to its class FQN
+                fqn = self.__getClassFQN(target)
+                self._addEdge(target, fqn,
+                              targetNodeType,
+                              NodeType.CLASS,
+                              EdgeType.CONTAINS)
+
         elif action == 'Imports':
             # target = FILE, referrer = CLASS
             # Link the file to its class FQN
@@ -238,6 +240,9 @@ class PfisGraph(object):
                           referrerNodeType,
                           EdgeType.TYPE)
 
+        elif action == 'Variant':
+            self._addEdge(target, referrer, targetNodeType, referrerNodeType, EdgeType.IN_VARIANT)
+
         if self.variantTopology:
             # TODO: this is a hack because Java and JS have different hierarchies
             # and  JS has varying hierarchies for file containers.
@@ -247,14 +252,14 @@ class PfisGraph(object):
 
                 if package is None:#Add edge from patch to variant
                     # Package is the folder inside variant where a file lives.
-                    self._addEdge(target, variant, targetNodeType, NodeType.VARIANT, EdgeType.IN_VARIANT)
-                    self.updateScent(action, target, variant, targetNodeType, NodeType.VARIANT)
+                    self.updateTopology('Variant', target, variant, targetNodeType, NodeType.VARIANT)
+                    self.updateScent('Variant', target, variant, targetNodeType, NodeType.VARIANT)
                 else:
-                    self._addEdge(target, package, targetNodeType, NodeType.PACKAGE, EdgeType.CONTAINS)
-                    self.updateScent(action, target, package, targetNodeType,NodeType.PACKAGE)
+                    self.updateTopology('Package', target, package, targetNodeType, NodeType.PACKAGE)
+                    self.updateScent('Package', target, package, targetNodeType,NodeType.PACKAGE)
 
-                    self._addEdge(package, variant, NodeType.PACKAGE, NodeType.VARIANT, EdgeType.IN_VARIANT)
-                    self.updateScent(action, package, variant, NodeType.PACKAGE, NodeType.VARIANT)
+                    self.updateTopology('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
+                    self.updateScent('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)

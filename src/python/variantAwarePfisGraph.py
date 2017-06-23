@@ -9,8 +9,7 @@ class VariantAwarePfisGraph(PfisGraph):
 
 	def updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType):
 		PfisGraph.updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType)
-
-		if action in ['Method declaration', 'Changelog declaration', 'Output declaration'] :
+		if action in ['Method declaration', 'Changelog declaration', 'Output declaration', 'Package', 'File']:
 			self._addEdgesToOtherVariants(referrer, referrerNodeType)
 			self._addEdgesToOtherVariants(target, targetNodeType)
 

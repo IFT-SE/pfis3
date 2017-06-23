@@ -17,7 +17,7 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_SIMILARITY = decaySimilarity
 		self.DECAY_VARIANT = decayVariant
 		self.mapNodesToActivation = None
-		self.VERBOSE = True
+		self.VERBOSE = verbose
 
 		self.GOAL_WORD_ACTIVATION = 1.0
 
