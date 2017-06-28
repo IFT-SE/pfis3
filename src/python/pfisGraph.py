@@ -1,7 +1,6 @@
 import networkx as nx
 import re
 import sqlite3
-
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
 from graphAttributes import NodeType
@@ -37,6 +36,9 @@ class PfisGraph(object):
         self.VERBOSE_BUILD = False
         self.graph = nx.Graph()
         self.name = "Variant unaware"
+
+        self.temporaryMode = False
+        self.tempNodes = set()
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
@@ -218,8 +220,10 @@ class PfisGraph(object):
 
             # Link the called method to its class
             fqn = self.__getClassFQN(referrer)
+            if self.langHelper.Language == "JAVA": containerType = NodeType.CLASS
+            elif self.langHelper.Language == "JS": containerType = NodeType.FILE
             self._addEdge(fqn, referrer,
-                          NodeType.CLASS,
+                          containerType,
                           referrerNodeType,
                           EdgeType.CONTAINS)
 
@@ -296,16 +300,29 @@ class PfisGraph(object):
     #==============================================================================#
     
     def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
+        def _addNodeIfNotPresent(self, node, nodeType):
+            if not self.graph.has_node(node):
+                self.graph.add_node(node, attr_dict={'type': nodeType})
+
+                if self.temporaryMode:
+                    self.tempNodes.add(node)
+
+                    if self.VERBOSE_BUILD:
+                        print "Adding temp node to graph: ", node, nodeType
+
         if node1 is None or node1.strip()=='' or node2 is None or node2.strip()=='':
             return
+        if node1Type is None or node2Type is None:
+            raise Exception("Missing nodetype while adding edge: ", node1Type, node2Type, edgeType)
 
-        if self.graph.has_edge(node1, node2) and edgeType not in self.graph.edge[node1][node2]['types']:
+        _addNodeIfNotPresent(self, node1, node1Type)
+        _addNodeIfNotPresent(self, node2, node2Type)
+
+        if not self.graph.has_edge(node1, node2):
+            self.graph.add_edge(node1, node2, attr_dict={'types': []})
+
+        if edgeType not in self.graph.edge[node1][node2]['types']:
             self.graph.edge[node1][node2]['types'].append(edgeType)
-        else:
-            self.graph.add_edge(node1, node2, attr_dict={'types': [edgeType]})
-            
-        self.graph.node[node1]['type'] = node1Type
-        self.graph.node[node2]['type'] = node2Type
 
         if self.VERBOSE_BUILD:
             print "\tAdding edge from {0} ({1}) to {2} ({3}) of type {4}".format(node1, node1Type, node2, node2Type, edgeType)
@@ -475,15 +492,24 @@ class PfisGraph(object):
         if nodeType in [NodeType.METHOD, NodeType.OUTPUT]:
             self._copyPatchContent(cloneFrom, cloneTo, nodeType)
 
+
+    def removeNode(self, nodeFqn):
+        if self.VERBOSE_BUILD:
+            print "Removing temp node from graph: ", nodeFqn
+        self.graph.remove_node(nodeFqn)
+
+    def resetTemporaryMode(self):
+        for tempNode in self.tempNodes:
+            self.removeNode(tempNode)
+        self.temporaryMode = False
+        self.tempNodes = set()
+
     def _copyPatchContent(self, cloneFromFqn, cloneTo, nodeType):
         sourceNodeNeighbors = self.getNeighborsWithNodeTypes(cloneFromFqn, NodeType.getNodeTypesToClone())
         for neighborFqn in sourceNodeNeighbors:
             edgeTypes = self.getEdgeTypesBetween(cloneFromFqn, neighborFqn)
             for edgeType in edgeTypes:
-                self._addEdge(cloneTo, neighborFqn, nodeType, nodeType, edgeType)
-
-    def removeNode(self, nodeFqn):
-        self.graph.remove_node(nodeFqn)
+                self._addEdge(cloneTo, neighborFqn, nodeType, self.getNode(neighborFqn)['type'], edgeType)
 
     def getChangelogScent(self, fqn):
         conn = sqlite3.connect(self.dbFilePath)

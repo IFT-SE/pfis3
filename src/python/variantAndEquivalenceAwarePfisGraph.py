@@ -2,6 +2,7 @@ from variantAwarePfisGraph import VariantAwarePfisGraph
 from patches import *
 import os
 import sqlite3
+from graphAttributes import NodeType
 from graphAttributes import EdgeType
 
 class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
@@ -30,37 +31,38 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 
 	def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
-
-		self._updateEquivalenceInformation(node1)
-		self._updateEquivalenceInformation(node2)
+		self._updateEquivalenceInformation(node1, node1Type)
+		self._updateEquivalenceInformation(node2, node2Type)
 
 		node1Equivalent = self.getFqnOfEquivalentNode(node1)
 		node2Equivalent = self.getFqnOfEquivalentNode(node2)
 
-		if node1Equivalent == node2Equivalent: #Happens for equivalent nodes: do not add self loops.
-			return
+		if not (edgeType == EdgeType.SIMILAR and node1Equivalent == node2Equivalent): #Happens for equivalent nodes: do not add self loops.
+			VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
 
-		VariantAwarePfisGraph._addEdge(self, node1Equivalent, node2Equivalent, node1Type, node2Type, edgeType)
+	def _updateEquivalenceInformation(self, node, nodeType):
+		if nodeType in [NodeType.VARIANT, NodeType.WORD, NodeType.OUTPUT_INFO_FEATURE]: return
+		if self.getPatchByFqn(node) is not None: return
+		if self.langHelper.isLibMethodWithoutSource(node): return
 
-	def _updateEquivalenceInformation(self, node):
-		newPatch = None
-		if self.langHelper.isNavigablePatch(node) and self.getPatchByFqn(node) is None:
-			newPatch = self.getNewPatch(node)
-		elif self.langHelper.isFileFqn(node):
-			newPatch = self.getNewFilePatch(node)
+		if self.langHelper.isNavigablePatch(node):
+			newPatch = self.getNewLeafLevelPatch(node)
+		else:
+			newPatch = self.getNewNonLeafPatch(node)
 
-		if newPatch is not None:
-			self.fqnToIdMap[node] = newPatch.uuid
-			if newPatch.uuid not in self.idToPatchMap.keys():
-				self.idToPatchMap[newPatch.uuid] = newPatch
+		if newPatch is None:
+			raise Exception("Cannot create representative patch for:", node)
 
-	def getNewFilePatch(self, filefqn):
-		return FilePatch(filefqn)
+		self.setAsEquivalent(node, newPatch.uuid, newPatch)
+		print "Updating equivalence: ", node, nodeType, newPatch.uuid, newPatch.fqn
 
-	def getNewPatch(self, patchFqn, tempNode = False):
+	def getNewNonLeafPatch(self, fqn):
+		return Patch(fqn)
+
+	def getNewLeafLevelPatch(self, patchFqn):
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
-			if not tempNode:
+			if not self.temporaryMode:
 				if not self.langHelper.isPfigHeaderFqn(patchFqn):
 					newPatch.uuid = self.__getEquivalenceUUIDFromDB(newPatch.fqn)
 
@@ -69,7 +71,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 		elif self.langHelper.isOutputFqn(patchFqn):
 			newPatch = OutputPatch(patchFqn)
-			if not tempNode:
+			if not self.temporaryMode:
 				self.__updateEquivalenceForOutput(newPatch, patchFqn)
 		else:
 			raise Exception("Not a patch fqn:", patchFqn)
@@ -91,10 +93,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		return None
 
 	def getFqnOfEquivalentNode(self, node):
-		if self.langHelper.isNavigablePatch(node):
-			equivalentPatch = self.getPatchByFqn(node)
-			if equivalentPatch is not None:
-				return equivalentPatch.fqn
+		equivalentPatch = self.getPatchByFqn(node)
+		if equivalentPatch is not None:
+			return equivalentPatch.fqn
 		return node
 
 	def containsNode(self, node):
@@ -108,16 +109,15 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		return self.graph.node[equivalentNode]
 
 	def cloneNode(self, cloneTo, cloneFrom):
-		def _cloneAsEquivalent(to, fromNode):
+		def _cloneAsEquivalent(toNode, fromNode):
 			#Set the equivalence first because graph manipulation is based on equivalent FQN.
-			self.fqnToIdMap[to] = self.fqnToIdMap[fromNode]
-			VariantAwarePfisGraph.cloneNode(self, to, fromNode)
+			self.setAsEquivalent(toNode, self.fqnToIdMap[fromNode])
+			VariantAwarePfisGraph.cloneNode(self, toNode, fromNode)
 
 		def _cloneAsNonEquivalent(toNode, fromNode):
 			#Set the equivalence first because graph manipulation is based on equivalent FQN.
-			tempPatch = self.getNewPatch(toNode, tempNode=True)
-			self.idToPatchMap[tempPatch.uuid] = tempPatch
-			self.fqnToIdMap[toNode] = tempPatch.uuid
+			tempPatch = self.getNewLeafLevelPatch(toNode)
+			self.setAsEquivalent(toNode, tempPatch.uuid, tempPatch)
 			VariantAwarePfisGraph.cloneNode(self, toNode, fromNode)
 
 		# Changelog patches are never equivalent, so always create from and to as non-equivalent.
@@ -127,20 +127,34 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		# For output or source code patches, clone cloneTo as equivalent to cloneFrom or not, based on config.
 		elif self.langHelper.isOutputFqn(cloneTo) or self.langHelper.isMethodFqn(cloneTo):
 			if self.divorcedUntilMarried:
-				_cloneAsEquivalent(cloneTo, cloneFrom)
+				_cloneAsNonEquivalent(cloneTo, cloneFrom)
 			else:
 				_cloneAsEquivalent(cloneTo, cloneFrom)
 
+	def setAsEquivalent(self, fqn, id, equivalentPatch=None):
+		if fqn not in self.fqnToIdMap.keys():
+			self.fqnToIdMap[fqn] = id
+			if self.temporaryMode:
+				self.tempNodes.add(fqn)
+
+		if equivalentPatch is not None and id not in self.idToPatchMap.keys():
+			self.idToPatchMap[id] = equivalentPatch
 
 	def removeNode(self, nodeFqn):
-		# Output and method patches are treated as equivalent to last seen, so just update the maps.
-		id = self.fqnToIdMap[nodeFqn]
-		self.fqnToIdMap.pop(nodeFqn)
-
-		# For changelog, there is an actual node added, so remove that node.
-		if self.langHelper.isChangelogFqn(nodeFqn):
-			self.idToPatchMap.pop(id)
+		if nodeFqn not in self.fqnToIdMap.keys(): #Variant nodes do not have equivalents, and they need to be deleted.
 			VariantAwarePfisGraph.removeNode(self, nodeFqn)
+
+		else:
+			id = self.fqnToIdMap[nodeFqn]
+			self.fqnToIdMap.pop(nodeFqn)
+
+			# If the ID is equivalent of some other other fqn also, removing node from FQNtoID map is enough. So, remove it from temp added nodes list.
+			# Otherwise, remove from ID to patch map, and remove the representative node from the graph.
+
+			if id not in self.fqnToIdMap.values(): #It is an orphan entry in idtoPatchMap, so remove.
+				patch = self.idToPatchMap[id]
+				self.idToPatchMap.pop(id)
+				VariantAwarePfisGraph.removeNode(self, patch.fqn)
 
 	def __getEquivalenceUUIDFromDB(self, fqn):
 		if self.langHelper.isMethodFqn(fqn):

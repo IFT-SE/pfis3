@@ -26,14 +26,7 @@ class Predictor(object):
 		totalPredictions = self.navPath.getLength() - 1
 
 		for _ in range(1, totalPredictions + 1):
-
-			if self.navNumber == 45:
-				self.graph.VERBOSE_BUILD = True
-			else:
-				self.graph.VERBOSE_BUILD = False
-
 			self.updateGraphByOneNavigation()
-
 			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
 			for algorithm in algorithms:
 				prediction = algorithm.makePrediction(self.graph, self.navPath, self.navNumber)
@@ -77,18 +70,16 @@ class Predictor(object):
 				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
 				if mostRecentSimilarNav is not None:
 					print "Clone temporary node {} from {}".format(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
-					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
+					self.graph.temporaryMode = True
+					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
 	def __removeTemporarilyAddedNodeIfAny(self):
 		if self.navPath.ifNavToUnseenPatch(self.navNumber):
-			currentNav = self.navPath.getNavigation(self.navNumber)
-			additionalNode = currentNav.toFileNav.methodFqn
-
 			# If graph contains unseen patch, it was because it was known from other variant.
 			# Remove this temporary unseen but known patch.
-			if self.graph.containsNode(additionalNode):
-				print "Removing temporary node: ", additionalNode
-				self.graph.removeNode(additionalNode)
+			if self.graph.temporaryMode:
+				self.graph.resetTemporaryMode()
+
 
 
