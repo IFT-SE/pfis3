@@ -23,12 +23,15 @@ class Predictor(object):
 
 		for _ in range(0, self.navPath.getLength()-1):
 			self.navNumber += 1
+
 			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(self.navPath.getLength())
 			self.updateGraphByOneNavigation()
 			self.__addUnseenButKnownPatchIfAny(self.navNumber)
+
 			for algorithm in algorithms:
 				prediction = algorithm.makePrediction(self.graph, self.navPath, self.navNumber)
 				results[algorithm.name].addPrediction(prediction)
+
 			self.__removeTemporarilyAddedNodeIfAny(self.navNumber)
 			print "-----------------------------------------------"
 

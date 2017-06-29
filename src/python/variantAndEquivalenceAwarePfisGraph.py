@@ -183,6 +183,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 			c.close()
 			conn.close()
 
+			if patchRow is None:
+				raise Exception("Missing patch equivalence:", patch, variantName, variantNum, pathRelativeToVariant)
+
 			uuid = patchRow[0]
 			return uuid
 

@@ -69,6 +69,8 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def isLibMethodWithoutSource(self, node):
 		if node.startswith(self.JS_STD_LIB):
 			return True
+		elif ".min.js" in node:
+			return True
 		return False
 
 	def performDBPostProcessing(self, db):
@@ -102,10 +104,15 @@ class JavaScriptHelper (AbstractLanguageHelper):
 			return groups1[0] != groups2[0] and groups1[1] == groups2[1]
 		return False
 
+	def hasLanguageExtension(self, filePath):
+		isJs = AbstractLanguageHelper.hasLanguageExtension(self, filePath)
+		if isJs and ".min.js" not in filePath:
+			return True
+		return False
+
 	def getPatchTypeForFile(self, filePath):
 		CHANGELOG_FILE_REGEX = re.compile(r'(.*changes\.txt)')
 		OUTPUT_FILE_REGEX = re.compile(r'(.*\.output)')
-
 		if '[B]' not in filePath and '[P]' not in filePath:
 			if self.hasLanguageExtension(filePath):
 				return PatchType.METHOD
