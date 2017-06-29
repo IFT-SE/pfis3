@@ -25,7 +25,7 @@ class PFISBase(PredictiveAlgorithm):
 		raise NotImplementedError('spreadActivation is not implemented in PFISBase')
 
 	def makePrediction(self, pfisGraph, navPath, navNumber):
-		print "{}: Predict #{}: {}".format(self.name, navNumber, navPath.getNavigation(navNumber))
+		print "Predicting #{}: {} using {}".format(navNumber, navPath.getNavigation(navNumber), self.name)
 		if navNumber < 1 or navNumber >= navPath.getLength():
 			raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 

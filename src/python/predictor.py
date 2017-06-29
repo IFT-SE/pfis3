@@ -7,7 +7,7 @@ class Predictor(object):
 		self.navPath = navPath
 		self.outputFolder = outputFolderPath
 		self.topPredictionsFolder = topPredictionsPath
-		self.navNumber = -1
+		self.navNumber = 0
 		self.endTimeStamp = '0'
 
 	def makeAllPredictions(self, algorithms):
@@ -21,57 +21,45 @@ class Predictor(object):
 			results[algorithm.name] = Predictions(algorithm.name, self.outputFolder, algorithm.fileName,
 			                                      algorithm.includeTop, self.topPredictionsFolder)
 
-		totalPredictions = self.navPath.getLength() - 1
-		for _ in range(1, totalPredictions + 1):
+		for _ in range(0, self.navPath.getLength()-1):
+			self.navNumber += 1
+			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(self.navPath.getLength())
 			self.updateGraphByOneNavigation()
-			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
+			self.__addUnseenButKnownPatchIfAny(self.navNumber)
 			for algorithm in algorithms:
 				prediction = algorithm.makePrediction(self.graph, self.navPath, self.navNumber)
 				results[algorithm.name].addPrediction(prediction)
+			self.__removeTemporarilyAddedNodeIfAny(self.navNumber)
+			print "-----------------------------------------------"
 
 		print 'Done making predictions.'
 		print self.graph.printEntireGraphStats()
 		return results
 
 	def updateGraphByOneNavigation(self):
-		if self.navPath.getNavPathType() == NavigationPath.PFIS_V:
-			self.__removeTemporarilyAddedNodeIfAny()
-
-		newEndTimestamp = 0
-		if self.navNumber < self.navPath.getLength() - 1:
-			self.navNumber += 1
-			newEndTimestamp = self.navPath.getNavigation(self.navNumber).toFileNav.timestamp
-
-		print "-----------------------------"
-		print "Updating graph... ".format(self.navNumber-1, self.navNumber)
-
+		newEndTimestamp = self.navPath.getNavigation(self.navNumber).toFileNav.timestamp
 		self.graph.updateGraphByOneNavigation(self.endTimeStamp, newEndTimestamp)
-
 		self.endTimeStamp = newEndTimestamp
 
-		if self.navPath.getNavPathType() == NavigationPath.PFIS_V:
-			# The actual patch navigated to is not present in graph but we make a prediction,
-			# so temporarily add the node in the graph, similar to earlier seen variant.
-			self.__addUnseenButKnownPatch()
-
-	def __addUnseenButKnownPatch(self):
-		# If patch is not seen, it can still be known for PFIS-V.
-		# So, we add that "unseen, yet known" patch to graph.
-		if self.navPath.ifNavToUnseenPatch(self.navNumber):
-			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
-
+	def __addUnseenButKnownPatchIfAny(self, navNumber):
+		# If patch is not seen before by a programmer, he/she might still know about it based on previous variants. This is what PFIS-V models.
+		# So, we add that "unseen, yet known" patch to graph temporarily, for the sake of still predicting it.
+		# Such temp nodes are then removed after prediction is made.
+		# The update graph after the nav takes care of putting the actual node back into the graph.
+		if self.navPath.getNavPathType() == NavigationPath.PFIS_V and self.navPath.ifNavToUnseenPatch(navNumber):
+			actualNavigation = self.navPath.getNavigation(navNumber).toFileNav
 			if self.graph.containsNode(actualNavigation.methodFqn):
-				print "Warning: Unseen method already exists in graph: ", actualNavigation.methodFqn, self.navNumber
-
+				print "Warning: Unseen method already exists in graph: ", actualNavigation.methodFqn, navNumber
 			else:
-				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(self.navNumber)
+				mostRecentSimilarNav = self.navPath.getPriorNavToSimilarPatchIfAny(navNumber)
 				if mostRecentSimilarNav is not None:
-					print "Clone temporary node {} from {}".format(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
-
+					self.graph.setTemporaryMode(value=True)
+					print "Add temporary node {}: similar to {}".format(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
-	def __removeTemporarilyAddedNodeIfAny(self):
-		if self.navPath.ifNavToUnseenPatch(self.navNumber):
+	def __removeTemporarilyAddedNodeIfAny(self, navNumber):
+		if self.navPath.getNavPathType() == NavigationPath.PFIS_V \
+				and self.navPath.ifNavToUnseenPatch(navNumber):
 			# If graph contains unseen patch, it was because it was known from other variant.
 			# Remove this temporary unseen but known patch.
 			if self.graph.temporaryMode:

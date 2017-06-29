@@ -44,7 +44,7 @@ class PfisGraph(object):
         conn = sqlite3.connect(self.dbFilePath)
         conn.row_factory = sqlite3.Row
 
-        print 'Updating PFIS Graph...'
+        print 'Updating PFIS Graph... {} to {}'.format(prevEndTimeStamp, newEndTimestamp)
 
         self.__addTopologyNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
         self.__addScentNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
@@ -491,15 +491,13 @@ class PfisGraph(object):
 
 
     def removeNode(self, nodeFqn):
-        if self.VERBOSE_BUILD:
-            print "Removing temp node from graph: ", nodeFqn
+        print "Removing temporary node:", nodeFqn
         self.graph.remove_node(nodeFqn)
 
     def setTemporaryMode(self, value):
         if self.temporaryMode != value:
-            if self.VERBOSE_BUILD:
-                print "Setting temporary mode to: ", value
-
+            # self.VERBOSE_BUILD = not self.VERBOSE_BUILD
+            print "Setting temporary mode to: ", value
             if value == False:
                 for tempNode in self.tempNodes:
                     self.removeNode(tempNode)

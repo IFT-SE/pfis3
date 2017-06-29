@@ -135,14 +135,15 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 	def setAsEquivalent(self, fqn, id, equivalentPatch=None):
 		if fqn not in self.fqnToIdMap.keys():
 			self.fqnToIdMap[fqn] = id
-			if self.VERBOSE_BUILD:
-				print "Equivalent {0} : {1}".format(fqn, id)
-
 			if self.temporaryMode:
 				self.tempNodes.add(fqn)
 
-		if equivalentPatch is not None and id not in self.idToPatchMap.keys():
-			self.idToPatchMap[id] = equivalentPatch
+			if id not in self.idToPatchMap.keys() and equivalentPatch is not None:
+				self.idToPatchMap[id] = equivalentPatch
+
+			if self.VERBOSE_BUILD:
+				print "Equivalent {0} : {1}".format(fqn, self.idToPatchMap[id].fqn)
+
 
 	def removeNode(self, nodeFqn):
 		if nodeFqn not in self.fqnToIdMap.keys(): #Variant nodes do not have equivalents, and they need to be deleted.
@@ -151,8 +152,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		else:
 			id = self.fqnToIdMap[nodeFqn]
 			self.fqnToIdMap.pop(nodeFqn)
-			if self.VERBOSE_BUILD:
-				print "Remove equivalence infomration: ", nodeFqn
+			print "Remove node equivalence: ", nodeFqn
 
 
 			# If the ID is equivalent of some other other fqn also, removing node from FQNtoID map is enough. So, remove it from temp added nodes list.
