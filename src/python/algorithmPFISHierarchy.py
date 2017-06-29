@@ -21,20 +21,23 @@ class PFISHierarchy(PFIS):
 		for i in range(0, self.NUM_SPREAD):
 			accumulator = {}
 			if i%3 == 0:
-				print "Spread to words"
+				if self.VERBOSE:
+					print "Spread to words"
 				for node in self.mapNodesToActivation.keys():
 					if pfisGraph.getNode(node)['type'] != NodeType.WORD:
 						wordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] == NodeType.WORD]
 						self.spreadTo(pfisGraph, node, wordNeighbors, self.mapNodesToActivation, accumulator)
 			elif i%3 == 1:
-				print "Spread word to non-words"
+				if self.VERBOSE:
+					print "Spread word to non-words"
 				for node in self.mapNodesToActivation.keys():
 					if pfisGraph.getNode(node)['type'] == NodeType.WORD:
 						nonWordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] != NodeType.WORD]
 						self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator)
 			else:
 				for level in range(0, max(NodeType.Levels.values()) + 1):
-					print "Spread non-word to non-word nodes from level {0} to same or lower levels in hierarchy".format(level)
+					if self.VERBOSE:
+						print "Spread non-word to non-word nodes from level {0} to same or lower levels in hierarchy".format(level)
 					nodes = [n for n in self.mapNodesToActivation.keys() if pfisGraph.getNodeLevel(n) == level]
 					accumulator = {}
 					for node in nodes:

@@ -51,7 +51,6 @@ class PfisGraph(object):
         self.__addAdjacencyNodesUpTo(conn, prevEndTimeStamp, newEndTimestamp)
 
         print 'Done updating PFIS Graph.'
-
         conn.close()
 
     def __addScentNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
@@ -60,8 +59,6 @@ class PfisGraph(object):
         print '\tProcessing scent. Adding scent-related nodes...'
         
         c = conn.cursor()
-        # if self.VERBOSE_BUILD:
-        #     print "\tExecuting scent query from ", self.endTimestamp, "to", newEndTimestamp
         c.execute(self.SCENT_QUERY, [prevEndTimestamp, newEndTimestamp])
         #TODO: Sruti, Souti: account for output patch scent
         
@@ -308,7 +305,7 @@ class PfisGraph(object):
                     self.tempNodes.add(node)
 
                     if self.VERBOSE_BUILD:
-                        print "Adding temp node to graph: ", node, nodeType
+                        print "Adding temporary node to graph: ", node, nodeType
 
         if node1 is None or node1.strip()=='' or node2 is None or node2.strip()=='':
             return
@@ -498,11 +495,16 @@ class PfisGraph(object):
             print "Removing temp node from graph: ", nodeFqn
         self.graph.remove_node(nodeFqn)
 
-    def resetTemporaryMode(self):
-        for tempNode in self.tempNodes:
-            self.removeNode(tempNode)
-        self.temporaryMode = False
-        self.tempNodes = set()
+    def setTemporaryMode(self, value):
+        if self.temporaryMode != value:
+            if self.VERBOSE_BUILD:
+                print "Setting temporary mode to: ", value
+
+            if value == False:
+                for tempNode in self.tempNodes:
+                    self.removeNode(tempNode)
+                self.tempNodes = set()
+            self.temporaryMode = value
 
     def _copyPatchContent(self, cloneFromFqn, cloneTo, nodeType):
         sourceNodeNeighbors = self.getNeighborsWithNodeTypes(cloneFromFqn, NodeType.getNodeTypesToClone())

@@ -11,9 +11,7 @@ class Predictor(object):
 		self.endTimeStamp = '0'
 
 	def makeAllPredictions(self, algorithms):
-
 		self.updateGraphByOneNavigation()
-
 		if self.navPath.getLength() < 2:
 			raise RuntimeError('makeAllPredictions: Not enough navigations to run predictive algorithms')
 
@@ -24,7 +22,6 @@ class Predictor(object):
 			                                      algorithm.includeTop, self.topPredictionsFolder)
 
 		totalPredictions = self.navPath.getLength() - 1
-
 		for _ in range(1, totalPredictions + 1):
 			self.updateGraphByOneNavigation()
 			print 'Making predictions for navigation #' + str(self.navNumber) + ' of ' + str(totalPredictions)
@@ -47,6 +44,7 @@ class Predictor(object):
 
 		print "-----------------------------"
 		print "Updating graph... ".format(self.navNumber-1, self.navNumber)
+
 		self.graph.updateGraphByOneNavigation(self.endTimeStamp, newEndTimestamp)
 
 		self.endTimeStamp = newEndTimestamp
@@ -59,7 +57,6 @@ class Predictor(object):
 	def __addUnseenButKnownPatch(self):
 		# If patch is not seen, it can still be known for PFIS-V.
 		# So, we add that "unseen, yet known" patch to graph.
-
 		if self.navPath.ifNavToUnseenPatch(self.navNumber):
 			actualNavigation = self.navPath.getNavigation(self.navNumber).toFileNav
 
@@ -71,7 +68,6 @@ class Predictor(object):
 				if mostRecentSimilarNav is not None:
 					print "Clone temporary node {} from {}".format(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
-					self.graph.temporaryMode = True
 					self.graph.cloneNode(actualNavigation.methodFqn, mostRecentSimilarNav.methodFqn)
 
 	def __removeTemporarilyAddedNodeIfAny(self):
@@ -79,7 +75,7 @@ class Predictor(object):
 			# If graph contains unseen patch, it was because it was known from other variant.
 			# Remove this temporary unseen but known patch.
 			if self.graph.temporaryMode:
-				self.graph.resetTemporaryMode()
+				self.graph.setTemporaryMode(value=False)
 
 
 

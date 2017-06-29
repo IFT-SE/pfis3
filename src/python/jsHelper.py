@@ -108,7 +108,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
 		if '[B]' not in filePath and '[P]' not in filePath:
 			if self.hasLanguageExtension(filePath):
-				return PatchType.SOURCE
+				return PatchType.METHOD
 			elif CHANGELOG_FILE_REGEX.match(filePath) != None:
 				return PatchType.CHANGELOG
 			elif OUTPUT_FILE_REGEX.match(filePath) != None:

@@ -8,10 +8,7 @@ from graphAttributes import EdgeType
 class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 	GET_VARIANT_POSITION_QUERY = 'select * from VARIANTS where NAME= ?'
-	FETCH_PATCH_FOR_FQN_QUERY = 'select vf.method, v1.name, v2.name, vf.body, vf.uuid from variants_to_functions as vf ' \
-                            'join variants as v1 on vf.start = v1.num ' \
-                            'join variants as v2 on vf.end=v2.num ' \
-                            'where vf.method = ? and start <= ? and end >=?'
+	FETCH_PATCH_FOR_FQN_QUERY_FORMAT = 'select vf.uuid from {} as vf where vf.fqn = ? and start <= ? and end >=?'
 
 
 	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, divorcedUntilMarried=False, stopWords=[], goalWords=[], verbose=False):
@@ -28,7 +25,6 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		self.name = "Variant and equivalence aware: " + variantsDb
 		if divorcedUntilMarried:
 			self.name = self.name + "(DUM)"
-
 
 	def _addEdge(self, node1, node2, node1Type, node2Type, edgeType):
 		self._updateEquivalenceInformation(node1, node1Type)
@@ -49,22 +45,27 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 			newPatch = self.getNewLeafLevelPatch(node)
 		else:
 			newPatch = self.getNewNonLeafPatch(node)
-
 		if newPatch is None:
 			raise Exception("Cannot create representative patch for:", node)
 
 		self.setAsEquivalent(node, newPatch.uuid, newPatch)
-		print "Updating equivalence: ", node, nodeType, newPatch.uuid, newPatch.fqn
 
 	def getNewNonLeafPatch(self, fqn):
-		return Patch(fqn)
+		if self.langHelper.isFileFqn(fqn):
+			fqn = self.langHelper.fileFqn(fqn)
+			filePatch = FilePatch(fqn)
+			if self.temporaryMode: return filePatch
+			else:
+				filePatch.uuid = self.__getEquivalenceUUIDFromDB(filePatch)
+				return filePatch
+		else: return Patch(fqn)
 
 	def getNewLeafLevelPatch(self, patchFqn):
 		if self.langHelper.isMethodFqn(patchFqn):
 			newPatch = MethodPatch(patchFqn)
 			if not self.temporaryMode:
 				if not self.langHelper.isPfigHeaderFqn(patchFqn):
-					newPatch.uuid = self.__getEquivalenceUUIDFromDB(newPatch.fqn)
+					newPatch.uuid = self.__getEquivalenceUUIDFromDB(newPatch)
 
 		elif self.langHelper.isChangelogFqn(patchFqn):
 			newPatch = ChangelogPatch(patchFqn)
@@ -134,6 +135,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 	def setAsEquivalent(self, fqn, id, equivalentPatch=None):
 		if fqn not in self.fqnToIdMap.keys():
 			self.fqnToIdMap[fqn] = id
+			if self.VERBOSE_BUILD:
+				print "Equivalent {0} : {1}".format(fqn, id)
+
 			if self.temporaryMode:
 				self.tempNodes.add(fqn)
 
@@ -147,6 +151,9 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		else:
 			id = self.fqnToIdMap[nodeFqn]
 			self.fqnToIdMap.pop(nodeFqn)
+			if self.VERBOSE_BUILD:
+				print "Remove equivalence infomration: ", nodeFqn
+
 
 			# If the ID is equivalent of some other other fqn also, removing node from FQNtoID map is enough. So, remove it from temp added nodes list.
 			# Otherwise, remove from ID to patch map, and remove the representative node from the graph.
@@ -156,31 +163,28 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 				self.idToPatchMap.pop(id)
 				VariantAwarePfisGraph.removeNode(self, patch.fqn)
 
-	def __getEquivalenceUUIDFromDB(self, fqn):
-		if self.langHelper.isMethodFqn(fqn):
+	def __getEquivalenceUUIDFromDB(self, patch):
+		tableNames = {PatchType.METHOD: "VARIANTS_TO_FUNCTIONS", PatchType.FILE: "VARIANTS_TO_FILES"}
+		fqn = patch.fqn
+
+		if patch.patchType in tableNames.keys():
 			pathRelativeToVariant = self.langHelper.getPathRelativeToVariant(fqn)
 			variantName = self.langHelper.getVariantName(fqn)
 
-		if not os.path.exists(self.variantsDb):
-			raise Exception("Db not found: ", self.variantsDb)
+			conn = sqlite3.connect(self.variantsDb)
+			c = conn.cursor()
+			c.execute(self.GET_VARIANT_POSITION_QUERY, [variantName])
+			variantNum = c.fetchone()[0]
 
-		conn = sqlite3.connect(self.variantsDb)
+			queryString = self.FETCH_PATCH_FOR_FQN_QUERY_FORMAT.format(tableNames[patch.patchType])
+			c.execute(queryString, [pathRelativeToVariant, variantNum, variantNum])
 
-		if conn is None:
-			raise Exception("Connection Error: ", self.variantsDb)
+			patchRow = c.fetchone()
+			c.close()
+			conn.close()
 
-		c = conn.cursor()
-
-		c.execute(self.GET_VARIANT_POSITION_QUERY, [variantName])
-		variantNum = c.fetchone()[0]
-
-		c.execute(self.FETCH_PATCH_FOR_FQN_QUERY, [pathRelativeToVariant, variantNum, variantNum])
-		patchRow = c.fetchone()
-
-		c.close()
-		conn.close()
-
-		return patchRow[4] #UUID
+			uuid = patchRow[0]
+			return uuid
 
 	def __getOutputContent(self, patchFqn):
 		variant_name = self.langHelper.getVariantName(patchFqn)
@@ -195,4 +199,6 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		conn.close()
 
 		return content
+
+
 

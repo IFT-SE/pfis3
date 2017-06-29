@@ -28,7 +28,7 @@ class AbstractLanguageHelper:
 
     def getPatchTypeForFile(self, filePath):
         if self.hasLanguageExtension(filePath):
-            return PatchType.SOURCE
+            return PatchType.METHOD
 
     def package(self, s):
         # Return the package. Empty string returned on fail.
