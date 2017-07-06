@@ -51,7 +51,7 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		self.setAsEquivalent(node, newPatch.uuid, newPatch)
 
 	def getNewNonLeafPatch(self, fqn):
-		if self.langHelper.isFileFqn(fqn):
+		if self.langHelper.isFileFqn(fqn) and not VariantAwarePfisGraph.optionToggles['excludeFileEquivalence']:
 			fqn = self.langHelper.fileFqn(fqn)
 			filePatch = FilePatch(fqn)
 			if self.temporaryMode: return filePatch

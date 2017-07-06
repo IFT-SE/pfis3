@@ -1,23 +1,34 @@
 import networkx as nx
 import re
 import sqlite3
+from collections import defaultdict
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
 from graphAttributes import NodeType
 from graphAttributes import EdgeType
 
 class PfisGraph(object):
+    optionToggles = {'excludeChangelog': False, 'excludeOutput': False, 'excludeVariant': False, 'excludePackage': False,
+                           'excludeFileSimilarity': False, 'excludeFileEquivalence': False}
+
+    declarationAndScentDict = defaultdict(lambda: '')
+    declarationAndScentDict['changelogDeclAndScent'] = ", 'Changelog declaration', 'Changelog declaration scent'"
+    declarationAndScentDict['outputDeclAndScent'] = ", 'Output declaration', 'Output declaration scent'"
+
+    topologyDict = defaultdict(lambda: '')
+    topologyDict['changelogDecl'] = ", 'Changelog declaration'"
+    topologyDict['outputDecl'] = ", 'Output declaration'"
 
     SCENT_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                   "('Package', 'Imports', 'Extends', 'Implements', " \
                   "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
-                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent', " \
-                  "'Changelog declaration', 'Changelog declaration scent', 'Output declaration', 'Output declaration scent') " \
+                  "'Constructor invocation scent', 'Method declaration scent', 'Method invocation scent' " \
+                  "{} {}) " \
                   "AND timestamp >= ? AND timestamp < ?"
     TOPOLOGY_QUERY = "SELECT action, target, referrer FROM logger_log WHERE action IN " \
                      "('Package', 'Imports', 'Extends', 'Implements', " \
-                     "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type', " \
-                     "'Changelog declaration', 'Output declaration') " \
+                     "'Method declaration', 'Constructor invocation', 'Method invocation', 'Variable declaration', 'Variable type' " \
+                     "{} {}) " \
                      "AND timestamp >= ? AND timestamp < ?"
     ADJACENCY_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Method declaration offset' " \
                       "AND timestamp >= ? AND timestamp < ? ORDER BY timestamp"
@@ -57,9 +68,10 @@ class PfisGraph(object):
         # Inserts nodes into the graph up to a given timestamp in the database
         # provided by the conn.
         print '\tProcessing scent. Adding scent-related nodes...'
-        
+
+        scentQuery = self.getScentQuery()
         c = conn.cursor()
-        c.execute(self.SCENT_QUERY, [prevEndTimestamp, newEndTimestamp])
+        c.execute(scentQuery, [prevEndTimestamp, newEndTimestamp])
         #TODO: Sruti, Souti: account for output patch scent
         
         for row in c:
@@ -121,9 +133,9 @@ class PfisGraph(object):
         # each section of the build for details.
     
         print "\tProcessing topology. Adding location nodes to the graph..."
-    
+        topologyQuery = self.getTopologyQuery()
         c = conn.cursor()
-        c.execute(self.TOPOLOGY_QUERY, [prevEndTimestamp, newEndTimestamp])
+        c.execute(topologyQuery, [prevEndTimestamp, newEndTimestamp])
     
         for row in c:
             action, target, referrer, = \
@@ -250,17 +262,20 @@ class PfisGraph(object):
             if action in ["Changelog declaration", "Output declaration", "Method declaration"]:
                 variant = self.langHelper.getVariantName(referrer)
                 package = self.langHelper.package(referrer)
+                if self.optionToggles['excludePackage']:
+                    package = None
 
                 if package is None:#Add edge from patch to variant
                     # Package is the folder inside variant where a file lives.
-                    self.updateTopology('Variant', target, variant, targetNodeType, NodeType.VARIANT)
-                    self.updateScent('Variant', target, variant, targetNodeType, NodeType.VARIANT)
+                    if not self.optionToggles['excludeVariant']:
+                        self.updateTopology('Variant', target, variant, targetNodeType, NodeType.VARIANT)
+                        self.updateScent('Variant', target, variant, targetNodeType, NodeType.VARIANT)
                 else:
                     self.updateTopology('Package', target, package, targetNodeType, NodeType.PACKAGE)
                     self.updateScent('Package', target, package, targetNodeType,NodeType.PACKAGE)
-
-                    self.updateTopology('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
-                    self.updateScent('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
+                    if not self.optionToggles['excludeVariant']:
+                        self.updateTopology('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
+                        self.updateScent('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)
@@ -529,3 +544,23 @@ class PfisGraph(object):
 
     def getNodeLevel(self, fqn):
         return NodeType.getLevel(self.getNode(fqn)['type'])
+
+    def getScentQuery(self):
+        if not self.optionToggles['excludeChangelog'] and not self.optionToggles['excludeOutput']:
+            return self.SCENT_QUERY.format(self.declarationAndScentDict['changelogDeclAndScent'], self.declarationAndScentDict['outputDeclAndScent'])
+        elif self.optionToggles['excludeChangelog'] and not self.optionToggles['excludeOutput']:
+            return self.SCENT_QUERY.format(self.declarationAndScentDict['default'], self.declarationAndScentDict['outputDeclAndScent'])
+        elif not self.optionToggles['excludeChangelog'] and self.optionToggles['excludeOutput']:
+            return self.SCENT_QUERY.format(self.declarationAndScentDict['changelogDeclAndScent'], self.declarationAndScentDict['default'])
+        else:
+            return self.SCENT_QUERY.format(self.declarationAndScentDict['default'], self.declarationAndScentDict['default'])
+
+    def getTopologyQuery(self):
+        if not self.optionToggles['excludeChangelog'] and not self.optionToggles['excludeOutput']:
+            return self.TOPOLOGY_QUERY.format(self.topologyDict['changelogDecl'], self.topologyDict['outputDecl'])
+        elif self.optionToggles['excludeChangelog'] and not self.optionToggles['excludeOutput']:
+            return self.TOPOLOGY_QUERY.format(self.topologyDict['default'], self.topologyDict['outputDecl'])
+        elif not self.optionToggles['excludeChangelog'] and self.optionToggles['excludeOutput']:
+            return self.TOPOLOGY_QUERY.format(self.topologyDict['changelogDecl'], self.topologyDict['default'])
+        else:
+            return self.TOPOLOGY_QUERY.format(self.topologyDict['default'], self.topologyDict['default'])

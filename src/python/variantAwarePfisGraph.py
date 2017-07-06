@@ -6,10 +6,12 @@ class VariantAwarePfisGraph(PfisGraph):
 		variantTopology = True
 		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, variantTopology, stopWords, goalWords, verbose)
 		self.name = "Variant aware"
+		self.similarityList = ['Method declaration', 'Changelog declaration', 'Output declaration', 'File']
+		if PfisGraph.optionToggles['excludeFileSimilarity']: self.similarityList.remove('File')
 
 	def updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType):
 		PfisGraph.updateTopology(self, action, target, referrer, targetNodeType, referrerNodeType)
-		if action in ['Method declaration', 'Changelog declaration', 'Output declaration', 'Package', 'File']:
+		if action in self.similarityList:
 			self._addEdgesToOtherVariants(referrer, referrerNodeType)
 			self._addEdgesToOtherVariants(target, targetNodeType)
 

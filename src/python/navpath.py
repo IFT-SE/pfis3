@@ -1,5 +1,6 @@
 import sqlite3
 import iso8601
+from collections import defaultdict
 from pfigFileHeader import PFIGFileHeader
 from knownPatches import KnownPatches
 from navigation import Navigation
@@ -9,10 +10,23 @@ class NavigationPath(object):
     DEFAULT = "Default"
     PFIS_V = "PFIS-V"
 
-    TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' ORDER BY timestamp"
+    declarationDict = defaultdict(lambda: '')
+    declarationDict['Method declaration'] = "'Method declaration'"
+    declarationDict['Method declaration offset'] = ",'Method declaration offset'"
+    declarationDict['Method declaration length'] = ",'Method declaration length'"
+    declarationDict['Changelog declaration'] = ",'Changelog declaration'"
+    declarationDict['Output declaration'] = ",'Output declaration'"
+
+    tsoDict = defaultdict(lambda : '')
+    tsoDict['ignoreChangelog'] = "and target not like '%.txt%'"
+    tsoDict['ignoreOutput'] = "and target not like '%.html.output%'"
+    tsoDict['ignoreClAndOutput'] = "and target not like '%.html.output%' and target not like '%.txt%'"
+
+    clAndOutputSwitches = {'excludeChangelog': False, 'excludeOutput': False}
+
+    TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' {} ORDER BY timestamp"
     PATCH_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log " \
-                                "WHERE action IN ('Method declaration', 'Method declaration offset', 'Method declaration length', " \
-                                "'Changelog declaration', 'Output declaration') AND timestamp <= ? ORDER BY timestamp"
+                                "WHERE action IN ({} {} {} {} {}) AND timestamp <= ? ORDER BY timestamp"
 
     def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
         self.dbFilePath = dbFilePath
@@ -48,8 +62,10 @@ class NavigationPath(object):
         # remove any obvious duplicates that have the same file path and offset
         # in this function. We store time stamps here since they will be used to
         # determine if self.knownMethods entries need to be added or updated.
+        tsoQuery = self.getTextSelectionOffsetQuery()
+
         c = conn.cursor()
-        c.execute(self.TEXT_SELECTION_OFFSET_QUERY)
+        c.execute(tsoQuery)
 
         prevFilePath = None
         prevOffset = None
@@ -94,8 +110,9 @@ class NavigationPath(object):
             # Note that the queries here are by a method's FQN. This allows us
             # to update the method's declaration info if it gets updated at some
             # point in the future.
+            patchQuery = self.getPatchDeclarationQuery()
 
-            c = conn.execute(self.PATCH_DECLARATIONS_QUERY, [toFileNavigation.timestamp])
+            c = conn.execute(patchQuery, [toFileNavigation.timestamp])
             for row in c:
                 action, target, referrer = row['action'], row['target'], row['referrer']
 
@@ -255,3 +272,27 @@ class NavigationPath(object):
 
     def ifNavToUnseenPatch(self, navNumber):
         return self.getDefaultNavigation(navNumber).isToUnknown()
+
+    def getPatchDeclarationQuery(self):
+        if not self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+           return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
+                                                         self.declarationDict['Method declaration length'], self.declarationDict['Changelog declaration'], self.declarationDict['Output declaration']])
+        elif self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+            return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
+                                                          self.declarationDict['Method declaration length'], self.declarationDict['Output declaration'], self.declarationDict['default']])
+        elif not self.clAndOutputSwitches['excludeChangelog'] and self.clAndOutputSwitches['excludeOutput']:
+            return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
+                                                          self.declarationDict['Method declaration length'], self.declarationDict['Changelog declaration'], self.declarationDict['default']])
+        else:
+            return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
+                                                          self.declarationDict['Method declaration length'], self.declarationDict['default'], self.declarationDict['default']])
+
+    def getTextSelectionOffsetQuery(self):
+        if not self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+            return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['default'])
+        elif self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+            return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['ignoreChangelog'])
+        elif not self.clAndOutputSwitches['excludeChangelog'] and self.clAndOutputSwitches['excludeOutput']:
+            return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['ignoreOutput'])
+        else:
+            return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['ignoreClAndOutput'])
