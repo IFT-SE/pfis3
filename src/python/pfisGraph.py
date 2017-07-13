@@ -8,8 +8,15 @@ from graphAttributes import NodeType
 from graphAttributes import EdgeType
 
 class PfisGraph(object):
-    optionToggles = {'excludeChangelog': False, 'excludeOutput': False, 'excludeVariant': False, 'excludePackage': False,
-                           'excludeFileSimilarity': False, 'excludeFileEquivalence': False}
+    optionToggles = dict({
+        'excludeChangelog': True,
+         'excludeOutput': True,
+         'excludeVariant': True,
+         'excludePackage': True,
+         'excludeFileSimilarity': True,
+         'excludeFileEquivalence': True,
+        'excludeHierarchyLevels': False
+    })
 
     declarationAndScentDict = defaultdict(lambda: '')
     declarationAndScentDict['changelogDeclAndScent'] = ", 'Changelog declaration', 'Changelog declaration scent'"
@@ -38,7 +45,7 @@ class PfisGraph(object):
     REGEX_SPLIT_CAMEL_CASE = re.compile(r'_|\W+|\s+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[a-zA-Z])(?=[0-9]+)|(?<=[0-9])(?=[a-zA-Z]+)')
     
 
-    def __init__(self, dbFilePath, langHelper, projSrc, variantTopology =False, stopWords=[], goalWords=[], verbose=False):
+    def __init__(self, dbFilePath, langHelper, projSrc, variantTopology =False, stopWords=[], goalWords=[], variantOverrides = {}, verbose=False):
         self.dbFilePath = dbFilePath
         self.langHelper = langHelper
         self.variantTopology = variantTopology
@@ -48,8 +55,22 @@ class PfisGraph(object):
         self.graph = nx.Graph()
         self.name = "Variant unaware"
 
+        if self.variantTopology:
+            self.optionToggles.update(variantOverrides)
+        self.precomputeQueryFormats()
+
         self.temporaryMode = False
         self.tempNodes = set()
+
+
+    def precomputeQueryFormats(self):
+        print "Configs: ", self.optionToggles
+
+        self.TOPOLOGY_QUERY = self.getTopologyQuery()
+        self.SCENT_QUERY = self.getScentQuery()
+
+        print self.TOPOLOGY_QUERY
+        print self.SCENT_QUERY
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
@@ -69,9 +90,8 @@ class PfisGraph(object):
         # provided by the conn.
         print '\tProcessing scent. Adding scent-related nodes...'
 
-        scentQuery = self.getScentQuery()
         c = conn.cursor()
-        c.execute(scentQuery, [prevEndTimestamp, newEndTimestamp])
+        c.execute(self.SCENT_QUERY, [prevEndTimestamp, newEndTimestamp])
         #TODO: Sruti, Souti: account for output patch scent
         
         for row in c:
@@ -133,9 +153,8 @@ class PfisGraph(object):
         # each section of the build for details.
     
         print "\tProcessing topology. Adding location nodes to the graph..."
-        topologyQuery = self.getTopologyQuery()
         c = conn.cursor()
-        c.execute(topologyQuery, [prevEndTimestamp, newEndTimestamp])
+        c.execute(self.TOPOLOGY_QUERY, [prevEndTimestamp, newEndTimestamp])
     
         for row in c:
             action, target, referrer, = \
@@ -261,21 +280,28 @@ class PfisGraph(object):
             # and  JS has varying hierarchies for file containers.
             if action in ["Changelog declaration", "Output declaration", "Method declaration"]:
                 variant = self.langHelper.getVariantName(referrer)
-                package = self.langHelper.package(referrer)
-                if self.optionToggles['excludePackage']:
-                    package = None
 
-                if package is None:#Add edge from patch to variant
-                    # Package is the folder inside variant where a file lives.
+                if self.optionToggles['excludeHierarchyLevels']:
                     if not self.optionToggles['excludeVariant']:
-                        self.updateTopology('Variant', target, variant, targetNodeType, NodeType.VARIANT)
-                        self.updateScent('Variant', target, variant, targetNodeType, NodeType.VARIANT)
+                        self.updateTopology('Variant', referrer, variant, targetNodeType, NodeType.VARIANT)
+                        self.updateScent('Variant', referrer, variant, targetNodeType, NodeType.VARIANT)
+
                 else:
-                    self.updateTopology('Package', target, package, targetNodeType, NodeType.PACKAGE)
-                    self.updateScent('Package', target, package, targetNodeType,NodeType.PACKAGE)
-                    if not self.optionToggles['excludeVariant']:
-                        self.updateTopology('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
-                        self.updateScent('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
+                    package = self.langHelper.package(referrer)
+                    if self.optionToggles['excludePackage']:
+                        package = None
+
+                    if package is None:#Add edge from patch to variant
+                        # Package is the folder inside variant where a file lives.
+                        if not self.optionToggles['excludeVariant']:
+                            self.updateTopology('Variant', target, variant, targetNodeType, NodeType.VARIANT)
+                            self.updateScent('Variant', target, variant, targetNodeType, NodeType.VARIANT)
+                    else:
+                        self.updateTopology('Package', target, package, targetNodeType, NodeType.PACKAGE)
+                        self.updateScent('Package', target, package, targetNodeType,NodeType.PACKAGE)
+                        if not self.optionToggles['excludeVariant']:
+                            self.updateTopology('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
+                            self.updateScent('Variant', package, variant, NodeType.PACKAGE, NodeType.VARIANT)
 
     def __addAdjacencyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         knownPatches = KnownPatches(self.langHelper)

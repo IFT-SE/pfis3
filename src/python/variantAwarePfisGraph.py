@@ -2,9 +2,9 @@ from pfisGraph import PfisGraph
 from graphAttributes import EdgeType, NodeType
 
 class VariantAwarePfisGraph(PfisGraph):
-	def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], goalWords=[], verbose=False):
+	def __init__(self, dbFilePath, langHelper, projSrc, stopWords=[], goalWords=[], variantOverrides= {}, verbose=False):
 		variantTopology = True
-		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, variantTopology, stopWords, goalWords, verbose)
+		PfisGraph.__init__(self, dbFilePath, langHelper, projSrc, variantTopology, stopWords, goalWords, variantOverrides, verbose)
 		self.name = "Variant aware"
 		self.similarityList = ['Method declaration', 'Changelog declaration', 'Output declaration', 'File']
 		if PfisGraph.optionToggles['excludeFileSimilarity']: self.similarityList.remove('File')

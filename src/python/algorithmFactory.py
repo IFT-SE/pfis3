@@ -42,7 +42,7 @@ class AlgorithmFactory:
 		extensionIndex = node.attrib['fileName'].find('.txt')
 		fileName = node.attrib['fileName'][0:extensionIndex]
 		algoName = node.attrib['name']
-		if graphTypeSuffix is not None:
+		if graphTypeSuffix is not None or graphTypeSuffix != '':
 			fileName = fileName + "__" + graphTypeSuffix
 			algoName = algoName + "__" + graphTypeSuffix
 		return (fileName + ".txt", algoName)

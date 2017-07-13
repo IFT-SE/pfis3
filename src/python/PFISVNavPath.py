@@ -2,8 +2,8 @@ from navpath import NavigationPath
 
 class PFIS_V_NavPath(NavigationPath):
 
-	def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
-		NavigationPath.__init__(self, dbFilePath, langHelper, projectFolderPath, verbose)
+	def __init__(self, dbFilePath, langHelper, projectFolderPath, overrides={}, verbose = False):
+		NavigationPath.__init__(self, dbFilePath, langHelper, projectFolderPath, overrides, verbose)
 
 		self._name = NavigationPath.PFIS_V
 		self._variantAwareNavigations = []

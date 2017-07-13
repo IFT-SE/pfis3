@@ -1,5 +1,5 @@
 from algorithmPFIS import PFIS
-from graphAttributes import NodeType
+from graphAttributes import NodeType, EdgeType
 
 class PFISHierarchy(PFIS):
 	def __init__(self, langHelper, name, fileName, history=False, goal = False,
@@ -10,9 +10,17 @@ class PFISHierarchy(PFIS):
 				 changelogGoalActivation, includeTop, numTopPredictions, verbose)
 
 	def setPatchActivation(self, pfisGraph, patchFqn, value):
+		activation = value
 		hierarchyOfNodes = self.langHelper.getPatchHierarchy(patchFqn)
+
+		if pfisGraph.optionToggles['excludeHierarchyLevels']:
+			hierarchyOfNodes = [hierarchyOfNodes[0], hierarchyOfNodes[-1]]
+
 		for nodeFqn in hierarchyOfNodes:
-			PFIS.setPatchActivation(self, pfisGraph, nodeFqn, value)
+			# If graph contains that node (can be excluded, such as package nodes), activate it.
+			if pfisGraph.containsNode(nodeFqn):
+				PFIS.setPatchActivation(self, pfisGraph, nodeFqn, activation)
+				# activation = activation * 0.85
 
 	def spreadActivation(self, pfisGraph,  fromMethodFqn=None):
 		for i in range(0, self.NUM_SPREAD):

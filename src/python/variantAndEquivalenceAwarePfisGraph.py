@@ -11,8 +11,8 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 	FETCH_PATCH_FOR_FQN_QUERY_FORMAT = 'select vf.uuid from {} as vf where vf.fqn = ? and start <= ? and end >=?'
 
 
-	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, divorcedUntilMarried=False, stopWords=[], goalWords=[], verbose=False):
-		VariantAwarePfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, verbose)
+	def __init__(self, dbFilePath, langHelper, projSrc, variantsDb, divorcedUntilMarried=False, stopWords=[], goalWords=[], variantOverrides = {}, verbose=False):
+		VariantAwarePfisGraph.__init__(self, dbFilePath, langHelper, projSrc, stopWords, goalWords, variantOverrides, verbose)
 		self.variantsDb = variantsDb
 
 		#TODO: This is a hack. Should go off when output equivalence is moved to common equivalence DB

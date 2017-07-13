@@ -92,31 +92,19 @@ def main():
 	# Determine the algorithms to use
 	xmlParser = XMLOptionsParser(args['xml'], langHelper, workingDbCopy, projSrc, variantTopology, stopWords, goalWords)
 
-	graphAlgorithmsMapForDefaultNavPath = xmlParser.getAlgorithms(navPathType="Default")
-	if len(graphAlgorithmsMapForDefaultNavPath.keys()) > 0:
-		navPath = NavigationPath(workingDbCopy, langHelper, projSrc)
-		print "Predicting for DEFAULT Nav path.... "
-		runAlgorithms(args, graphAlgorithmsMapForDefaultNavPath, navPath)
-
-	#TODO: Collapse all navpaths into a single one for PFIS-V
-	graphAlgorithmsMapForVariantAwarePath = xmlParser.getAlgorithms(navPathType="PFIS-V")
-	if len(graphAlgorithmsMapForVariantAwarePath.keys()) > 0:
-		variantAwareNavPath = PFIS_V_NavPath(workingDbCopy, langHelper, projSrc)
-		print "Predicting for PFIS-V Nav path.... "
-		runAlgorithms(args, graphAlgorithmsMapForVariantAwarePath, variantAwareNavPath)
+	configsList = xmlParser.getAlgorithms()
+	for config in configsList:
+		print "**************************************************"
+		runAlgorithms(args, config[0], config[1], config[2])
 
 	# Exit gracefully
 	sys.exit(0)
 
-def runAlgorithms(args, graphAlgorithmsMap, navPath):
-	# Create the PFIS graph (which also determines the navigations)
-	for graph in graphAlgorithmsMap.keys():
-
-		print "Predicting for graph type: ", graph.name
+def runAlgorithms(args, navPath, graph, algorithms):
+	if len(algorithms) > 0:
+		print "Running algorithms for: ", navPath._name, graph.name
 		# Create a predictor instance for each graph type
 		predictor = Predictor(graph, navPath, args['outputPath'], args['topPredictionsFolderPath'])
-
-		algorithms = graphAlgorithmsMap[graph]
 
 		# Make all predictions for the graph for all algorithms
 		results = predictor.makeAllPredictions(algorithms)

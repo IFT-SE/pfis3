@@ -22,17 +22,23 @@ class NavigationPath(object):
     tsoDict['ignoreOutput'] = "and target not like '%.html.output%'"
     tsoDict['ignoreClAndOutput'] = "and target not like '%.html.output%' and target not like '%.txt%'"
 
-    clAndOutputSwitches = {'excludeChangelog': False, 'excludeOutput': False}
+    variantOptions = dict({
+        'excludeChangelog': True,
+        'excludeOutput': True
+    })
 
     TEXT_SELECTION_OFFSET_QUERY = "SELECT timestamp, action, target, referrer FROM logger_log WHERE action = 'Text selection offset' {} ORDER BY timestamp"
     PATCH_DECLARATIONS_QUERY = "SELECT timestamp, action, target, referrer from logger_log " \
                                 "WHERE action IN ({} {} {} {} {}) AND timestamp <= ? ORDER BY timestamp"
 
-    def __init__(self, dbFilePath, langHelper, projectFolderPath, verbose = False):
+    def __init__(self, dbFilePath, langHelper, projectFolderPath, variantOverrides = {}, verbose = False):
         self.dbFilePath = dbFilePath
         self.langHelper = langHelper
         self.projectFolderPath = projectFolderPath
         self.VERBOSE_PATH = verbose
+
+        self.variantOptions.update(variantOverrides)
+        self.precomputeQueryFormats()
 
         self.__fileNavigations = []
         self._navigations = []
@@ -273,14 +279,22 @@ class NavigationPath(object):
     def ifNavToUnseenPatch(self, navNumber):
         return self.getDefaultNavigation(navNumber).isToUnknown()
 
+    def precomputeQueryFormats(self):
+        print "Configs: ", self.variantOptions
+        self.PATCH_DECLARATIONS_QUERY = self.getPatchDeclarationQuery()
+        self.TEXT_SELECTION_OFFSET_QUERY = self.getTextSelectionOffsetQuery()
+
+        print self.PATCH_DECLARATIONS_QUERY
+        print self.TEXT_SELECTION_OFFSET_QUERY
+
     def getPatchDeclarationQuery(self):
-        if not self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+        if not self.variantOptions['excludeChangelog'] and not self.variantOptions['excludeOutput']:
            return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
                                                          self.declarationDict['Method declaration length'], self.declarationDict['Changelog declaration'], self.declarationDict['Output declaration']])
-        elif self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+        elif self.variantOptions['excludeChangelog'] and not self.variantOptions['excludeOutput']:
             return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
                                                           self.declarationDict['Method declaration length'], self.declarationDict['Output declaration'], self.declarationDict['default']])
-        elif not self.clAndOutputSwitches['excludeChangelog'] and self.clAndOutputSwitches['excludeOutput']:
+        elif not self.variantOptions['excludeChangelog'] and self.variantOptions['excludeOutput']:
             return self.PATCH_DECLARATIONS_QUERY.format(*[self.declarationDict['Method declaration'], self.declarationDict['Method declaration offset'],
                                                           self.declarationDict['Method declaration length'], self.declarationDict['Changelog declaration'], self.declarationDict['default']])
         else:
@@ -288,11 +302,11 @@ class NavigationPath(object):
                                                           self.declarationDict['Method declaration length'], self.declarationDict['default'], self.declarationDict['default']])
 
     def getTextSelectionOffsetQuery(self):
-        if not self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+        if not self.variantOptions['excludeChangelog'] and not self.variantOptions['excludeOutput']:
             return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['default'])
-        elif self.clAndOutputSwitches['excludeChangelog'] and not self.clAndOutputSwitches['excludeOutput']:
+        elif self.variantOptions['excludeChangelog'] and not self.variantOptions['excludeOutput']:
             return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['ignoreChangelog'])
-        elif not self.clAndOutputSwitches['excludeChangelog'] and self.clAndOutputSwitches['excludeOutput']:
+        elif not self.variantOptions['excludeChangelog'] and self.variantOptions['excludeOutput']:
             return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['ignoreOutput'])
         else:
             return self.TEXT_SELECTION_OFFSET_QUERY.format(self.tsoDict['ignoreClAndOutput'])
