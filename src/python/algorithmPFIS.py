@@ -20,28 +20,30 @@ class PFIS(PFISBase):
             accumulator= {}
             for node in self.mapNodesToActivation.keys():
                 if i%2 == 0:
-                    # if pfisGraph.containsNode(node):
-                    # Non-word to word types
-                    wordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] == NodeType.WORD]
-                    self.spreadTo(pfisGraph, node, wordNeighbors, self.mapNodesToActivation, accumulator)
+                    # Non-words --> word / non-words
+                    if pfisGraph.getNode(node)['type'] != NodeType.WORD:
+                        allNeighbors = [n for n in pfisGraph.getAllNeighbors(node)]
+                        self.spreadTo(pfisGraph, node, allNeighbors, self.mapNodesToActivation, accumulator)
                 else:
-                    # Word / non-word to non-word types
-                    nonWordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] != NodeType.WORD]
-                    self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator)
-
+                    # Word --> non-word types
+                    if pfisGraph.getNode(node)['type'] == NodeType.WORD:
+                        nonWordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] != NodeType.WORD]
+                        self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator, decay=False)
             self.mapNodesToActivation.update(accumulator)
         if self.VERBOSE:
             self.printScores(self.mapNodesToActivation, pfisGraph)
 
-    def spreadTo(self, pfisGraph, node, neighborsToSpread, priorSpreadResultant, accumulator):
+    def spreadTo(self, pfisGraph, node, neighborsToSpread, priorSpreadResultant, accumulator, decay=True):
         edgeWeight = 1.0
+        decay_factor = 1.0
 
         if len(neighborsToSpread) > 0:
             edgeWeight = 1.0 / len(neighborsToSpread)
 
         for neighbor in neighborsToSpread:
             edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
-            decay_factor = self.getDecayWeight(edge_types)
+            if decay:
+                decay_factor = self.getDecayWeight(edge_types)
 
             if neighbor not in accumulator:
                 if neighbor in self.mapNodesToActivation.keys():

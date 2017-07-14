@@ -50,6 +50,6 @@ class PFISHierarchy(PFIS):
 				for node in self.mapNodesToActivation.keys():
 					if pfisGraph.getNode(node)['type'] == NodeType.WORD:
 						nonWordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] != NodeType.WORD]
-						self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator)
+						self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator, decay=False)
 
 			self.mapNodesToActivation.update(accumulator)
