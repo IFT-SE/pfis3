@@ -280,12 +280,9 @@ class NavigationPath(object):
         return self.getDefaultNavigation(navNumber).isToUnknown()
 
     def precomputeQueryFormats(self):
-        print "Configs: ", self.variantOptions
+        print "Nav path Configs: ", self.variantOptions
         self.PATCH_DECLARATIONS_QUERY = self.getPatchDeclarationQuery()
         self.TEXT_SELECTION_OFFSET_QUERY = self.getTextSelectionOffsetQuery()
-
-        print self.PATCH_DECLARATIONS_QUERY
-        print self.TEXT_SELECTION_OFFSET_QUERY
 
     def getPatchDeclarationQuery(self):
         if not self.variantOptions['excludeChangelog'] and not self.variantOptions['excludeOutput']:

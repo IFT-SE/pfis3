@@ -16,6 +16,7 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_HISTORY = decayHistory
 		self.DECAY_SIMILARITY = decaySimilarity
 		self.DECAY_VARIANT = decayVariant
+		self.DECAY_CONTAINMENT = 1
 		self.mapNodesToActivation = None
 		self.VERBOSE = False
 
@@ -66,7 +67,6 @@ class PFISBase(PredictiveAlgorithm):
 							  str(navToPredict.toFileNav),
 							  navToPredict.toFileNav.timestamp,
 							  topPredictions)
-
 		else:
 			raise Exception("Node not in activation list: ", toMethodEquivalentFqn)
 
@@ -94,7 +94,6 @@ class PFISBase(PredictiveAlgorithm):
 			self.mapNodesToActivation[fromPatchEquivalent] = value
 			if self.VERBOSE:
 				print "{0} : {1}".format(fromPatchEquivalent, value)
-
 
 	def __initializeHistory(self, pfisGraph, navPath, navNumber):
 		activation = 1.0
@@ -188,8 +187,12 @@ class PFISBase(PredictiveAlgorithm):
 				return self.DECAY_SIMILARITY
 			elif edgeType == EdgeType.IN_VARIANT:
 				return self.DECAY_VARIANT
-			elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.CONTAINS]:
+			elif edgeType ==EdgeType.CONTAINS_WORD:
 				return self.DECAY_FACTOR
+			elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS]:
+				return self.DECAY_FACTOR
+			elif edgeType in [EdgeType.CONTAINS]:
+				return self.DECAY_CONTAINMENT
 			raise Exception("Invalid Edge Type: ", edgeType)
 
 		return max([getEdgeWeightForType(edgeType) for edgeType in edgeTypes])

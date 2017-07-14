@@ -149,7 +149,8 @@ class EdgeType(object):
     ADJACENT = 5
     TYPE = 6
     SIMILAR = 7
-    IN_VARIANT = 8
+    CONTAINS_WORD = 8
+    IN_VARIANT = 9
 
     @staticmethod
     def getAll():
@@ -162,5 +163,6 @@ class EdgeType(object):
             EdgeType.ADJACENT,
             EdgeType.TYPE,
             EdgeType.SIMILAR,
-            EdgeType.IN_VARIANT
+            EdgeType.IN_VARIANT,
+            EdgeType.CONTAINS_WORD
         ]

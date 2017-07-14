@@ -64,13 +64,9 @@ class PfisGraph(object):
 
 
     def precomputeQueryFormats(self):
-        print "Configs: ", self.optionToggles
-
+        print "Graph config: ", self.optionToggles
         self.TOPOLOGY_QUERY = self.getTopologyQuery()
         self.SCENT_QUERY = self.getScentQuery()
-
-        print self.TOPOLOGY_QUERY
-        print self.SCENT_QUERY
 
     def updateGraphByOneNavigation(self, prevEndTimeStamp, newEndTimestamp):
         conn = sqlite3.connect(self.dbFilePath)
@@ -119,10 +115,10 @@ class PfisGraph(object):
                       'Method invocation', 'Variable declaration',
                       'Variable type', 'Changelog declaration', 'Output declaration', 'Variant'):
             for word in self.__getWordNodes_splitNoStem(target):
-                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS_WORD)
 
             for word in self.__getWordNodes_splitNoStem(referrer):
-                self._addEdge(referrer, word, referrerNodeType, NodeType.WORD, EdgeType.CONTAINS)
+                self._addEdge(referrer, word, referrerNodeType, NodeType.WORD, EdgeType.CONTAINS_WORD)
 
         # Case 2: These actions have code content within them. In this case we
         # want to add an edge from the FQN node in target to the code content in
@@ -136,17 +132,17 @@ class PfisGraph(object):
                         'Method invocation scent',
                         'Changelog declaration scent'):
             for word in self.__getWordNodes_splitNoStem(referrer):
-                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS_WORD)
 
             for word in self.getWordNodes_splitCamelAndStem(referrer):
-                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS)
+                self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS_WORD)
 
         elif action == 'Output declaration scent':
             for word in self.__getWordNodes_splitNoStem(referrer):
-                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
+                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS_WORD)
 
             for word in self.getWordNodes_splitCamelAndStem(referrer):
-                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
+                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS_WORD)
 
     def __addTopologyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         # Build the graph according to the code structure recorded by PFIG. See

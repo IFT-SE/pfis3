@@ -203,5 +203,3 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 
 		return content
 
-
-

@@ -8,7 +8,7 @@ class PFISTouchOnce(PFISBase):
         PFISBase.__init__(self, langHelper, name, fileName, history, goal, 
                           decayFactor, decaySimilarity, decayVariant, decayHistory, changelogGoalActivation, includeTop, numTopPredictions)
 
-    def spreadActivation(self, pfisGraph, fromMethodFqn=None):
+    def spreadActivation(self, pfisGraph, fromMethodFqn):
         queue = deque()
         
         for node in self.mapNodesToActivation:

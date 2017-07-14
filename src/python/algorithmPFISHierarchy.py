@@ -12,6 +12,7 @@ class PFISHierarchy(PFIS):
 	def setPatchActivation(self, pfisGraph, patchFqn, value):
 		activation = value
 		hierarchyOfNodes = self.langHelper.getPatchHierarchy(patchFqn)
+		hierarchyOfNodes.reverse()
 
 		if pfisGraph.optionToggles['excludeHierarchyLevels']:
 			hierarchyOfNodes = [hierarchyOfNodes[0], hierarchyOfNodes[-1]]
@@ -22,7 +23,7 @@ class PFISHierarchy(PFIS):
 				PFIS.setPatchActivation(self, pfisGraph, nodeFqn, activation)
 				# activation = activation * 0.85
 
-	def spreadActivation(self, pfisGraph,  fromMethodFqn=None):
+	def spreadActivation(self, pfisGraph,  fromMethodFqn):
 		for i in range(0, self.NUM_SPREAD):
 			accumulator = {}
 			if i%3 == 0:
@@ -50,6 +51,6 @@ class PFISHierarchy(PFIS):
 				for node in self.mapNodesToActivation.keys():
 					if pfisGraph.getNode(node)['type'] == NodeType.WORD:
 						nonWordNeighbors = [n for n in pfisGraph.getAllNeighbors(node) if pfisGraph.getNode(n)['type'] != NodeType.WORD]
-						self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator, decay=False)
+						self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator)
 
 			self.mapNodesToActivation.update(accumulator)
