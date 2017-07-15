@@ -17,10 +17,13 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_SIMILARITY = decaySimilarity
 		self.DECAY_VARIANT = decayVariant
 		self.DECAY_CONTAINMENT = 1
+		self.GOAL_WORD_ACTIVATION = 1.0
+
 		self.mapNodesToActivation = None
 		self.VERBOSE = False
 
-		self.GOAL_WORD_ACTIVATION = 1.0
+		self.currentNode = None
+
 
 	def spreadActivation(self, pfisGraph, fromMethodFqn):
 		raise NotImplementedError('spreadActivation is not implemented in PFISBase')
@@ -31,6 +34,8 @@ class PFISBase(PredictiveAlgorithm):
 			raise RuntimeError('makePrediction: navNumber must be > 0 and less than the length of navPath')
 
 		navToPredict = navPath.getNavigation(navNumber)
+		self.currentNode = navToPredict.fromFileNav.methodFqn
+
 		if navToPredict.isToUnknown():
 			return Prediction(navNumber, 999999, 0, 0,
 							  str(navToPredict.fromFileNav),
@@ -181,7 +186,7 @@ class PFISBase(PredictiveAlgorithm):
 				self.mapNodesToActivation[patchFqn] = self.mapNodesToActivation[patchFqn] + \
 												  self.GOAL_WORD_ACTIVATION * self.DECAY_FACTOR
 
-	def getDecayWeight(self, edgeTypes):
+	def getDecayWeight(self, node, neighbor, pfisGraph):
 		def getEdgeWeightForType(edgeType):
 			if edgeType == EdgeType.SIMILAR:
 				return self.DECAY_SIMILARITY
@@ -195,4 +200,10 @@ class PFISBase(PredictiveAlgorithm):
 				return self.DECAY_CONTAINMENT
 			raise Exception("Invalid Edge Type: ", edgeType)
 
-		return max([getEdgeWeightForType(edgeType) for edgeType in edgeTypes])
+		# Word --> non-word, do not decay, because non-word to word already does the decay.
+		if pfisGraph.getNode(node)['type'] == NodeType.WORD and pfisGraph.getNode(neighbor)['type'] != NodeType.WORD:
+			decay_factor = 1.0
+		else:
+			edgeTypes = pfisGraph.getEdgeTypesBetween(node, neighbor)
+			decay_factor = max([getEdgeWeightForType(edgeType) for edgeType in edgeTypes])
+		return decay_factor

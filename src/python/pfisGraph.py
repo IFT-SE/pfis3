@@ -275,7 +275,7 @@ class PfisGraph(object):
             # TODO: this is a hack because Java and JS have different hierarchies
             # and  JS has varying hierarchies for file containers.
             if action in ["Changelog declaration", "Output declaration", "Method declaration"]:
-                variant = self.langHelper.getVariantName(referrer)
+                variant = self.langHelper.getVariantFqn(referrer)
 
                 if self.optionToggles['excludeHierarchyLevels']:
                     if not self.optionToggles['excludeVariant']:
@@ -586,3 +586,25 @@ class PfisGraph(object):
             return self.TOPOLOGY_QUERY.format(self.topologyDict['changelogDecl'], self.topologyDict['default'])
         else:
             return self.TOPOLOGY_QUERY.format(self.topologyDict['default'], self.topologyDict['default'])
+
+    def getDistance(self, fromFqn, toFqn):
+        fromEquivFqn = self.getFqnOfEquivalentNode(fromFqn)
+        toEquivFqn = self.getFqnOfEquivalentNode(toFqn)
+
+        if fromEquivFqn == toEquivFqn: return 1.0
+        if self.langHelper.isLibMethodWithoutSource(toFqn): return 1.0
+        if self.graph.has_edge(fromEquivFqn, toEquivFqn): return 1.0
+
+        fromContainment = self.langHelper.getPatchHierarchy(fromFqn)
+        toContainment = self.langHelper.getPatchHierarchy(toFqn)
+        if toFqn in fromContainment: return 1.0
+
+        distance = len(toContainment)
+        for i in range(0, len(toContainment)):
+            if toContainment[i] == fromContainment[i]:
+                distance -= 1
+                continue
+            else:
+                return distance
+
+        return distance

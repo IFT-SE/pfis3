@@ -1,6 +1,8 @@
-import re
 import os
+import re
+
 from patches import PatchType
+
 
 class AbstractLanguageHelper:
 
@@ -104,6 +106,8 @@ class AbstractLanguageHelper:
 
     def getVariantName(self, fqn):
         return None
+    def getVariantFqn(self, fqn):
+	    raise NotImplementedError("getVariantFqn : abstract language helper")
 
     def getPathRelativeToVariant(self, fqn):
         return None

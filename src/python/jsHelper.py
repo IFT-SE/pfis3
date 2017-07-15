@@ -10,6 +10,7 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	JS_STD_LIB = 'LJS_Std_lib;.'
 	REGEX_NORM_ECLIPSE = re.compile(r"L([^;]+).*")
 
+	VARIANT_FQN_REGEX = re.compile(r'(L/hexcom/[^/]*)/*')
 	FILE_FQN_REGEX = re.compile(r'L/hexcom/([^/]*)/([^/]*/)?(.*);$')
 	CHANGELOG_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/changes\.txt')
 	OUTPUT_FQN_REGEX = re.compile(r'L/hexcom/(.*?)/index\.html\.output')
@@ -17,7 +18,6 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	#Groups are: Variant, folder+"/" if any, folder name in groups[1], file name, method name
 
 	PATCH_HIERARCHY_REGEX = re.compile(r'L/hexcom/(.*?)/(.*)')
-		# re.compile(r'L/hexcom/([^/]*)/([^/]*/)?(.*)\.(js|txt|html.output);(\..*)?')
 
 	def __init__(self):
 		fileExtension = ".js"
@@ -128,6 +128,9 @@ class JavaScriptHelper (AbstractLanguageHelper):
 	def getVariantName(self, fqn):
 		return self.PATCH_HIERARCHY_REGEX.match(fqn).groups()[0]
 
+	def getVariantFqn(self, fqn):
+		return self.VARIANT_FQN_REGEX.match(fqn).groups()[0]
+
 	def isNavigablePatch(self, node):
 		if self.isLibMethodWithoutSource(node):
 			return False
@@ -146,15 +149,20 @@ class JavaScriptHelper (AbstractLanguageHelper):
 
 	def getPatchHierarchy(self, fqn):
 		#Returns top-most to leaf node.
-		if self.isOutputFqn(fqn) or self.isChangelogFqn(fqn):
-			return [self.getVariantName(fqn), fqn]
-		elif self.isMethodFqn(fqn):
-			items = [self.getVariantName(fqn)]
+		if self.isMethodFqn(fqn):
+			items = [self.getVariantFqn(fqn)]
 			if self.package(fqn) is not None:
 				items.append(self.package(fqn))
 			items.append(self.fileFqn(fqn))
 			items.append(fqn)
 			return items
+		else:
+			startString = 'L/hexcom/'
+			fqnFromVariant = fqn[fqn.index(startString) + len(startString):] + "/"
+			separatorIndexes = [i for i, x in enumerate(fqnFromVariant) if x == '/']
+			segments = [fqnFromVariant[:i] for i in separatorIndexes]
+			hierarchy = [startString+s for s in segments]
+			return hierarchy
 
 	def fileFqn(self, fqn):
 		return self.getOuterClass(fqn) + ";"

@@ -23,8 +23,7 @@ class PFIS3(PFIS):
 						edgeWeight = 1/len(neighbors)
 
 					for neighbor in neighbors:
-						edge_types = pfisGraph.getEdgeTypesBetween(node, neighbor)
-						decay_factor = self.getDecayWeight(edge_types)
+						decay_factor = self.getDecayWeight(node, neighbor, pfisGraph)
 
 						if neighbor not in self.mapNodesToActivation.keys():
 							self.mapNodesToActivation[neighbor] = 0.0

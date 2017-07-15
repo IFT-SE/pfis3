@@ -34,19 +34,18 @@ class PFIS(PFISBase):
             self.printScores(self.mapNodesToActivation, pfisGraph)
 
     def spreadTo(self, pfisGraph, spreadFrom, neighborsToSpread, priorSpreadResultant, accumulator):
+        spreadFromNodeType = pfisGraph.getNode(spreadFrom)['type']
+
         edgeWeight = 1.0
-        decay_factor = 1.0
-
-        # Word --> non-word, do not decay, because non-word to word already does the decay.
-        decay = pfisGraph.getNode(spreadFrom)['type'] != NodeType.WORD
-
         if len(neighborsToSpread) > 0:
             edgeWeight = 1.0 / len(neighborsToSpread)
 
         for neighbor in neighborsToSpread:
-            edge_types = pfisGraph.getEdgeTypesBetween(spreadFrom, neighbor)
-            if decay:
-                decay_factor = self.getDecayWeight(edge_types)
+            decay_factor = self.getDecayWeight(spreadFrom, neighbor, pfisGraph)
+            distance = 1.0
+            # If spreading non-word to non-word, get the cost (distance) of navigating to "to" from current patch
+            if spreadFromNodeType != NodeType.WORD and pfisGraph.getNode(neighbor)['type'] != NodeType.WORD:
+                distance = pfisGraph.getDistance(self.currentNode, neighbor)
 
             if neighbor not in accumulator:
                 if neighbor in self.mapNodesToActivation.keys():
@@ -55,15 +54,14 @@ class PFIS(PFISBase):
                     accumulator[neighbor] = 0.0
 
             neighborWeightBeforeSpread = accumulator[neighbor]
-            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (priorSpreadResultant[spreadFrom] * edgeWeight * decay_factor)
+            neighborWeightAfterSpreading = neighborWeightBeforeSpread + (priorSpreadResultant[spreadFrom] * edgeWeight * decay_factor)/distance
             accumulator[neighbor] = neighborWeightAfterSpreading
 
             if self.VERBOSE:
-                print '{} | {} to {}: {} + ({}*{}*{}) = {}'.format(edge_types, spreadFrom, neighbor,
+                print '{} to {}: {} + ({}*{}*{}) = {}'.format(spreadFrom, neighbor,
                                                                    neighborWeightBeforeSpread,
                                                                    priorSpreadResultant[spreadFrom], edgeWeight, decay_factor,
                                                                    neighborWeightAfterSpreading)
-
     def printScores(self, activationMap, graph):
         print "Patch weights for {}".format(self.name)
         for node in activationMap.keys():
