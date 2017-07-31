@@ -11,11 +11,11 @@ class PfisGraph(object):
     optionToggles = dict({
         'excludeChangelog': True,
          'excludeOutput': True,
-         'excludeVariant': True,
-         'excludePackage': True,
+         'excludeHierarchyLevels': False,
+         'excludeVariant': False,
+         'excludePackage': False,
          'excludeFileSimilarity': True,
-         'excludeFileEquivalence': True,
-        'excludeHierarchyLevels': False
+         'excludeFileEquivalence': True
     })
 
     declarationAndScentDict = defaultdict(lambda: '')

@@ -26,7 +26,6 @@ class JavaScriptHelper (AbstractLanguageHelper):
 		language = "JS"
 		AbstractLanguageHelper.__init__(self, language, fileExtension, normalizedPathRegex, packageRegex)
 
-
 	def normalize(self, string):
 		# Return the immediate container of the method
 		# L/hexcom/Current/js_v9/Hex.js/Hex(sideLength);.rotate() -- nested methods

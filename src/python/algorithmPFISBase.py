@@ -18,10 +18,8 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_VARIANT = decayVariant
 		self.DECAY_CONTAINMENT = 1
 		self.GOAL_WORD_ACTIVATION = 1.0
-
 		self.mapNodesToActivation = None
 		self.VERBOSE = False
-
 		self.currentNode = None
 
 
