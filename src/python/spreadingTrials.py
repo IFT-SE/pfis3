@@ -20,7 +20,7 @@ class PFIS3(PFIS):
 
 					edgeWeight = 1.0
 					if len(neighbors) > 0:
-						edgeWeight = 1/len(neighbors)
+						edgeWeight = 1.0/len(neighbors)
 
 					for neighbor in neighbors:
 						decay_factor = self.getDecayWeight(node, neighbor, pfisGraph)
@@ -28,6 +28,9 @@ class PFIS3(PFIS):
 						if neighbor not in self.mapNodesToActivation.keys():
 							self.mapNodesToActivation[neighbor] = 0.0
 
+						print "{0} --> {1}: {2} + ({3} * {4} * {5})".format(node, neighbor,
+						                                                           self.mapNodesToActivation[neighbor],
+						                                                           self.mapNodesToActivation[node], edgeWeight, decay_factor)
 						self.mapNodesToActivation[neighbor] = self.mapNodesToActivation[neighbor] + \
 															  (self.mapNodesToActivation[node] * edgeWeight * decay_factor)
 			if self.VERBOSE:

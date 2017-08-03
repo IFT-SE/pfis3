@@ -16,7 +16,7 @@ class PFISBase(PredictiveAlgorithm):
 		self.DECAY_HISTORY = decayHistory
 		self.DECAY_SIMILARITY = decaySimilarity
 		self.DECAY_VARIANT = decayVariant
-		self.DECAY_CONTAINMENT = 1
+		self.DECAY_CONTAINMENT = decayFactor
 		self.GOAL_WORD_ACTIVATION = 1.0
 		self.mapNodesToActivation = None
 		self.VERBOSE = False
@@ -186,16 +186,12 @@ class PFISBase(PredictiveAlgorithm):
 
 	def getDecayWeight(self, node, neighbor, pfisGraph):
 		def getEdgeWeightForType(edgeType):
-			if edgeType == EdgeType.SIMILAR:
-				return self.DECAY_SIMILARITY
-			elif edgeType == EdgeType.IN_VARIANT:
-				return self.DECAY_VARIANT
-			elif edgeType ==EdgeType.CONTAINS_WORD:
+			if edgeType ==EdgeType.CONTAINS_WORD:
 				return self.DECAY_FACTOR
-			elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS]:
+			elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.SIMILAR]:
 				return self.DECAY_FACTOR
 			elif edgeType in [EdgeType.CONTAINS]:
-				return self.DECAY_CONTAINMENT
+				return self.DECAY_FACTOR
 			raise Exception("Invalid Edge Type: ", edgeType)
 
 		# Word --> non-word, do not decay, because non-word to word already does the decay.

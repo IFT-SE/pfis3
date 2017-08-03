@@ -41,8 +41,8 @@ class PFISHierarchy(PFIS):
 					accumulator = {}
 					for node in nodes:
 						neighborsAtSameOrLowerInHierarchy = [n for n in pfisGraph.getAllNeighbors(node) if
-							                                     (pfisGraph.getNodeLevel(n) is not None
-							                                      and pfisGraph.getNodeLevel(n) >= level)]
+																 (pfisGraph.getNodeLevel(n) is not None
+																  and pfisGraph.getNodeLevel(n) >= level)]
 						self.spreadTo(pfisGraph, node, neighborsAtSameOrLowerInHierarchy, self.mapNodesToActivation, accumulator)
 					self.mapNodesToActivation.update(accumulator)
 			else:
@@ -54,3 +54,33 @@ class PFISHierarchy(PFIS):
 						self.spreadTo(pfisGraph, node, nonWordNeighbors, self.mapNodesToActivation, accumulator)
 
 			self.mapNodesToActivation.update(accumulator)
+
+	def spreadTo(self, pfisGraph, spreadFrom, neighborsToSpread, priorSpreadResultant, accumulator):
+		spreadFromNodeType = pfisGraph.getNode(spreadFrom)['type']
+
+		edgeWeight = 1.0
+		if len(neighborsToSpread) > 0:
+			edgeWeight = 1.0 / len(neighborsToSpread)
+
+		for neighbor in neighborsToSpread:
+			decay_factor = self.getDecayWeight(spreadFrom, neighbor, pfisGraph)
+			distance = 1.0
+			# If spreading non-word to non-word, get the cost (distance) of navigating to "to" from current patch
+			if spreadFromNodeType != NodeType.WORD and pfisGraph.getNode(neighbor)['type'] != NodeType.WORD:
+				distance = pfisGraph.getDistance(self.currentNode, neighbor)
+
+			if neighbor not in accumulator:
+				if neighbor in self.mapNodesToActivation.keys():
+					accumulator[neighbor] = self.mapNodesToActivation[neighbor]
+				else:
+					accumulator[neighbor] = 0.0
+
+			neighborWeightBeforeSpread = accumulator[neighbor]
+			neighborWeightAfterSpreading = neighborWeightBeforeSpread + (priorSpreadResultant[spreadFrom] * edgeWeight * decay_factor)/distance
+			accumulator[neighbor] = neighborWeightAfterSpreading
+
+			if self.VERBOSE:
+				print '{} to {}: {} + ({}*{}*{}) = {}'.format(spreadFrom, neighbor,
+																   neighborWeightBeforeSpread,
+																   priorSpreadResultant[spreadFrom], edgeWeight, decay_factor,
+																   neighborWeightAfterSpreading)

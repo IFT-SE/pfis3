@@ -43,9 +43,6 @@ class PFIS(PFISBase):
         for neighbor in neighborsToSpread:
             decay_factor = self.getDecayWeight(spreadFrom, neighbor, pfisGraph)
             distance = 1.0
-            # If spreading non-word to non-word, get the cost (distance) of navigating to "to" from current patch
-            if spreadFromNodeType != NodeType.WORD and pfisGraph.getNode(neighbor)['type'] != NodeType.WORD:
-                distance = pfisGraph.getDistance(self.currentNode, neighbor)
 
             if neighbor not in accumulator:
                 if neighbor in self.mapNodesToActivation.keys():

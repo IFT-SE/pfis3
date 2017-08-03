@@ -161,7 +161,7 @@ class PfisGraph(object):
             self.updateTopology(action, target, referrer, targetNodeType, referrerNodeType)
 
         c.close()
-    
+
         print "\tDone processing topology."
         self.__printGraphStats()
 
@@ -243,10 +243,9 @@ class PfisGraph(object):
 
             # Link the called method to its class
             fqn = self.__getClassFQN(referrer)
-            if self.langHelper.Language == "JAVA": containerType = NodeType.CLASS
-            elif self.langHelper.Language == "JS": containerType = NodeType.FILE
-            self._addEdge(fqn, referrer,
-                          containerType,
+            if self.langHelper.Language == "JAVA":
+                self._addEdge(fqn, referrer,
+                          NodeType.CLASS,
                           referrerNodeType,
                           EdgeType.CONTAINS)
 
@@ -268,9 +267,9 @@ class PfisGraph(object):
                           EdgeType.TYPE)
 
         elif action == 'Variant':
-            self._addEdge(target, referrer, targetNodeType, referrerNodeType, EdgeType.IN_VARIANT)
+            self._addEdge(target, referrer, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
 
-        if self.variantTopology:
+        if False: #self.variantTopology:
             # TODO: this is a hack because Java and JS have different hierarchies
             # and  JS has varying hierarchies for file containers.
             if action in ["Changelog declaration", "Output declaration", "Method declaration"]:
@@ -308,7 +307,7 @@ class PfisGraph(object):
 
         for row in c:
             target, referrer = self.langHelper.fixSlashes(row['target']), int(row['referrer'])
-            knownPatches.addFilePatch(target);
+            knownPatches.addFilePatch(target)
             method = knownPatches.findMethodByFqn(target)
             method.startOffset = referrer
         c.close()
@@ -463,18 +462,11 @@ class PfisGraph(object):
     def getNeighborsOfDesiredEdgeTypes(self, node, edgeTypes):
         validNeighbors = []
         equivalentNode = self.getFqnOfEquivalentNode(node)
-
         for neighbor in self.graph.neighbors(equivalentNode):
             for edgeType in edgeTypes:
                 if edgeType in self.getEdgeTypesBetween(equivalentNode, neighbor) and neighbor not in validNeighbors:
                     validNeighbors.append(neighbor)
-
         return validNeighbors
-
-    def getNeighborsExcludingContainingVariant(self, node):
-        edgeTypes = EdgeType.getAll()
-        edgeTypes.remove(EdgeType.IN_VARIANT)
-        return self.getNeighborsOfDesiredEdgeTypes(node, edgeTypes)
 
     def getEdgeTypesBetween(self, node1, node2):
         node1Equiv = self.getFqnOfEquivalentNode(node1)
@@ -598,12 +590,11 @@ class PfisGraph(object):
         toContainment = self.langHelper.getPatchHierarchy(toFqn)
         if toFqn in fromContainment: return 1.0
 
-        distance = len(toContainment)
+        distance = float(len(toContainment))
         for i in range(0, len(toContainment)):
             if toContainment[i] == fromContainment[i]:
-                distance -= 1
+                distance -= 1.0
                 continue
             else:
                 return distance
-
         return distance

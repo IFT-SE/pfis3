@@ -69,17 +69,18 @@ class AlgorithmFactory:
 			"PFIS3": PFIS3,
 			"PFISHierarchy": PFISHierarchy
 		}
-
 		history = False
 		goal = False
 		changelogGoalActivation = False
+
 		decayFactor = 0.85
-		decayHistory = 0.9
 		decaySimilarity = 0.85
 		decayVariant = 0.85
 
+		decayHistory = 0.9
+
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
-		if 'history' in node.attrib and node.attrib['history'] == 'true': history = True
+		if 'history' in node.attrib and node.attrib['history'].lower() == 'true': history = True
 		if 'goal' in node.attrib and node.attrib['goal'].lower() == 'true': goal = True
 		if 'decayFactor' in node.attrib: decayFactor = float(node.attrib['decayFactor'])
 		if 'decaySimilarity' in node.attrib: decaySimilarity = float(node.attrib['decaySimilarity'])

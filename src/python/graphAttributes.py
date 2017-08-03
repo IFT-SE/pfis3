@@ -163,6 +163,5 @@ class EdgeType(object):
             EdgeType.ADJACENT,
             EdgeType.TYPE,
             EdgeType.SIMILAR,
-            EdgeType.IN_VARIANT,
             EdgeType.CONTAINS_WORD
         ]
