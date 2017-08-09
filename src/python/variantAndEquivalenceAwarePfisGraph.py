@@ -51,7 +51,8 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		self.setAsEquivalent(node, newPatch.uuid, newPatch)
 
 	def getNewNonLeafPatch(self, fqn):
-		if self.langHelper.isFileFqn(fqn) and not VariantAwarePfisGraph.optionToggles['excludeFileEquivalence']:
+		if self.langHelper.isFileFqn(fqn) and \
+				not VariantAwarePfisGraph.optionToggles['excludeFileEquivalence']:
 			fqn = self.langHelper.fileFqn(fqn)
 			filePatch = FilePatch(fqn)
 			if self.temporaryMode: return filePatch
@@ -82,7 +83,6 @@ class VariantAndEquivalenceAwarePfisGraph(VariantAwarePfisGraph):
 		#TODO: Sruti, Souti: cleanup this getOutputContent, put output equivalence info in the equivalence DBs.
 		newPatchContent = self.__getOutputContent(patchFqn)
 		newPatch.content = newPatchContent
-
 		for _, patch in self.idToPatchMap.items():
 			if patch.patchType == PatchType.OUTPUT and patch.content == newPatchContent:
 				newPatch.uuid = patch.uuid

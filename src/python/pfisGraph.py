@@ -136,12 +136,12 @@ class PfisGraph(object):
             for word in self.getWordNodes_splitCamelAndStem(referrer):
                 self._addEdge(target, word, targetNodeType, NodeType.WORD, EdgeType.CONTAINS_WORD)
 
-        # elif action == 'Output declaration scent':
-        #     for word in self.__getWordNodes_splitNoStem(referrer):
-        #         self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS_WORD)
-        #
-        #     for word in self.getWordNodes_splitCamelAndStem(referrer):
-        #         self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS_WORD)
+        elif action == 'Output declaration scent':
+            for word in self.__getWordNodes_splitNoStem(referrer):
+                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS_WORD)
+
+            for word in self.getWordNodes_splitCamelAndStem(referrer):
+                self._addEdge(target, word, targetNodeType, referrerNodeType, EdgeType.CONTAINS_WORD)
 
     def __addTopologyNodesUpTo(self, conn, prevEndTimestamp, newEndTimestamp):
         # Build the graph according to the code structure recorded by PFIG. See

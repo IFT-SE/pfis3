@@ -50,7 +50,8 @@ class NodeType(object):
     __referrerNodes["Variable declaration"] = VARIABLE
     __referrerNodes["Changelog declaration"] = CHANGELOG
     __referrerNodes["Output declaration"] = OUTPUT
-    __referrerNodes["Output declaration scent"] = OUTPUT_INFO_FEATURE
+    # __referrerNodes["Output declaration scent"] = OUTPUT_INFO_FEATURE
+    __referrerNodes["Output declaration scent"] = WORD
 
 
     __targetNodeOverrides = {"JS": {}}
