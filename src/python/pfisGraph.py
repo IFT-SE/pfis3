@@ -269,7 +269,7 @@ class PfisGraph(object):
         elif action == 'Variant':
             self._addEdge(target, referrer, targetNodeType, referrerNodeType, EdgeType.CONTAINS)
 
-        if False: #self.variantTopology:
+        if self.variantTopology:
             # TODO: this is a hack because Java and JS have different hierarchies
             # and  JS has varying hierarchies for file containers.
             if action in ["Changelog declaration", "Output declaration", "Method declaration"]:
