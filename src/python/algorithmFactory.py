@@ -11,7 +11,7 @@ from algorithmVariantOfLinks import VariantOf
 from algorithmGoalWordSimilarity import GoalWordSimilarity
 from spreadingTrials import *
 from algorithmPFISHierarchy import PFISHierarchy
-
+from algorithmHierarchySingleFactor import HierarchySingleFactor
 class AlgorithmFactory:
 	def __init__(self, langHelper, dbPath):
 		self.langHelper = langHelper
@@ -29,7 +29,7 @@ class AlgorithmFactory:
 
 			if 'PFIS'.lower() in algClass.lower():
 				return self.__parsePFIS(node, suffix, algClass)
-			elif algClass in ['Adjacency', 'CallDepth', "Frequency", "Recency", "SourceTopology", "VariantOf"]:
+			elif algClass in ['Adjacency', 'CallDepth', "Frequency", "Recency", "SourceTopology", "VariantOf", "HierarchySingleFactor"]:
 				return self.__parseSingleFactors(node, suffix, algClass)
 			elif algClass in ['TFIDF', "GoalWordSimilarity"]:
 				return self.__parseTextSimilaritySingleFactorModels(node, suffix, algClass)
@@ -54,7 +54,8 @@ class AlgorithmFactory:
 			"CallDepth": CallDepth,
 			"Frequency": Frequency,
 			"Recency": Recency,
-			"SourceTopology": SourceTopology
+			"SourceTopology": SourceTopology,
+			"HierarchySingleFactor": HierarchySingleFactor
 		}
 
 		topPredictionsOptions = self.getTopPredictionsAttributes(node)
