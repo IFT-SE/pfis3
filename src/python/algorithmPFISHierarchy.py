@@ -11,7 +11,8 @@ class PFISHierarchy(PFIS):
 
 	def setPatchActivation(self, pfisGraph, patchFqn, value):
 		activation = value
-		hierarchyOfNodes = self.langHelper.getPatchHierarchy(patchFqn)
+		# hierarchyOfNodes = self.langHelper.getPatchHierarchy(patchFqn)
+		hierarchyOfNodes = pfisGraph.getPatchHierarchy(patchFqn)
 		hierarchyOfNodes.reverse()
 
 		if pfisGraph.optionToggles['excludeHierarchyLevels']:

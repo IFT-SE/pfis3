@@ -190,7 +190,7 @@ class PFISBase(PredictiveAlgorithm):
 				return self.DECAY_FACTOR
 			elif edgeType in [EdgeType.ADJACENT, EdgeType.CALLS, EdgeType.SIMILAR]:
 				return self.DECAY_FACTOR
-			elif edgeType in [EdgeType.CONTAINS]:
+			elif edgeType in [EdgeType.CONTAINS, EdgeType.IMPLEMENTS, EdgeType.IMPORTS, EdgeType.EXTENDS, EdgeType.TYPE]:
 				return self.DECAY_FACTOR
 			raise Exception("Invalid Edge Type: ", edgeType)
 

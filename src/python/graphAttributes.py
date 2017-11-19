@@ -21,7 +21,8 @@ class NodeType(object):
         CHANGELOG: 2,
         OUTPUT: 2,
         VARIANT: 1,
-        PROJECT: 0
+        PROJECT: 0,
+        SPECIAL: 0
     }
 
     __targetNodes = {}

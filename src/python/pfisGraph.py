@@ -1,11 +1,12 @@
 import networkx as nx
+import warnings
 import re
 import sqlite3
 from collections import defaultdict
 from nltk.stem import PorterStemmer
 from knownPatches import KnownPatches
-from graphAttributes import NodeType
-from graphAttributes import EdgeType
+from graphAttributes import *
+
 
 class PfisGraph(object):
     optionToggles = dict({
@@ -344,8 +345,10 @@ class PfisGraph(object):
 
         if node1 is None or node1.strip()=='' or node2 is None or node2.strip()=='':
             return
+
         if node1Type is None or node2Type is None:
-            raise Exception("Missing nodetype while adding edge: ", node1Type, node2Type, edgeType)
+            # This should NEVER happen, but happens for Java constructor invocation.
+            print "Warning: Missing nodetype while adding edge: {} ({}) to {} ({}) {}".format(node1, node1Type, node2, node2Type, edgeType)
 
         _addNodeIfNotPresent(self, node1, node1Type)
         _addNodeIfNotPresent(self, node2, node2Type)
@@ -598,3 +601,23 @@ class PfisGraph(object):
             else:
                 return distance
         return distance
+
+    def getPatchHierarchy(self, fqn):
+        hierarchy = [fqn]
+        currentLevel = self.getNodeLevel(fqn)
+        currentNode = fqn
+        while currentLevel > 0:
+            neighbors = self.getNeighborsOfDesiredEdgeTypes(currentNode, [EdgeType.CONTAINS])
+            containingNodes = [n for n in neighbors if self.getNodeLevel(n) is not None and self.getNodeLevel(n) < currentLevel]
+            if len(containingNodes) == 0:
+                return hierarchy
+
+            containingNodes = sorted(containingNodes, key=lambda node: self.getNodeLevel(node))
+            container = containingNodes[0]
+            hierarchy.append(container)
+            currentNode = container
+            currentLevel = self.getNodeLevel(container)
+
+        hierarchy.reverse()
+        return hierarchy
+
