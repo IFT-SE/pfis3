@@ -582,12 +582,14 @@ class PfisGraph(object):
             return self.TOPOLOGY_QUERY.format(self.topologyDict['default'], self.topologyDict['default'])
 
     def getDistance(self, fromFqn, toFqn):
+        # returns actual distance in environment for going fromFqn -> toFqn.
         fromEquivFqn = self.getFqnOfEquivalentNode(fromFqn)
         toEquivFqn = self.getFqnOfEquivalentNode(toFqn)
 
-        if fromEquivFqn == toEquivFqn: return 1.0
         if self.langHelper.isLibMethodWithoutSource(toFqn): return 1.0
-        if self.graph.has_edge(fromEquivFqn, toEquivFqn): return 1.0
+        if self.graph.has_edge(fromEquivFqn, toEquivFqn) and \
+                not self.langHelper.isVariantOf(fromFqn, toFqn):
+            return 1.0
 
         fromContainment = self.langHelper.getPatchHierarchy(fromFqn)
         toContainment = self.langHelper.getPatchHierarchy(toFqn)
